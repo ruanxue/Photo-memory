@@ -4,7 +4,9 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const backendRoot = path.resolve(__dirname, '../..');
-export const uploadRoot = path.join(backendRoot, 'uploads');
+export const uploadRoot = process.env.UPLOAD_ROOT
+  ? path.resolve(process.env.UPLOAD_ROOT)
+  : path.join(backendRoot, 'uploads');
 
 export const uploadDirs = {
   originals: path.join(uploadRoot, 'originals'),

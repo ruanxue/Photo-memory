@@ -398,36 +398,6 @@ export const listComments = async (req, res) => {
   success(res, comments);
 };
 
-export const listLikes = async (req, res) => {
-  const { page, pageSize, skip, take } = getPagination(req.query);
-  const q = String(req.query.q || '').trim();
-  const where = q
-    ? {
-        OR: [
-          { ip: { contains: q } },
-          { deviceId: { contains: q } },
-          { userAgent: { contains: q } },
-          { photo: { title: { contains: q } } },
-          { user: { username: { contains: q } } }
-        ]
-      }
-    : {};
-  const [items, total] = await Promise.all([
-    prisma.like.findMany({
-      where,
-      include: {
-        user: { select: { id: true, username: true, nickname: true } },
-        photo: { select: { id: true, title: true, thumbnailUrl: true } }
-      },
-      orderBy: { createdAt: 'desc' },
-      skip,
-      take
-    }),
-    prisma.like.count({ where })
-  ]);
-  success(res, items, 'ok', buildPageMeta(total, page, pageSize));
-};
-
 export const updateCommentStatus = async (req, res) => {
   const id = Number(req.params.id);
   const status = ['pending', 'approved', 'rejected'].includes(req.body.status) ? req.body.status : 'approved';

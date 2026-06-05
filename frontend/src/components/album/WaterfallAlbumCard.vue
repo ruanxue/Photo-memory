@@ -162,7 +162,7 @@ onMounted(checkCachedImage);
   width: 100%;
   height: auto;
   object-fit: contain;
-  opacity: var(--image-load-opacity, 0);
+  opacity: var(--image-load-opacity, 1);
   filter: var(--image-load-filter, none);
   transform: var(--image-load-transform, none);
   transform-origin: center;
@@ -188,6 +188,10 @@ onMounted(checkCachedImage);
 .album-image.load-blur {
   --image-load-opacity: 1;
   --image-load-filter: blur(18px);
+}
+
+.album-image.load-blur::before {
+  display: none;
 }
 
 .album-image.load-blur img {

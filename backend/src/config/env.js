@@ -11,6 +11,7 @@ export const env = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   clientOrigin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
   uploadMaxSizeMb: Number(process.env.UPLOAD_MAX_SIZE_MB || 15),
+  uploadTransportMaxSizeMb: Number(process.env.UPLOAD_TRANSPORT_MAX_SIZE_MB || process.env.UPLOAD_MAX_SIZE_MB || 100),
   publicBaseUrl: process.env.PUBLIC_BASE_URL || 'http://localhost:13033',
   trustProxy: parseTrustProxyValue(process.env.TRUST_PROXY ?? process.env.TRUST_PROXY_HOPS ?? '0')
 };

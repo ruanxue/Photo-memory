@@ -34,7 +34,7 @@
       </el-table-column>
       <el-table-column prop="city" label="城市" width="120" />
       <el-table-column label="数据" width="160">
-        <template #default="{ row }">{{ row.viewCount }} 浏览 · {{ row.likeCount }} 赞</template>
+        <template #default="{ row }">{{ row.viewCount }} 浏览</template>
       </el-table-column>
       <el-table-column label="操作" width="230" fixed="right">
         <template #default="{ row }">

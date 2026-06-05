@@ -48,7 +48,6 @@
               <p>{{ photo.description || '这张照片还没有描述。' }}</p>
             </div>
             <div class="detail-actions">
-              <el-button :type="photo.liked ? 'primary' : 'default'" @click="toggleLike">{{ photo.liked ? '已点赞' : '点赞' }}</el-button>
               <el-button :type="photo.favorited ? 'primary' : 'default'" @click="toggleFavorite">{{ photo.favorited ? '已收藏' : '收藏' }}</el-button>
               <el-button @click="share">分享</el-button>
             </div>
@@ -179,12 +178,6 @@ const load = async () => {
   } finally {
     loading.value = false;
   }
-};
-
-const toggleLike = async () => {
-  const res = photo.value.liked ? await photoApi.unlike(photo.value.id) : await photoApi.like(photo.value.id);
-  photo.value.liked = res.data.liked;
-  photo.value.likeCount = res.data.likeCount;
 };
 
 const toggleFavorite = async () => {

@@ -28,7 +28,6 @@ export const adminApi = {
   comments: () => request.get('/admin/comments'),
   updateCommentStatus: (id, data) => request.put(`/admin/comments/${id}/status`, data),
   deleteComment: (id) => request.delete(`/admin/comments/${id}`),
-  likes: (params) => request.get('/admin/likes', { params }),
   settings: () => request.get('/admin/settings'),
   updateSettings: (data) => request.put('/admin/settings', data)
 };

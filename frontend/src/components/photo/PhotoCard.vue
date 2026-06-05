@@ -23,16 +23,6 @@
             <el-icon><Top /></el-icon>
           </span>
         </div>
-        <button
-          class="overlay-pill like-pill"
-          :class="{ active: photo.liked, offset: photo.isFeatured || photo.isPinned }"
-          type="button"
-          :aria-label="photo.liked ? '取消点赞' : '点赞'"
-          @click.stop="toggleLike"
-        >
-          <span class="heart">{{ photo.liked ? '♥' : '♡' }}</span>
-          <span>{{ numberText(photo.likeCount) }}</span>
-        </button>
         <div v-if="photo.tags?.length" class="overlay-tags" :class="{ 'with-status': photo.isFeatured || photo.isPinned }">
           <router-link v-for="item in photo.tags.slice(0, 3)" :key="item.tag.id" :to="`/tags/${item.tag.id}`" @click.stop>
             #{{ item.tag.name }}
@@ -73,7 +63,6 @@
 <script setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { Star, Top } from '@element-plus/icons-vue';
-import { photoApi } from '../../api/photo.api.js';
 import { useSettingsStore } from '../../stores/settings.store.js';
 import { imageUrl } from '../../utils/image.js';
 import { formatDate, numberText } from '../../utils/format.js';
@@ -88,7 +77,6 @@ const emit = defineEmits(['preview', 'detail', 'loaded']);
 
 const settings = useSettingsStore();
 const exifHovered = ref(false);
-const liking = ref(false);
 const imageRef = ref(null);
 const imageLoaded = ref(false);
 
@@ -134,20 +122,6 @@ const exifLines = computed(() => [
   props.photo.iso ? `ISO ${props.photo.iso}` : null,
   props.photo.shutterSpeed ? `快门 ${props.photo.shutterSpeed}` : null
 ].filter(Boolean));
-
-const toggleLike = async () => {
-  if (liking.value) return;
-  liking.value = true;
-  try {
-    const result = props.photo.liked
-      ? await photoApi.unlike(props.photo.id)
-      : await photoApi.like(props.photo.id);
-    props.photo.liked = result.data.liked;
-    props.photo.likeCount = result.data.likeCount;
-  } finally {
-    liking.value = false;
-  }
-};
 
 const markImageLoaded = () => {
   if (imageLoaded.value) return;
@@ -241,7 +215,7 @@ onMounted(checkCachedImage);
   border: 0;
   background: transparent;
   cursor: zoom-in;
-  opacity: var(--image-load-opacity, 0);
+  opacity: var(--image-load-opacity, 1);
   filter: var(--image-load-filter, none);
   transform: var(--image-load-transform, none);
   transition:
@@ -270,6 +244,10 @@ onMounted(checkCachedImage);
 .image-frame.load-blur {
   --image-load-opacity: 1;
   --image-load-filter: blur(18px);
+}
+
+.image-frame.load-blur::before {
+  display: none;
 }
 
 .image-frame.load-blur .image-button {
@@ -371,38 +349,6 @@ onMounted(checkCachedImage);
   align-items: center;
   gap: var(--overlay-gap);
   transition: top 0.24s ease, left 0.24s ease, gap 0.24s ease;
-}
-
-.like-pill {
-  top: var(--overlay-current-edge);
-  left: var(--overlay-current-edge);
-  padding: 0 clamp(8px, 4cqw, 11px) 0 clamp(7px, 3.4cqw, 9px);
-  opacity: 0;
-  transform: translateY(-5px);
-  cursor: pointer;
-  transition: top 0.24s ease, left 0.24s ease, opacity 0.22s ease, transform 0.22s ease, background 0.22s ease, color 0.22s ease;
-}
-
-.like-pill.offset {
-  top: calc(var(--overlay-current-edge) + var(--overlay-control-size) + var(--overlay-gap));
-}
-
-.image-frame:hover .like-pill,
-.like-pill:focus-visible {
-  opacity: 1;
-  transform: none;
-}
-
-.like-pill:hover,
-.like-pill.active {
-  border-color: rgba(255, 156, 162, 0.8);
-  color: #ffd3d7;
-  background: rgba(122, 26, 37, 0.52);
-}
-
-.heart {
-  font-size: clamp(16px, 7.5cqw, 19px);
-  line-height: 1;
 }
 
 .status-icon {
@@ -537,7 +483,6 @@ onMounted(checkCachedImage);
 }
 
 .photo-overlays.exif-mode .status-actions,
-.photo-overlays.exif-mode .like-pill,
 .photo-overlays.exif-mode .overlay-tags {
   opacity: 0;
   transform: translateY(-4px);
@@ -673,7 +618,6 @@ onMounted(checkCachedImage);
 
 @media (hover: none) {
   .photo-card .overlay-tags,
-  .photo-card .like-pill,
   .photo-card .exif-trigger,
   .photo-card .capture-overlay {
     opacity: 1;

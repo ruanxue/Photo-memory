@@ -53,7 +53,6 @@ const routes = [
       { path: 'categories', redirect: '/admin/tags' },
       { path: 'tags', name: 'admin-tags', component: () => import('../views/admin/AdminTags.vue') },
       { path: 'comments', name: 'admin-comments', component: () => import('../views/admin/AdminComments.vue') },
-      { path: 'likes', name: 'admin-likes', component: () => import('../views/admin/AdminLikes.vue') },
       { path: 'settings', name: 'admin-settings', component: () => import('../views/admin/AdminSettings.vue') }
     ]
   },

@@ -9,7 +9,13 @@
     :style="waterfallStyle"
   >
     <div v-for="(column, columnIndex) in columns" :key="columnIndex" class="waterfall-column">
-      <div v-for="item in column" :key="item.key" class="waterfall-item" :data-waterfall-key="item.key">
+      <div
+        v-for="item in column"
+        :key="item.key"
+        class="waterfall-item"
+        :class="{ 'waterfall-item-enter-pending': pendingEnterKeys.has(item.key) }"
+        :data-waterfall-key="item.key"
+      >
         <WaterfallAlbumCard v-if="item.type === 'album'" :album="item.data" :load-index="item.loadIndex" @preview="openAlbumPreview" @detail="openAlbumDetail" />
         <PhotoCard
           v-else
@@ -80,6 +86,7 @@ const columns = ref([]);
 const creditColumnIndex = ref(-1);
 const resolvedColumns = ref(props.variant === 'wall' ? 5 : 3);
 const isReflowing = ref(false);
+const pendingEnterKeys = ref(new Set());
 const detailVisible = ref(false);
 const detailPhoto = ref(null);
 const albumDetailVisible = ref(false);
@@ -89,6 +96,7 @@ const albumLightboxPhotos = ref([]);
 const albumLightboxIndex = ref(0);
 const albumOriginSelector = ref('');
 let resizeObserver = null;
+let enterObserver = null;
 let resizeTimer = null;
 let flipTween = null;
 let resizeListening = false;
@@ -98,13 +106,20 @@ gsap.registerPlugin(Flip);
 
 const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 const cardsInDom = () => [...(wallRef.value?.querySelectorAll('.waterfall-item') || [])];
+const keysFromSignature = (signature = '') => String(signature).split('|').filter(Boolean);
+const photoKeysFrom = (keys) => keys.filter((key) => key.startsWith('photo-'));
 const isFullBleed = computed(() => props.variant === 'wall' && settings.settings.waterfallFullBleed === true);
 const animationDuration = computed(() => Math.max(200, Math.min(1600, Number(settings.settings.waterfallLoadDurationMs) || 720)));
 const animationStagger = computed(() => Math.max(0, Math.min(120, Number(settings.settings.waterfallLoadStaggerMs) || 24)));
+const cardEnterDistance = computed(() => {
+  const width = window.innerWidth || 1280;
+  return Math.max(28, Math.min(42, width * 0.026));
+});
 const waterfallStyle = computed(() => ({
   '--waterfall-columns': resolvedColumns.value,
   '--waterfall-load-duration': `${animationDuration.value}ms`,
-  '--waterfall-load-stagger': `${animationStagger.value}ms`
+  '--waterfall-load-stagger': `${animationStagger.value}ms`,
+  '--waterfall-card-enter-y': `${cardEnterDistance.value}px`
 }));
 const withLoadIndex = (items) => items.map((item, index) => ({ ...item, loadIndex: index }));
 
@@ -204,6 +219,81 @@ const runFlip = async (state, duration = 1.12) => {
   });
 };
 
+const removePendingKey = (key) => {
+  if (!pendingEnterKeys.value.has(key)) return;
+  const next = new Set(pendingEnterKeys.value);
+  next.delete(key);
+  pendingEnterKeys.value = next;
+};
+
+const revealPendingCard = (card) => {
+  const key = card.dataset.waterfallKey;
+  if (!key || !pendingEnterKeys.value.has(key)) return;
+  enterObserver?.unobserve(card);
+
+  if (reducedMotion()) {
+    removePendingKey(key);
+    return;
+  }
+
+  removePendingKey(key);
+  card.classList.remove('waterfall-item-enter-pending');
+  const duration = Math.max(1.25, Math.min(2.25, animationDuration.value / 1000 * 1.65));
+  gsap.fromTo(
+    card,
+    {
+      y: cardEnterDistance.value,
+      scale: 0.992,
+      force3D: true
+    },
+    {
+      y: 0,
+      scale: 1,
+      duration,
+      ease: 'expo.out',
+      overwrite: 'auto',
+      clearProps: 'transform'
+    }
+  );
+};
+
+const observePendingEnterCards = async (keys) => {
+  await nextTick();
+  if (!keys.length || reducedMotion()) {
+    pendingEnterKeys.value = new Set();
+    return;
+  }
+
+  if (typeof IntersectionObserver === 'undefined') {
+    keys.forEach((key) => {
+      const card = wallRef.value?.querySelector(`[data-waterfall-key="${CSS.escape(key)}"]`);
+      if (card) revealPendingCard(card);
+    });
+    return;
+  }
+
+  enterObserver ??= new IntersectionObserver(
+    (entries) => {
+      entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+        .forEach((entry, index) => {
+          window.setTimeout(() => revealPendingCard(entry.target), index * Math.max(48, Math.min(130, animationStagger.value * 1.45 || 64)));
+        });
+    },
+    {
+      root: null,
+      rootMargin: '0px 0px 10% 0px',
+      threshold: 0.01
+    }
+  );
+
+  keys.forEach((key) => {
+    const card = wallRef.value?.querySelector(`[data-waterfall-key="${CSS.escape(key)}"]`);
+    if (card) enterObserver.observe(card);
+  });
+};
+
 const applyColumns = async ({ animateLayout = false } = {}) => {
   const state = animateLayout && cardsInDom().length ? Flip.getState(cardsInDom()) : null;
   columns.value = distributePhotos(wallItems.value, resolvedColumns.value);
@@ -227,8 +317,22 @@ const requestColumnUpdate = (animate = true) => {
 
 const onWindowResize = () => requestColumnUpdate(true);
 
-const handleItemsChange = async () => {
+const handleItemsChange = async (signature, previousSignature) => {
+  const keys = keysFromSignature(signature);
+  const previousKeyList = keysFromSignature(previousSignature);
+  const previousKeys = new Set(previousKeyList);
+  const previousPhotoKeys = photoKeysFrom(previousKeyList);
+  const nextPhotoKeys = photoKeysFrom(keys);
+  const isPhotoAppend =
+    previousPhotoKeys.length > 0 &&
+    nextPhotoKeys.length > previousPhotoKeys.length &&
+    previousPhotoKeys.every((key) => keys.includes(key));
+  const addedKeys = isPhotoAppend
+    ? keys.filter((key) => !previousKeys.has(key))
+    : (!previousKeyList.length && props.animateInitial ? keys : []);
+  pendingEnterKeys.value = addedKeys.length ? new Set(addedKeys) : new Set();
   await applyColumns({ animateLayout: false });
+  if (addedKeys.length) await observePendingEnterCards(addedKeys);
 };
 
 const openDetail = (photo) => {
@@ -288,6 +392,7 @@ onMounted(observeWall);
 
 onBeforeUnmount(() => {
   resizeObserver?.disconnect();
+  enterObserver?.disconnect();
   if (resizeTimer) window.clearTimeout(resizeTimer);
   if (resizeListening) window.removeEventListener('resize', onWindowResize);
   flipTween?.kill();
@@ -339,6 +444,13 @@ onBeforeUnmount(() => {
 
 .waterfall-item {
   min-width: 0;
+  transform-origin: center bottom;
+}
+
+.waterfall-item-enter-pending {
+  visibility: hidden;
+  transform: translate3d(0, var(--waterfall-card-enter-y, 36px), 0) scale(0.992);
+  will-change: transform;
 }
 
 @media (max-width: 760px) {
@@ -357,6 +469,13 @@ onBeforeUnmount(() => {
 
   .waterfall-wall .waterfall-column {
     gap: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .waterfall-item-enter-pending {
+    visibility: visible;
+    transform: none;
   }
 }
 </style>

@@ -9,10 +9,8 @@ import {
   favoritePhoto,
   getComments,
   getPhoto,
-  likePhoto,
   listPhotos,
   unfavoritePhoto,
-  unlikePhoto,
   updatePhoto,
   uploadPhoto
 } from '../controllers/photo.controller.js';
@@ -25,8 +23,6 @@ router.post('/upload', requireAuth, upload.single('photo'), asyncHandler(uploadP
 router.post('/batch-upload', requireAuth, upload.array('photos', 30), asyncHandler(batchUploadPhotos));
 router.put('/:id', requireAuth, asyncHandler(updatePhoto));
 router.delete('/:id', requireAuth, asyncHandler(deletePhoto));
-router.post('/:id/like', optionalAuth, asyncHandler(likePhoto));
-router.delete('/:id/like', optionalAuth, asyncHandler(unlikePhoto));
 router.post('/:id/favorite', requireAuth, asyncHandler(favoritePhoto));
 router.delete('/:id/favorite', requireAuth, asyncHandler(unfavoritePhoto));
 router.get('/:id/comments', optionalAuth, asyncHandler(getComments));

@@ -45,9 +45,6 @@
             <div class="lead-copy">
               <p class="description">{{ photo.description || '这张照片还没有描述。' }}</p>
               <div class="sheet-actions">
-                <el-button :type="photo.liked ? 'primary' : 'default'" @click="toggleLike">
-                  {{ photo.liked ? '已点赞' : '点赞' }} {{ numberText(photo.likeCount) }}
-                </el-button>
                 <el-button :type="photo.favorited ? 'primary' : 'default'" @click="toggleFavorite">
                   {{ photo.favorited ? '已收藏' : '收藏' }} {{ numberText(photo.favoriteCount) }}
                 </el-button>
@@ -158,13 +155,6 @@ const requireLogin = () => {
   close();
   router.push({ name: 'login', query: { redirect: route.fullPath } });
   return false;
-};
-
-const toggleLike = async () => {
-  const result = photo.value.liked ? await photoApi.unlike(photo.value.id) : await photoApi.like(photo.value.id);
-  photo.value.liked = result.data.liked;
-  photo.value.likeCount = result.data.likeCount;
-  emit('updated', photo.value);
 };
 
 const toggleFavorite = async () => {

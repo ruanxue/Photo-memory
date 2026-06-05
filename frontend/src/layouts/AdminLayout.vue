@@ -10,7 +10,6 @@
         <el-menu-item index="/admin/albums">相册管理</el-menu-item>
         <el-menu-item index="/admin/tags">标签管理</el-menu-item>
         <el-menu-item index="/admin/comments">评论管理</el-menu-item>
-        <el-menu-item index="/admin/likes">点赞记录</el-menu-item>
         <el-menu-item index="/admin/settings">系统设置</el-menu-item>
       </el-menu>
     </aside>

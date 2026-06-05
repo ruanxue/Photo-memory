@@ -11,7 +11,6 @@
           <el-option label="最新上传" value="latest" />
           <el-option label="拍摄时间" value="taken" />
           <el-option label="浏览量" value="views" />
-          <el-option label="点赞数" value="likes" />
           <el-option label="评论数" value="comments" />
         </el-select>
         <el-select v-model="filters.tagId" clearable placeholder="标签" @change="reload">

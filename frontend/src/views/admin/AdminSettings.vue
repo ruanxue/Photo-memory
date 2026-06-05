@@ -167,7 +167,7 @@
       <section class="settings-section deploy-section">
         <div class="settings-section-head">
           <h2>部署与代理</h2>
-          <p>站点部署在 Nginx、Caddy、CDN 等反向代理后时，用它告诉后端应信任几层代理头，以便点赞和评论审计记录真实访客 IP。</p>
+          <p>站点部署在 Nginx、Caddy、CDN 等反向代理后时，用它告诉后端应信任几层代理头，以便评论审计记录真实访客 IP。</p>
         </div>
         <div class="settings-grid">
           <el-form-item label="TRUST_PROXY_HOPS">

@@ -190,7 +190,6 @@ async function createPhotos({ admin, demo, categoryMap, tagMap, albumMap }) {
           isFeatured,
           sortOrder: groups.length * variants.length - index,
           viewCount: 90 + index * 19,
-          likeCount: 8 + index,
           favoriteCount: 3 + Math.floor(index / 2),
           commentCount: index % 5 === 0 ? 1 : 0
         }
@@ -290,6 +289,14 @@ async function refreshCounters() {
 }
 
 async function main() {
+  if (process.env.SEED_ONLY_EMPTY === 'true') {
+    const userCount = await prisma.user.count();
+    if (userCount > 0) {
+      console.log('Seed skipped because database already has users.');
+      return;
+    }
+  }
+
   const users = await upsertUsers();
   const categoryMap = await upsertCategories();
   const tagMap = await upsertTags();

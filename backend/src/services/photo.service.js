@@ -9,20 +9,9 @@ export const photoInclude = {
   tags: { include: { tag: true } }
 };
 
-export const photoIncludeForViewer = (user, deviceId = null) => {
-  const visitorMatches = [];
-  if (user) visitorMatches.push({ userId: user.id });
-  if (deviceId) visitorMatches.push({ deviceId });
-  return visitorMatches.length
-    ? { ...photoInclude, likes: { where: { isActive: true, OR: visitorMatches }, select: { id: true } } }
-    : photoInclude;
-};
+export const photoIncludeForViewer = () => photoInclude;
 
-export const attachViewerState = (items) => items.map((photo) => {
-  if (!Object.prototype.hasOwnProperty.call(photo, 'likes')) return { ...photo, liked: false };
-    const { likes, ...rest } = photo;
-    return { ...rest, liked: Boolean(likes?.length) };
-});
+export const attachViewerState = (items) => items;
 
 export const visibilityFilter = (user) => {
   if (user?.role === 'admin') return { status: { not: 'deleted' } };
@@ -136,7 +125,6 @@ export const buildPhotoOrder = (sort = 'latest') => {
     latest: { uploadedAt: 'desc' },
     taken: { takenAt: 'desc' },
     views: { viewCount: 'desc' },
-    likes: { likeCount: 'desc' },
     favorites: { favoriteCount: 'desc' },
     comments: { commentCount: 'desc' },
     custom: { sortOrder: 'desc' }

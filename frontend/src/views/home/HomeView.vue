@@ -39,6 +39,7 @@
       show-credit-card
       @preview="openLightbox(featured, $event)"
     />
+    <div v-if="featured.length && hasMore" ref="loadMoreRef" class="home-load-sentinel" aria-hidden="true"></div>
   </section>
 
   <FloatingDock :visible="dockVisible" home />
@@ -46,7 +47,7 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { ArrowDown, Refresh } from '@element-plus/icons-vue';
 import request from '../../api/request.js';
 import { albumApi } from '../../api/album.api.js';
@@ -60,16 +61,23 @@ import PhotoLightbox from '../../components/photo/PhotoLightbox.vue';
 
 const settings = useSettingsStore();
 const loading = ref(true);
+const loadingMore = ref(false);
 const featured = ref([]);
 const wallAlbums = ref([]);
 const heroCandidates = ref([]);
 const heroPhoto = ref(null);
 const wallSectionRef = ref(null);
+const loadMoreRef = ref(null);
 const dockVisible = ref(false);
 const stats = reactive({ photos: 0, albums: 0, views: 0, cities: 0, tags: 0 });
 const lightboxVisible = ref(false);
 const lightboxIndex = ref(0);
 const lightboxPhotos = ref([]);
+const page = ref(1);
+const pageSize = ref(Number(settings.settings.pageSize || 24));
+const totalPhotos = ref(0);
+const wallMode = ref('latest');
+let wallObserver = null;
 const fallbackHero = 'https://picsum.photos/seed/photo-memory-hero/2200/1400';
 const heroImage = computed(() => imageUrl(heroPhoto.value?.mediumUrl || heroPhoto.value?.originalUrl || fallbackHero));
 const heroMode = computed(() => settings.settings.heroMode === 'fixed' ? 'fixed' : 'random');
@@ -81,6 +89,7 @@ const fixedHero = computed(() => {
 });
 const heroPool = computed(() => heroCandidates.value.length ? heroCandidates.value : featured.value);
 const canRefreshHero = computed(() => !fixedHero.value && heroPool.value.length > 1);
+const hasMore = computed(() => featured.value.length < totalPhotos.value);
 
 const pickHero = () => {
   const pool = heroPool.value;
@@ -104,22 +113,73 @@ const scrollToWall = () => {
   wallSectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
 
+const wallPhotoParams = () => ({
+  page: page.value,
+  pageSize: pageSize.value,
+  sort: wallMode.value === 'featured' ? 'latest' : (settings.settings.defaultSort || 'latest'),
+  featured: wallMode.value === 'featured' ? true : undefined
+});
+
+const observeHomeLoadMore = async () => {
+  await nextTick();
+  wallObserver?.disconnect();
+  if (!loadMoreRef.value || !hasMore.value) return;
+  wallObserver = new IntersectionObserver(
+    (entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) loadMore();
+    },
+    { root: null, rootMargin: '720px 0px', threshold: 0.01 }
+  );
+  wallObserver.observe(loadMoreRef.value);
+};
+
+const loadWallPhotos = async ({ append = false } = {}) => {
+  if (append) loadingMore.value = true;
+  try {
+    const res = await photoApi.list(wallPhotoParams());
+    const nextPhotos = res.data || [];
+    if (append) {
+      const existing = new Set(featured.value.map((photo) => photo.id));
+      const uniquePhotos = nextPhotos.filter((photo) => !existing.has(photo.id));
+      if (uniquePhotos.length) featured.value = [...featured.value, ...uniquePhotos];
+    } else {
+      featured.value = nextPhotos;
+    }
+    totalPhotos.value = res.meta?.total || featured.value.length;
+  } finally {
+    loadingMore.value = false;
+    await observeHomeLoadMore();
+  }
+};
+
+const loadMore = async () => {
+  if (loading.value || loadingMore.value || !hasMore.value) return;
+  page.value += 1;
+  await loadWallPhotos({ append: true });
+};
+
 const load = async () => {
   loading.value = true;
   try {
+    page.value = 1;
+    pageSize.value = Number(settings.settings.pageSize || pageSize.value || 24);
     const heroIds = configuredHeroIds.value;
     const heroRequest = heroIds.length
       ? photoApi.list({ ids: heroIds.join(','), pageSize: Math.min(heroIds.length, 60) })
       : Promise.resolve({ data: [] });
     const [featuredRes, latestRes, albumRes, tagRes, cityRes, heroRes] = await Promise.all([
-      photoApi.list({ featured: true, pageSize: 60, sort: 'latest' }),
-      photoApi.list({ pageSize: 60, sort: settings.settings.defaultSort || 'latest' }),
+      photoApi.list({ featured: true, page: 1, pageSize: pageSize.value, sort: 'latest' }),
+      photoApi.list({ page: 1, pageSize: pageSize.value, sort: settings.settings.defaultSort || 'latest' }),
       albumApi.list({ pageSize: 12 }),
       tagApi.list(),
       request.get('/map/cities'),
       heroRequest
     ]);
-    featured.value = featuredRes.data.length >= 40 ? featuredRes.data : latestRes.data;
+    const featuredTotal = featuredRes.meta?.total || featuredRes.data.length;
+    wallMode.value = featuredTotal >= 40 ? 'featured' : 'latest';
+    const wallRes = wallMode.value === 'featured' ? featuredRes : latestRes;
+    featured.value = wallRes.data || [];
+    totalPhotos.value = wallRes.meta?.total || featured.value.length;
     stats.photos = latestRes.meta?.total || featuredRes.meta?.total || featured.value.length;
     stats.albums = albumRes.meta?.total || albumRes.data?.length || 0;
     wallAlbums.value = albumRes.data || [];
@@ -130,6 +190,7 @@ const load = async () => {
     applyHeroSelection();
   } finally {
     loading.value = false;
+    await observeHomeLoadMore();
   }
 };
 
@@ -148,6 +209,7 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  wallObserver?.disconnect();
   window.removeEventListener('scroll', updateDockVisibility);
   window.removeEventListener('resize', updateDockVisibility);
 });
@@ -290,6 +352,12 @@ h1 {
   min-height: 100vh;
   padding: 0 0 92px;
   background: #050607;
+}
+
+.home-load-sentinel {
+  width: 100%;
+  height: 2px;
+  pointer-events: none;
 }
 
 @media (max-width: 760px) {

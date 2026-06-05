@@ -51,11 +51,10 @@ export const myComments = async (req, res) => {
 };
 
 export const myStatistics = async (req, res) => {
-  const [photoCount, albumCount, favoriteCount, likeCount, commentCount, views] = await Promise.all([
+  const [photoCount, albumCount, favoriteCount, commentCount, views] = await Promise.all([
     prisma.photo.count({ where: { userId: req.user.id, status: { not: 'deleted' } } }),
     prisma.album.count({ where: { userId: req.user.id } }),
     prisma.favorite.count({ where: { userId: req.user.id } }),
-    prisma.like.count({ where: { userId: req.user.id, isActive: true } }),
     prisma.comment.count({ where: { userId: req.user.id } }),
     prisma.photo.aggregate({ where: { userId: req.user.id }, _sum: { viewCount: true } })
   ]);
@@ -63,7 +62,6 @@ export const myStatistics = async (req, res) => {
     photoCount,
     albumCount,
     favoriteCount,
-    likeCount,
     commentCount,
     viewCount: views._sum.viewCount || 0
   });

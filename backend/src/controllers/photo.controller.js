@@ -201,16 +201,12 @@ export const getPhoto = async (req, res) => {
   });
 
   const where = visibilityFilter(req.user);
-  const likeOwners = [];
-  if (req.user) likeOwners.push({ userId: req.user.id });
-  if (visitor.deviceId) likeOwners.push({ deviceId: visitor.deviceId });
-  const [previous, next, liked, favorited] = await Promise.all([
+  const [previous, next, favorited] = await Promise.all([
     prisma.photo.findFirst({ where: { AND: [where, { id: { lt: photo.id } }] }, orderBy: { id: 'desc' }, select: { id: true, title: true } }),
     prisma.photo.findFirst({ where: { AND: [where, { id: { gt: photo.id } }] }, orderBy: { id: 'asc' }, select: { id: true, title: true } }),
-    likeOwners.length ? prisma.like.findFirst({ where: { photoId: photo.id, isActive: true, OR: likeOwners } }) : null,
     req.user ? prisma.favorite.findUnique({ where: { photoId_userId: { photoId: photo.id, userId: req.user.id } } }) : null
   ]);
-  success(res, { ...photo, viewCount: photo.viewCount + 1, previous, next, liked: Boolean(liked), favorited: Boolean(favorited) });
+  success(res, { ...photo, viewCount: photo.viewCount + 1, previous, next, favorited: Boolean(favorited) });
 };
 
 export const uploadPhoto = async (req, res) => {
@@ -272,57 +268,6 @@ export const deletePhoto = async (req, res) => {
   await prisma.photo.update({ where: { id: photo.id }, data: { status: 'deleted' } });
   await refreshCounters();
   success(res, null, '照片已删除');
-};
-
-export const likePhoto = async (req, res) => {
-  const { photo } = await requirePhotoAccess(req.params.id, req.user);
-  const visitor = getVisitorAudit(req);
-  if (!visitor.deviceId || !visitor.ip) return fail(res, 422, '无法识别当前设备，请刷新页面后重试');
-  const existingMatches = [{ deviceId: visitor.deviceId }, { ip: visitor.ip }];
-  if (req.user) existingMatches.push({ userId: req.user.id });
-  const existing = await prisma.like.findFirst({ where: { photoId: photo.id, OR: existingMatches } });
-  if (existing) {
-    const currentVisitor = existing.deviceId === visitor.deviceId || (req.user && existing.userId === req.user.id);
-    if (!currentVisitor) return fail(res, 409, '当前网络已为这张照片点过赞');
-    if (!existing.isActive) {
-      await prisma.like.update({
-        where: { id: existing.id },
-        data: { isActive: true, removedAt: null, userAgent: visitor.userAgent }
-      });
-    }
-    const count = await prisma.like.count({ where: { photoId: photo.id, isActive: true } });
-    await prisma.photo.update({ where: { id: photo.id }, data: { likeCount: count } });
-    return success(res, { likeCount: count, liked: true }, '已点赞');
-  }
-  try {
-    await prisma.like.create({
-      data: {
-        photoId: photo.id,
-        userId: req.user?.id || null,
-        deviceId: visitor.deviceId,
-        ip: visitor.ip,
-        userAgent: visitor.userAgent
-      }
-    });
-  } catch (error) {
-    if (error.code !== 'P2002') throw error;
-    return fail(res, 409, '当前设备或网络已为这张照片点过赞');
-  }
-  const count = await prisma.like.count({ where: { photoId: photo.id, isActive: true } });
-  await prisma.photo.update({ where: { id: photo.id }, data: { likeCount: count } });
-  success(res, { likeCount: count, liked: true }, '点赞成功');
-};
-
-export const unlikePhoto = async (req, res) => {
-  const { photo } = await requirePhotoAccess(req.params.id, req.user);
-  const visitor = getVisitorAudit(req);
-  if (!visitor.deviceId) return fail(res, 422, '无法识别当前设备，请刷新页面后重试');
-  const ownership = [{ deviceId: visitor.deviceId }];
-  if (req.user) ownership.push({ userId: req.user.id });
-  await prisma.like.updateMany({ where: { photoId: photo.id, isActive: true, OR: ownership }, data: { isActive: false, removedAt: new Date() } });
-  const count = await prisma.like.count({ where: { photoId: photo.id, isActive: true } });
-  await prisma.photo.update({ where: { id: photo.id }, data: { likeCount: count } });
-  success(res, { likeCount: count, liked: false }, '已取消点赞');
 };
 
 export const favoritePhoto = async (req, res) => {

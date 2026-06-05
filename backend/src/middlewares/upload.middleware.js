@@ -18,7 +18,9 @@ const storage = multer.diskStorage({
 const fileFilter = (req, file, cb) => {
   const ext = path.extname(file.originalname).toLowerCase();
   if (!allowedMime.has(file.mimetype) || !allowedExt.has(ext)) {
-    cb(new Error('仅支持 jpg、jpeg、png、webp 图片'));
+    const err = new Error('仅支持 jpg、jpeg、png、webp 图片');
+    err.status = 415;
+    cb(err);
     return;
   }
   cb(null, true);
@@ -27,5 +29,5 @@ const fileFilter = (req, file, cb) => {
 export const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: env.uploadMaxSizeMb * 1024 * 1024 }
+  limits: { fileSize: Math.max(1, env.uploadTransportMaxSizeMb) * 1024 * 1024 }
 });

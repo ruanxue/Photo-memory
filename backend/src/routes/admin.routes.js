@@ -21,7 +21,6 @@ import {
   listAlbums,
   listCategories,
   listComments,
-  listLikes,
   listPhotos,
   listTags,
   listUsers,
@@ -82,7 +81,6 @@ router.post('/tags/merge', asyncHandler(mergeTags));
 router.get('/comments', asyncHandler(listComments));
 router.put('/comments/:id/status', asyncHandler(updateCommentStatus));
 router.delete('/comments/:id', asyncHandler(deleteComment));
-router.get('/likes', asyncHandler(listLikes));
 
 router.get('/settings', asyncHandler(getSettings));
 router.put('/settings', asyncHandler(updateSettings));

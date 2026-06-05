@@ -7,7 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { env } from './config/env.js';
 import { prisma } from './config/prisma.js';
-import { ensureUploadDirs } from './utils/file.js';
+import { backendRoot, ensureUploadDirs, uploadRoot } from './utils/file.js';
 import { parseTrustProxyValue } from './utils/proxy.js';
 import { errorHandler, notFound } from './middlewares/error.middleware.js';
 import authRoutes from './routes/auth.routes.js';
@@ -51,7 +51,7 @@ app.use(
     legacyHeaders: false
   })
 );
-app.use('/uploads', express.static(path.resolve(__dirname, '../uploads')));
+app.use('/uploads', express.static(uploadRoot));
 
 app.get('/api/health', (req, res) => res.json({ success: true, message: 'Photo Memory API is running' }));
 app.use('/api/auth', authRoutes);
@@ -65,6 +65,15 @@ app.use('/api/search', searchRoutes);
 app.use('/api/settings', settingRoutes);
 app.use('/api/my', userRoutes);
 app.use('/api/admin', adminRoutes);
+
+const frontendDist = process.env.FRONTEND_DIST_DIR || path.resolve(backendRoot, '../frontend/dist');
+if (env.nodeEnv === 'production') {
+  app.use(express.static(frontendDist));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) return next();
+    res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+}
 
 app.use(notFound);
 app.use(errorHandler);

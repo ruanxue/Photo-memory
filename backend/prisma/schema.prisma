@@ -23,7 +23,6 @@ model User {
   photos       Photo[]
   albums       Album[]
   comments     Comment[]
-  likes        Like[]
   favorites    Favorite[]
   views        PhotoView[]
   uploadLogs   UploadLog[]
@@ -71,7 +70,6 @@ model Photo {
   isFeatured           Boolean     @default(false)
   sortOrder            Int         @default(0)
   viewCount            Int         @default(0)
-  likeCount            Int         @default(0)
   favoriteCount        Int         @default(0)
   commentCount         Int         @default(0)
   createdAt            DateTime    @default(now())
@@ -82,7 +80,6 @@ model Photo {
   category             Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   tags                 PhotoTag[]
   comments             Comment[]
-  likes                Like[]
   favorites            Favorite[]
   views                PhotoView[]
 
@@ -176,28 +173,6 @@ model Comment {
   @@index([userId])
   @@index([status])
   @@index([guestEmail])
-  @@index([createdAt])
-}
-
-model Like {
-  id        Int      @id @default(autoincrement())
-  photoId   Int
-  userId    Int?
-  deviceId  String?
-  ip        String?
-  userAgent String?
-  isActive  Boolean  @default(true)
-  removedAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-
-  photo     Photo    @relation(fields: [photoId], references: [id], onDelete: Cascade)
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@unique([photoId, userId])
-  @@unique([photoId, deviceId])
-  @@unique([photoId, ip])
-  @@index([userId])
   @@index([createdAt])
 }
 

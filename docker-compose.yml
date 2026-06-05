@@ -1,0 +1,28 @@
+services:
+  photo-memory:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: photo-memory:latest
+    container_name: photo-memory
+    restart: unless-stopped
+    ports:
+      - "${PHOTO_MEMORY_PORT:-8080}:8080"
+    environment:
+      NODE_ENV: production
+      PORT: 8080
+      DATABASE_URL: file:/data/db/photo-memory.db
+      UPLOAD_ROOT: /data/uploads
+      FRONTEND_DIST_DIR: /app/frontend/dist
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET before starting Photo Memory}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost:8080}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8080}
+      UPLOAD_MAX_SIZE_MB: ${UPLOAD_MAX_SIZE_MB:-15}
+      UPLOAD_TRANSPORT_MAX_SIZE_MB: ${UPLOAD_TRANSPORT_MAX_SIZE_MB:-100}
+      TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-1}
+    volumes:
+      - photo_memory_data:/data
+
+volumes:
+  photo_memory_data:
