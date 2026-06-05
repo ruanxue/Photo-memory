@@ -1,0 +1,25 @@
+:root {
+  --page-bg: #08090a;
+  --surface: #121619;
+  --surface-soft: #1a2025;
+  --surface-strong: #20272d;
+  --surface-glass: rgba(14, 17, 19, 0.82);
+  --text: #f6f2ea;
+  --text-soft: #d8d1c6;
+  --muted: #b7afa4;
+  --muted-strong: #cbc3b8;
+  --line: rgba(255, 255, 255, 0.14);
+  --primary: #8fb8c4;
+  --primary-strong: #d2eef4;
+  --accent: #d89575;
+  --success: #84a98c;
+  --shadow: 0 22px 70px rgba(0, 0, 0, 0.46);
+  --radius: 8px;
+  --danger: #ef8f8f;
+  --warning: #e6c47a;
+  color-scheme: dark;
+}
+
+html.dark {
+  color-scheme: dark;
+}

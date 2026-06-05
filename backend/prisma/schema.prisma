@@ -1,0 +1,253 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int         @id @default(autoincrement())
+  username     String      @unique
+  email        String      @unique
+  passwordHash String
+  nickname     String?
+  avatar       String?
+  bio          String?
+  role         String      @default("user")
+  status       String      @default("active")
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  photos       Photo[]
+  albums       Album[]
+  comments     Comment[]
+  likes        Like[]
+  favorites    Favorite[]
+  views        PhotoView[]
+  uploadLogs   UploadLog[]
+
+  @@index([role])
+  @@index([status])
+}
+
+model Photo {
+  id                   Int         @id @default(autoincrement())
+  userId               Int
+  albumId              Int?
+  categoryId           Int?
+  title                String
+  description          String?
+  originalUrl          String
+  mediumUrl            String
+  thumbnailUrl         String
+  filename             String
+  mimeType             String
+  fileSize             Int
+  width                Int?
+  height               Int?
+  takenAt              DateTime?
+  uploadedAt           DateTime    @default(now())
+  cameraMake           String?
+  cameraModel          String?
+  lensModel            String?
+  focalLength          Float?
+  aperture             Float?
+  shutterSpeed         String?
+  iso                  Int?
+  exposureCompensation String?
+  whiteBalance         String?
+  latitude             Float?
+  longitude            Float?
+  country              String?
+  province             String?
+  city                 String?
+  locationName         String?
+  visibility           String      @default("public")
+  status               String      @default("normal")
+  isPinned             Boolean     @default(false)
+  pinnedAt             DateTime?
+  isFeatured           Boolean     @default(false)
+  sortOrder            Int         @default(0)
+  viewCount            Int         @default(0)
+  likeCount            Int         @default(0)
+  favoriteCount        Int         @default(0)
+  commentCount         Int         @default(0)
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+
+  user                 User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  album                Album?      @relation("AlbumPhotos", fields: [albumId], references: [id], onDelete: SetNull)
+  category             Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  tags                 PhotoTag[]
+  comments             Comment[]
+  likes                Like[]
+  favorites            Favorite[]
+  views                PhotoView[]
+
+  @@index([userId])
+  @@index([albumId])
+  @@index([categoryId])
+  @@index([visibility, status])
+  @@index([isPinned, isFeatured])
+  @@index([takenAt])
+}
+
+model Album {
+  id            Int       @id @default(autoincrement())
+  userId        Int
+  title         String
+  description   String?
+  coverPhotoId  Int?
+  visibility    String    @default("public")
+  isPinned      Boolean   @default(false)
+  sortOrder     Int       @default(0)
+  photoCount    Int       @default(0)
+  startDate     DateTime?
+  endDate       DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photos        Photo[]   @relation("AlbumPhotos")
+
+  @@index([userId])
+  @@index([visibility])
+}
+
+model Category {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  cover       String?
+  sortOrder   Int      @default(0)
+  photoCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  photos      Photo[]
+}
+
+model Tag {
+  id          Int        @id @default(autoincrement())
+  name        String     @unique
+  slug        String     @unique
+  color       String?
+  photoCount  Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  photos      PhotoTag[]
+}
+
+model PhotoTag {
+  id        Int      @id @default(autoincrement())
+  photoId   Int
+  tagId     Int
+  createdAt DateTime @default(now())
+
+  photo     Photo    @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([photoId, tagId])
+  @@index([tagId])
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  photoId   Int
+  userId    Int?
+  guestName String?
+  guestEmail String?
+  deviceId  String?
+  ip        String?
+  userAgent String?
+  content   String
+  status    String   @default("approved")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  photo     Photo    @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([photoId])
+  @@index([userId])
+  @@index([status])
+  @@index([guestEmail])
+  @@index([createdAt])
+}
+
+model Like {
+  id        Int      @id @default(autoincrement())
+  photoId   Int
+  userId    Int?
+  deviceId  String?
+  ip        String?
+  userAgent String?
+  isActive  Boolean  @default(true)
+  removedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  photo     Photo    @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([photoId, userId])
+  @@unique([photoId, deviceId])
+  @@unique([photoId, ip])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  photoId   Int
+  userId    Int
+  createdAt DateTime @default(now())
+
+  photo     Photo    @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([photoId, userId])
+  @@index([userId])
+}
+
+model PhotoView {
+  id        Int      @id @default(autoincrement())
+  photoId   Int
+  userId    Int?
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  photo     Photo    @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([photoId])
+  @@index([createdAt])
+}
+
+model SystemSetting {
+  id          Int      @id @default(autoincrement())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+}
+
+model UploadLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  filename  String
+  fileSize  Int
+  status    String
+  message   String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+}
