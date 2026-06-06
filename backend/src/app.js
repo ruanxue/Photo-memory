@@ -38,7 +38,17 @@ const getInitialTrustProxy = async () => {
 
 const initialTrustProxy = await getInitialTrustProxy();
 if (initialTrustProxy) app.set('trust proxy', initialTrustProxy);
-app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    contentSecurityPolicy: {
+      directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        'upgrade-insecure-requests': null
+      }
+    }
+  })
+);
 app.use(cors({ origin: env.clientOrigin, credentials: true }));
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
