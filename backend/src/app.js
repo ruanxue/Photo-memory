@@ -10,6 +10,7 @@ import { prisma } from './config/prisma.js';
 import { backendRoot, ensureUploadDirs, uploadRoot } from './utils/file.js';
 import { parseTrustProxyValue } from './utils/proxy.js';
 import { errorHandler, notFound } from './middlewares/error.middleware.js';
+import { guardRequestPayload } from './middlewares/security.middleware.js';
 import authRoutes from './routes/auth.routes.js';
 import photoRoutes from './routes/photo.routes.js';
 import albumRoutes from './routes/album.routes.js';
@@ -26,6 +27,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 await ensureUploadDirs();
 
 const app = express();
+app.disable('x-powered-by');
 
 const getInitialTrustProxy = async () => {
   try {
@@ -52,6 +54,7 @@ app.use(
 app.use(cors({ origin: env.clientOrigin, credentials: true }));
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
+app.use(guardRequestPayload);
 app.use(morgan(env.nodeEnv === 'development' ? 'dev' : 'combined'));
 app.use(
   rateLimit({

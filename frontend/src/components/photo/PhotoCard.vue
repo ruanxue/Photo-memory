@@ -295,6 +295,17 @@ onMounted(checkCachedImage);
   }
 }
 
+@keyframes exifLineIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .photo-overlays {
   position: absolute;
   inset: 0;
@@ -443,6 +454,10 @@ onMounted(checkCachedImage);
   transition: right 0.24s ease, bottom 0.24s ease, opacity 0.22s ease, transform 0.22s ease, background 0.22s ease, color 0.22s ease;
 }
 
+.image-frame :is(a, button, img) {
+  cursor: zoom-in;
+}
+
 .capture-overlay {
   position: absolute;
   z-index: 2;
@@ -450,6 +465,7 @@ onMounted(checkCachedImage);
   bottom: calc(var(--overlay-current-edge) + 1px);
   left: var(--overlay-current-edge);
   max-height: calc(100% - var(--overlay-current-edge) * 2 - var(--overlay-control-size) - var(--overlay-gap));
+  overflow: hidden;
   display: flex;
   flex-direction: column-reverse;
   align-items: flex-start;
@@ -464,17 +480,52 @@ onMounted(checkCachedImage);
 }
 
 .capture-overlay span {
+  display: block;
+  box-sizing: border-box;
   max-width: 100%;
   overflow: hidden;
   padding: clamp(2px, 1.4cqw, 3px) clamp(5px, 3cqw, 7px);
   border-radius: 4px;
   background: rgba(5, 7, 9, 0.42);
+  line-height: 1.2;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.capture-overlay.detailed {
+  right: var(--overlay-current-edge);
+  max-height: min(72%, calc(100% - var(--overlay-current-edge) * 2));
+  gap: clamp(2px, 1.3cqw, 3px);
+  line-height: 1.18;
+}
+
 .capture-overlay.detailed span {
+  max-width: min(100%, 240px);
+  padding: clamp(1px, 1cqw, 2px) clamp(5px, 2.4cqw, 7px);
   background: rgba(5, 7, 9, 0.62);
+  opacity: 0;
+  transform: translateY(6px);
+  animation: exifLineIn 0.34s cubic-bezier(0.2, 0.72, 0.22, 1) both;
+}
+
+.capture-overlay.detailed span:nth-child(2) {
+  animation-delay: 28ms;
+}
+
+.capture-overlay.detailed span:nth-child(3) {
+  animation-delay: 56ms;
+}
+
+.capture-overlay.detailed span:nth-child(4) {
+  animation-delay: 84ms;
+}
+
+.capture-overlay.detailed span:nth-child(5) {
+  animation-delay: 112ms;
+}
+
+.capture-overlay.detailed span:nth-child(6) {
+  animation-delay: 140ms;
 }
 
 .image-frame:hover .capture-overlay {
@@ -600,6 +651,10 @@ onMounted(checkCachedImage);
   .capture-overlay span {
     max-width: calc(100% - 4px);
   }
+
+  .capture-overlay.detailed {
+    max-height: 62%;
+  }
 }
 
 @container (max-width: 155px) {
@@ -613,6 +668,15 @@ onMounted(checkCachedImage);
 
   .capture-overlay {
     right: calc(var(--overlay-current-edge) + var(--overlay-exif-width) + 3px);
+  }
+
+  .capture-overlay.detailed {
+    right: var(--overlay-current-edge);
+    max-height: 56%;
+  }
+
+  .capture-overlay.detailed span:nth-child(n + 6) {
+    display: none;
   }
 }
 
@@ -632,6 +696,12 @@ onMounted(checkCachedImage);
 
   .image-button {
     transition: none;
+  }
+
+  .capture-overlay.detailed span {
+    opacity: 1;
+    transform: none;
+    animation: none;
   }
 }
 </style>

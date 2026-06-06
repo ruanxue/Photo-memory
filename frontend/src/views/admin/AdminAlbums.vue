@@ -4,22 +4,24 @@
       <div><h1 class="section-title">相册管理</h1><p class="section-subtitle">新增、编辑、删除、置顶和公开控制。</p></div>
       <el-button type="primary" @click="openCreate">新增相册</el-button>
     </div>
-    <el-table :data="albums" class="surface">
+    <el-table :data="albums" class="surface admin-album-table" scrollbar-always-on>
       <el-table-column prop="id" label="ID" width="70" />
       <el-table-column label="卡片头图" width="106">
         <template #default="{ row }"><img class="album-thumb" :src="albumCover(row)" :alt="row.title" /></template>
       </el-table-column>
-      <el-table-column prop="title" label="标题" />
-      <el-table-column label="作者" width="120"><template #default="{ row }">{{ row.user?.nickname || row.user?.username }}</template></el-table-column>
+      <el-table-column prop="title" label="标题" width="170" />
+      <el-table-column label="作者" width="96"><template #default="{ row }">{{ row.user?.nickname || row.user?.username }}</template></el-table-column>
       <el-table-column label="可见性" width="100">
         <template #default="{ row }">{{ formatVisibility(row.visibility) }}</template>
       </el-table-column>
       <el-table-column prop="photoCount" label="照片数" width="100" />
       <el-table-column label="操作" width="220">
         <template #default="{ row }">
-          <el-button size="small" @click="openEdit(row)">编辑</el-button>
-          <router-link :to="`/albums/${row.id}`"><el-button size="small">查看</el-button></router-link>
-          <el-button size="small" type="danger" @click="remove(row)">删除</el-button>
+          <div class="action-buttons">
+            <el-button size="small" @click="openEdit(row)">编辑</el-button>
+            <router-link :to="`/albums/${row.id}`"><el-button size="small">查看</el-button></router-link>
+            <el-button size="small" type="danger" @click="remove(row)">删除</el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -64,5 +66,20 @@ onMounted(load);
   height: 52px;
   border-radius: 4px;
   object-fit: cover;
+}
+.admin-album-table {
+  width: 100%;
+}
+.admin-album-table :deep(.cell) {
+  white-space: nowrap;
+}
+.action-buttons {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.action-buttons :deep(.el-button + .el-button) {
+  margin-left: 0;
 }
 </style>

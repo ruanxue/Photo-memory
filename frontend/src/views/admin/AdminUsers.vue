@@ -11,10 +11,10 @@
       <el-input v-model="q" clearable placeholder="搜索用户" @keyup.enter="load" />
       <el-button type="primary" @click="load">搜索</el-button>
     </div>
-    <el-table :data="users" class="surface">
+    <el-table :data="users" class="surface admin-user-table" scrollbar-always-on>
       <el-table-column prop="id" label="ID" width="70" />
-      <el-table-column prop="username" label="用户名" />
-      <el-table-column prop="email" label="邮箱" />
+      <el-table-column prop="username" label="用户名" min-width="140" />
+      <el-table-column prop="email" label="邮箱" min-width="220" />
       <el-table-column label="角色" width="90">
         <template #default="{ row }">{{ formatUserRole(row.role) }}</template>
       </el-table-column>
@@ -22,13 +22,15 @@
         <template #default="{ row }">{{ formatUserStatus(row.status) }}</template>
       </el-table-column>
       <el-table-column label="照片" width="90"><template #default="{ row }">{{ row._count?.photos || 0 }}</template></el-table-column>
-      <el-table-column label="操作" width="360" fixed="right">
+      <el-table-column label="操作" width="430">
         <template #default="{ row }">
-          <el-button size="small" @click="openEdit(row)">编辑</el-button>
-          <el-button size="small" @click="toggleStatus(row)">{{ row.status === 'active' ? '禁用' : '启用' }}</el-button>
-          <el-button size="small" @click="toggleRole(row)">{{ row.role === 'admin' ? '设为用户' : '设为管理员' }}</el-button>
-          <el-button size="small" @click="resetPassword(row)">重置密码</el-button>
-          <el-button size="small" type="danger" @click="remove(row)">删除</el-button>
+          <div class="action-buttons">
+            <el-button size="small" @click="openEdit(row)">编辑</el-button>
+            <el-button size="small" @click="toggleStatus(row)">{{ row.status === 'active' ? '禁用' : '启用' }}</el-button>
+            <el-button size="small" @click="toggleRole(row)">{{ row.role === 'admin' ? '设为用户' : '设为管理员' }}</el-button>
+            <el-button size="small" @click="resetPassword(row)">重置密码</el-button>
+            <el-button size="small" type="danger" @click="remove(row)">删除</el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -96,4 +98,19 @@ onMounted(load);
 <style scoped>
 .toolbar { padding: 14px; }
 .toolbar .el-input { width: 240px; }
+.admin-user-table {
+  width: 100%;
+}
+.admin-user-table :deep(.cell) {
+  white-space: nowrap;
+}
+.action-buttons {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.action-buttons :deep(.el-button + .el-button) {
+  margin-left: 0;
+}
 </style>
