@@ -312,6 +312,60 @@ http://服务器IP:8080
 
 不要去掉 `/api` 或 `/uploads` 前缀。Lucky 中请求体/上传大小限制建议设置为至少 `100MB`。
 
+## GHCR 镜像部署与 NAS 升级
+
+仓库已提供 GitHub Actions 工作流：每次推送 `main` 分支后，会自动构建并推送镜像：
+
+```text
+ghcr.io/ruanxue/photo-memory:latest
+```
+
+飞牛 NAS 推荐使用预构建镜像运行，不在 NAS 上本地编译。目录建议：
+
+```text
+/vol1/1000/Docker/photo-memory/
+  app/   # 只放 compose 和 .env
+  data/  # SQLite 数据库和上传图片
+```
+
+NAS 上直接使用 `docker-compose.ghcr.yml`，不要覆盖仓库自带的 `docker-compose.yml`，这样后续 `git pull` 不会产生本地冲突。
+
+创建 `.env`：
+
+```env
+JWT_SECRET=replace-with-a-long-random-secret
+CLIENT_ORIGIN=http://192.168.100.186:8080
+PUBLIC_BASE_URL=http://192.168.100.186:8080
+TRUST_PROXY_HOPS=1
+PHOTO_MEMORY_PORT=8080
+UPLOAD_MAX_SIZE_MB=15
+UPLOAD_TRANSPORT_MAX_SIZE_MB=100
+```
+
+启动：
+
+```bash
+docker compose -f docker-compose.ghcr.yml pull
+docker compose -f docker-compose.ghcr.yml up -d
+```
+
+后续升级只需要等待 GitHub Actions 构建完成，然后在 NAS 上执行：
+
+```bash
+cd /vol1/1000/Docker/photo-memory/app
+docker compose -f docker-compose.ghcr.yml pull
+docker compose -f docker-compose.ghcr.yml up -d
+docker image prune -f
+```
+
+如果 GHCR 镜像是私有状态，需要先在 GitHub 创建带 `read:packages` 权限的 token，并在 NAS 上登录：
+
+```bash
+echo "你的 GitHub Token" | docker login ghcr.io -u ruanxue --password-stdin
+```
+
+如果希望免登录拉取镜像，请在 GitHub 的 Packages 页面把 `photo-memory` 容器包可见性改为 Public。
+
 反向代理示例：
 
 ```nginx
