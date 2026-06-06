@@ -95,7 +95,21 @@ const load = async () => {
 const reload = () => { page.value = 1; load(); };
 const openEdit = (row) => {
   currentId.value = row.id;
-  Object.assign(form, row, { tags: row.tags?.map((item) => item.tag.name).join(', ') || '' });
+  Object.keys(form).forEach((key) => delete form[key]);
+  Object.assign(form, {
+    title: row.title || '',
+    description: row.description || '',
+    albumId: row.albumId || null,
+    visibility: row.visibility || 'public',
+    sortOrder: row.sortOrder ?? 0,
+    city: row.city || '',
+    locationName: row.locationName || '',
+    latitude: row.latitude ?? '',
+    longitude: row.longitude ?? '',
+    tags: row.tags?.map((item) => item.tag.name).join(', ') || '',
+    isPinned: Boolean(row.isPinned),
+    isFeatured: Boolean(row.isFeatured)
+  });
   dialogVisible.value = true;
 };
 const save = async () => { await adminApi.updatePhoto(currentId.value, form); ElMessage.success('已保存'); dialogVisible.value = false; load(); };

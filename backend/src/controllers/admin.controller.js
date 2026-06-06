@@ -39,8 +39,10 @@ const safeUser = (user) => {
 
 const adminPhotoData = (body) => {
   const data = {};
+  if (Object.prototype.hasOwnProperty.call(body, 'title')) {
+    data.title = String(body.title || '').trim() || '未命名照片';
+  }
   [
-    'title',
     'description',
     'cameraMake',
     'cameraModel',
@@ -51,15 +53,20 @@ const adminPhotoData = (body) => {
     'country',
     'province',
     'city',
-    'locationName',
-    'visibility',
-    'status'
+    'locationName'
   ].forEach((field) => {
-    if (Object.prototype.hasOwnProperty.call(body, field)) data[field] = body[field] || null;
+    if (Object.prototype.hasOwnProperty.call(body, field)) data[field] = body[field] === '' ? null : body[field] || null;
   });
-  ['albumId', 'categoryId', 'iso', 'sortOrder'].forEach((field) => {
-    if (Object.prototype.hasOwnProperty.call(body, field)) data[field] = toInt(body[field]) || null;
+  if (Object.prototype.hasOwnProperty.call(body, 'visibility')) {
+    data.visibility = body.visibility === 'private' ? 'private' : 'public';
+  }
+  if (Object.prototype.hasOwnProperty.call(body, 'status')) {
+    data.status = ['normal', 'hidden', 'deleted'].includes(body.status) ? body.status : 'normal';
+  }
+  ['albumId', 'categoryId', 'iso'].forEach((field) => {
+    if (Object.prototype.hasOwnProperty.call(body, field)) data[field] = toInt(body[field]) ?? null;
   });
+  if (Object.prototype.hasOwnProperty.call(body, 'sortOrder')) data.sortOrder = toInt(body.sortOrder) ?? 0;
   ['focalLength', 'aperture', 'latitude', 'longitude'].forEach((field) => {
     if (Object.prototype.hasOwnProperty.call(body, field)) data[field] = toFloatOrNull(body[field]);
   });
