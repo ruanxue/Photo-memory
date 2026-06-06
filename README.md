@@ -320,6 +320,19 @@ http://服务器IP:8080
 ghcr.io/ruanxue/photo-memory:latest
 ```
 
+同时支持推送到阿里云 ACR。需要先在 GitHub 仓库 `Settings -> Secrets and variables -> Actions` 中新增：
+
+```text
+ALIYUN_USERNAME
+ALIYUN_PASSWORD
+```
+
+配置完成后，每次推送 `main` 还会生成：
+
+```text
+crpi-axmbs5adbsdxo86d.cn-shanghai.personal.cr.aliyuncs.com/xzzzz/photo-memory:latest
+```
+
 飞牛 NAS 推荐使用预构建镜像运行，不在 NAS 上本地编译。目录建议：
 
 ```text
@@ -329,6 +342,8 @@ ghcr.io/ruanxue/photo-memory:latest
 ```
 
 NAS 上直接使用 `docker-compose.ghcr.yml`，不要覆盖仓库自带的 `docker-compose.yml`，这样后续 `git pull` 不会产生本地冲突。
+
+如果使用阿里云 ACR 镜像，则使用 `docker-compose.aliyun.yml`，国内下载速度通常更快。
 
 创建 `.env`：
 
@@ -349,12 +364,29 @@ docker compose -f docker-compose.ghcr.yml pull
 docker compose -f docker-compose.ghcr.yml up -d
 ```
 
+阿里云 ACR 版本：
+
+```bash
+docker compose -f docker-compose.aliyun.yml pull
+docker compose -f docker-compose.aliyun.yml up -d
+```
+
 后续升级只需要等待 GitHub Actions 构建完成，然后在 NAS 上执行：
 
 ```bash
 cd /vol1/1000/Docker/photo-memory/app
 docker compose -f docker-compose.ghcr.yml pull
 docker compose -f docker-compose.ghcr.yml up -d
+docker image prune -f
+```
+
+使用阿里云 ACR 时：
+
+```bash
+cd /vol1/1000/Docker/photo-memory/app
+git pull
+docker compose -f docker-compose.aliyun.yml pull
+docker compose -f docker-compose.aliyun.yml up -d
 docker image prune -f
 ```
 
