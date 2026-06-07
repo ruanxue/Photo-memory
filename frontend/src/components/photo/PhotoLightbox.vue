@@ -55,7 +55,8 @@ const props = defineProps({
   photos: { type: Array, default: () => [] },
   index: { type: Number, default: 0 },
   navigation: { type: Boolean, default: true },
-  originSelector: { type: String, default: '' }
+  originSelector: { type: String, default: '' },
+  closeAnimation: { type: String, default: 'origin' }
 });
 
 const emit = defineEmits(['close', 'update:index']);
@@ -148,6 +149,26 @@ const loadFullImage = (id) => {
   if (preloader.complete && preloader.naturalWidth > 0) swap();
 };
 
+const photoPreviewUrl = (photo) => imageUrl(photo?.thumbnailUrl || photo?.mediumUrl || photo?.originalUrl);
+const photoFullUrl = (photo) => imageUrl(photo?.originalUrl || photo?.mediumUrl || photo?.thumbnailUrl);
+
+const warmImage = (source) => {
+  if (!source) return;
+  const image = new Image();
+  image.decoding = 'async';
+  image.src = source;
+};
+
+const preloadNearbyImages = (centerIndex = props.index) => {
+  if (!props.navigation || props.photos.length < 2) return;
+  [-1, 1].forEach((step) => {
+    const nextIndex = (centerIndex + step + props.photos.length) % props.photos.length;
+    const photo = props.photos[nextIndex];
+    warmImage(photoPreviewUrl(photo));
+    warmImage(photoFullUrl(photo));
+  });
+};
+
 const finishClose = () => {
   restoreOrigin();
   transition = null;
@@ -170,7 +191,7 @@ const openFromCard = async () => {
   transition?.kill();
   restoreOrigin();
   clearPhotoTransition();
-  await waitForImage(photoRef.value);
+  await waitForImage(photoRef.value, props.navigation ? 180 : 700);
   await nextPaint();
   if (run !== animationRun || !props.visible || closing.value) return;
 
@@ -187,6 +208,7 @@ const openFromCard = async () => {
     gsap.set(backdropRef.value, { autoAlpha: 1 });
     gsap.set(controls, { autoAlpha: 1, y: 0 });
     loadFullImage(activeId);
+    preloadNearbyImages();
     return;
   }
 
@@ -216,6 +238,7 @@ const openFromCard = async () => {
   }, 0);
   transition.to(controls, { autoAlpha: 1, y: 0, duration: 0.28, ease: 'power2.out' }, 0.25);
   loadFullImage(activeId);
+  preloadNearbyImages();
 };
 
 const move = (step) => {
@@ -245,6 +268,26 @@ const syncDetail = (fresh) => {
   detailPhoto.value = original || fresh;
 };
 
+const closeToCorner = () => {
+  const controls = uiElements();
+  const targetRect = photoRef.value?.getBoundingClientRect();
+  const x = targetRect ? 28 - targetRect.left : -window.innerWidth * 0.28;
+  const y = targetRect ? 28 - targetRect.top : -window.innerHeight * 0.28;
+  transition = gsap.timeline({ onComplete: finishClose });
+  transition.to(controls, { autoAlpha: 0, y: 8, duration: 0.16, ease: 'power1.in' }, 0);
+  transition.to(photoRef.value, {
+    x,
+    y,
+    scale: 0.18,
+    autoAlpha: 0,
+    filter: 'blur(6px)',
+    transformOrigin: 'top left',
+    duration: 0.58,
+    ease: 'power3.inOut'
+  }, 0);
+  transition.to(backdropRef.value, { autoAlpha: 0, duration: 0.38, ease: 'power1.in' }, 0.1);
+};
+
 const requestClose = async () => {
   if (!props.visible || closing.value) return;
   animationRun += 1;
@@ -254,6 +297,11 @@ const requestClose = async () => {
 
   if (!stageReady.value || !photoRef.value || !backdropRef.value || reducedMotion()) {
     finishClose();
+    return;
+  }
+
+  if (props.closeAnimation === 'corner') {
+    closeToCorner();
     return;
   }
 
@@ -313,7 +361,7 @@ watch(currentId, async (id) => {
   restoreOrigin();
   displaySrc.value = previewSrc.value;
   await nextTick();
-  await waitForImage(photoRef.value);
+  await waitForImage(photoRef.value, 180);
   clearPhotoTransition();
   stageReady.value = true;
   gsap.set(photoRef.value, { autoAlpha: 1 });
@@ -321,6 +369,7 @@ watch(currentId, async (id) => {
   gsap.set(uiElements(), { autoAlpha: 1, y: 0 });
   concealOrigin(findOrigin(current.value));
   loadFullImage(id);
+  preloadNearbyImages(props.index);
 }, { flush: 'post' });
 
 onMounted(() => window.addEventListener('keydown', onKey));

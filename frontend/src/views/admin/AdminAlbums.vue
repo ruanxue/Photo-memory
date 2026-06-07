@@ -4,18 +4,18 @@
       <div><h1 class="section-title">相册管理</h1><p class="section-subtitle">新增、编辑、删除、置顶和公开控制。</p></div>
       <el-button type="primary" @click="openCreate">新增相册</el-button>
     </div>
-    <el-table :data="albums" class="surface admin-album-table" scrollbar-always-on>
+    <el-table :data="albums" class="surface admin-album-table" scrollbar-always-on table-layout="auto">
       <el-table-column prop="id" label="ID" width="70" />
-      <el-table-column label="卡片头图" width="106">
+      <el-table-column label="卡片头图" width="120">
         <template #default="{ row }"><img class="album-thumb" :src="albumCover(row)" :alt="row.title" /></template>
       </el-table-column>
-      <el-table-column prop="title" label="标题" width="170" />
-      <el-table-column label="作者" width="96"><template #default="{ row }">{{ row.user?.nickname || row.user?.username }}</template></el-table-column>
-      <el-table-column label="可见性" width="100">
+      <el-table-column prop="title" label="标题" min-width="230" />
+      <el-table-column label="作者" min-width="160"><template #default="{ row }">{{ row.user?.nickname || row.user?.username }}</template></el-table-column>
+      <el-table-column label="可见性" min-width="130">
         <template #default="{ row }">{{ formatVisibility(row.visibility) }}</template>
       </el-table-column>
-      <el-table-column prop="photoCount" label="照片数" width="100" />
-      <el-table-column label="操作" width="220">
+      <el-table-column prop="photoCount" label="照片数" min-width="130" />
+      <el-table-column label="操作" min-width="260">
         <template #default="{ row }">
           <div class="action-buttons">
             <el-button size="small" @click="openEdit(row)">编辑</el-button>

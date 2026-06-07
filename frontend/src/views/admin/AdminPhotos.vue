@@ -20,17 +20,17 @@
       <el-button @click="runBatch">执行</el-button>
       <el-button type="primary" @click="load">搜索</el-button>
     </div>
-    <el-table :data="photos" class="surface admin-photo-table" scrollbar-always-on @selection-change="selection = $event">
+    <el-table :data="photos" class="surface admin-photo-table" scrollbar-always-on table-layout="auto" @selection-change="selection = $event">
       <el-table-column type="selection" width="46" />
-      <el-table-column label="图" width="92"><template #default="{ row }"><img class="table-thumb" :src="row.thumbnailUrl" /></template></el-table-column>
-      <el-table-column prop="title" label="标题" width="150" />
-      <el-table-column label="作者" width="96"><template #default="{ row }">{{ row.user?.nickname || row.user?.username }}</template></el-table-column>
-      <el-table-column label="可见性" width="90">
+      <el-table-column label="图" width="104"><template #default="{ row }"><img class="table-thumb" :src="row.thumbnailUrl" /></template></el-table-column>
+      <el-table-column prop="title" label="标题" min-width="210" />
+      <el-table-column label="作者" min-width="150"><template #default="{ row }">{{ row.user?.nickname || row.user?.username }}</template></el-table-column>
+      <el-table-column label="可见性" min-width="126">
         <template #default="{ row }">{{ formatVisibility(row.visibility) }}</template>
       </el-table-column>
-      <el-table-column prop="city" label="城市" width="130" />
-      <el-table-column label="状态" width="130"><template #default="{ row }">{{ row.isPinned ? '置顶 ' : '' }}{{ row.isFeatured ? '精选' : '' }}</template></el-table-column>
-      <el-table-column label="操作" width="330">
+      <el-table-column prop="city" label="城市" min-width="150" />
+      <el-table-column label="状态" min-width="150"><template #default="{ row }">{{ row.isPinned ? '置顶 ' : '' }}{{ row.isFeatured ? '精选' : '' }}</template></el-table-column>
+      <el-table-column label="操作" min-width="340">
         <template #default="{ row }">
           <div class="action-buttons">
             <el-button size="small" @click="openEdit(row)">编辑</el-button>

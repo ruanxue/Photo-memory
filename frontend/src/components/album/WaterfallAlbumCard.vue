@@ -117,6 +117,7 @@ onMounted(checkCachedImage);
   padding: 0;
   overflow: hidden;
   border: 0;
+  border-radius: 4px 4px 0 0;
   background: transparent;
   cursor: zoom-in;
 }
@@ -126,6 +127,7 @@ onMounted(checkCachedImage);
   position: absolute;
   inset: 0;
   z-index: 0;
+  border-radius: 4px 4px 0 0;
   background:
     linear-gradient(110deg, transparent 0%, rgba(255, 255, 255, 0.08) 44%, transparent 74%),
     rgba(255, 255, 255, 0.045);
@@ -147,6 +149,7 @@ onMounted(checkCachedImage);
   position: absolute;
   inset: 0;
   z-index: 1;
+  border-radius: 4px 4px 0 0;
   background: rgba(0, 0, 0, 0.08);
   opacity: 0;
   pointer-events: none;
@@ -162,6 +165,7 @@ onMounted(checkCachedImage);
   width: 100%;
   height: auto;
   object-fit: contain;
+  border-radius: 4px 4px 0 0;
   opacity: var(--image-load-opacity, 1);
   filter: var(--image-load-filter, none);
   transform: var(--image-load-transform, none);
@@ -210,6 +214,7 @@ onMounted(checkCachedImage);
 .album-image:focus-visible img {
   transform: scale(0.965);
   filter: brightness(0.86) saturate(1.06);
+  transition: transform 0.32s ease, filter 0.32s ease;
 }
 
 @keyframes albumImageSkeleton {

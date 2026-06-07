@@ -47,6 +47,7 @@
     :visible="albumLightboxVisible"
     :photos="albumLightboxPhotos"
     :origin-selector="albumOriginSelector"
+    close-animation="corner"
     navigation
     @close="albumLightboxVisible = false"
   />
