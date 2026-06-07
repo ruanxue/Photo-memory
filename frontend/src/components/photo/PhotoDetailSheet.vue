@@ -205,7 +205,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
   position: fixed;
   inset: 0;
   z-index: 1050;
-  background: rgba(0, 0, 0, 0.48);
+  background: var(--overlay-bg);
   backdrop-filter: blur(3px);
 }
 
@@ -218,11 +218,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
   left: 0;
   height: var(--sheet-height);
   overflow: hidden;
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  border-top: 1px solid var(--line);
   border-radius: 10px 10px 0 0;
   color: var(--text);
-  background: #0c1013;
-  box-shadow: 0 -28px 74px rgba(0, 0, 0, 0.52);
+  background: var(--surface-overlay);
+  box-shadow: var(--shadow);
 }
 
 .sheet-header {
@@ -235,7 +235,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
   gap: 18px;
   padding: 20px clamp(18px, 4vw, 44px);
   border-bottom: 1px solid var(--line);
-  background: rgba(12, 16, 19, 0.96);
+  background: color-mix(in srgb, var(--surface-overlay) 94%, transparent);
   backdrop-filter: blur(18px);
 }
 
@@ -246,7 +246,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
   width: 42px;
   height: 4px;
   border-radius: 99px;
-  background: rgba(255, 255, 255, 0.26);
+  background: var(--line);
   transform: translateX(-50%);
 }
 
@@ -271,7 +271,7 @@ h2 {
   border: 1px solid var(--line);
   border-radius: 50%;
   color: var(--text);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--button-bg);
   cursor: pointer;
 }
 
@@ -375,10 +375,10 @@ h2 {
   display: inline-flex;
   align-items: center;
   padding: 4px 9px;
-  border: 1px solid rgba(143, 184, 196, 0.25);
+  border: 1px solid var(--tag-border);
   border-radius: 999px;
   color: var(--primary);
-  background: rgba(143, 184, 196, 0.09);
+  background: var(--tag-bg);
   font-size: 13px;
 }
 

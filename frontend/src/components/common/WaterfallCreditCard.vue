@@ -21,10 +21,10 @@ const settings = useSettingsStore();
   justify-content: flex-end;
   gap: 9px;
   padding: clamp(16px, 1.5vw, 22px);
-  border: 1px solid rgba(143, 184, 196, 0.18);
+  border: 1px solid var(--line);
   border-radius: 4px;
-  color: rgba(255, 255, 255, 0.7);
-  background: #090c0e;
+  color: var(--muted-strong);
+  background: var(--surface-glass);
 }
 
 .credit-label {
@@ -35,13 +35,13 @@ const settings = useSettingsStore();
 }
 
 strong {
-  color: rgba(255, 255, 255, 0.92);
+  color: var(--text);
   font-size: 14px;
   line-height: 1.55;
 }
 
 .credit-meta {
-  color: rgba(255, 255, 255, 0.56);
+  color: var(--muted-strong);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -49,8 +49,8 @@ strong {
 .credit-tech {
   margin-top: 5px;
   padding-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.09);
-  color: rgba(210, 238, 244, 0.76);
+  border-top: 1px solid var(--line-soft);
+  color: var(--primary-strong);
   font-size: 12px;
   line-height: 1.6;
 }

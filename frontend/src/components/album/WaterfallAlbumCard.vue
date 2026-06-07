@@ -98,15 +98,15 @@ onMounted(checkCachedImage);
   display: block;
   width: 100%;
   overflow: hidden;
-  border: 1px solid rgba(143, 184, 196, 0.2);
+  border: 1px solid var(--line-faint);
   border-radius: 4px;
-  background: #0a0d0f;
+  background: var(--wall-card-bg);
   transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .wall-album-card:hover {
-  border-color: rgba(143, 184, 196, 0.48);
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.38);
+  border-color: var(--button-hover-border);
+  box-shadow: var(--shadow);
 }
 
 .album-image {
@@ -255,7 +255,7 @@ onMounted(checkCachedImage);
   gap: 7px;
   min-height: 104px;
   padding: 10px 10px 12px;
-  background: linear-gradient(180deg, rgba(16, 19, 22, 0.98), rgba(9, 11, 13, 0.98));
+  background: var(--wall-card-body-bg);
 }
 
 .album-label {
@@ -270,7 +270,7 @@ onMounted(checkCachedImage);
   padding: 0;
   overflow: hidden;
   border: 0;
-  color: #fff;
+  color: var(--wall-card-text);
   background: transparent;
   font: inherit;
   font-size: 15px;
@@ -288,7 +288,7 @@ onMounted(checkCachedImage);
 p {
   margin: 0;
   overflow: hidden;
-  color: rgba(255, 255, 255, 0.68);
+  color: var(--wall-card-muted);
   font-size: 12px;
   line-height: 1.45;
   text-overflow: ellipsis;

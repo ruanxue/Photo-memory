@@ -25,22 +25,26 @@
       <el-button type="primary" @click="load">搜索</el-button>
     </div>
 
-    <el-table :data="photos" @selection-change="selection = $event" class="surface">
+    <el-table :data="photos" class="surface user-photo-table" scrollbar-always-on table-layout="auto" @selection-change="selection = $event">
       <el-table-column type="selection" width="46" />
-      <el-table-column label="照片" width="96"><template #default="{ row }"><img class="table-thumb" :src="row.thumbnailUrl" /></template></el-table-column>
-      <el-table-column prop="title" label="标题" min-width="160" />
-      <el-table-column label="可见性" width="100">
+      <el-table-column label="照片" width="104">
+        <template #default="{ row }"><img class="table-thumb" :src="row.thumbnailUrl" :alt="row.title" /></template>
+      </el-table-column>
+      <el-table-column prop="title" label="标题" min-width="230" />
+      <el-table-column label="可见性" min-width="126">
         <template #default="{ row }">{{ formatVisibility(row.visibility) }}</template>
       </el-table-column>
-      <el-table-column prop="city" label="城市" width="120" />
-      <el-table-column label="数据" width="160">
+      <el-table-column prop="city" label="城市" min-width="150" />
+      <el-table-column label="数据" min-width="150">
         <template #default="{ row }">{{ row.viewCount }} 浏览</template>
       </el-table-column>
-      <el-table-column label="操作" width="230" fixed="right">
+      <el-table-column label="操作" min-width="260">
         <template #default="{ row }">
-          <el-button size="small" @click="openEdit(row)">编辑</el-button>
-          <router-link :to="`/photos/${row.id}`"><el-button size="small">查看</el-button></router-link>
-          <el-button size="small" type="danger" @click="remove(row)">删除</el-button>
+          <div class="action-buttons">
+            <el-button size="small" @click="openEdit(row)">编辑</el-button>
+            <router-link :to="`/photos/${row.id}`"><el-button size="small">查看</el-button></router-link>
+            <el-button size="small" type="danger" @click="remove(row)">删除</el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -179,5 +183,24 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
+}
+
+.user-photo-table {
+  width: 100%;
+}
+
+.user-photo-table :deep(.cell) {
+  white-space: nowrap;
+}
+
+.action-buttons {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.action-buttons :deep(.el-button + .el-button) {
+  margin-left: 0;
 }
 </style>

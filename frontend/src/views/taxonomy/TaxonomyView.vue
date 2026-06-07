@@ -108,10 +108,10 @@ watch(() => route.params.id, loadPhotos);
   gap: 7px;
   min-height: 38px;
   padding: 8px 12px;
-  border: 1px solid rgba(143, 184, 196, 0.26);
+  border: 1px solid var(--tag-border);
   border-radius: 999px;
-  color: color-mix(in srgb, var(--primary) 72%, #ffffff);
-  background: rgba(143, 184, 196, 0.1);
+  color: var(--primary-strong);
+  background: var(--tag-bg);
 }
 
 .tag-item span {
@@ -120,7 +120,7 @@ watch(() => route.params.id, loadPhotos);
   display: grid;
   place-items: center;
   border-radius: 50%;
-  color: #071012;
+  color: var(--primary-text);
   background: var(--primary-strong);
   font-size: 12px;
   font-weight: 900;
@@ -129,7 +129,7 @@ watch(() => route.params.id, loadPhotos);
 .tag-item.active,
 .tag-item:hover {
   border-color: var(--primary-strong);
-  background: rgba(143, 184, 196, 0.18);
+  background: var(--primary-soft);
 }
 
 .nested {

@@ -92,21 +92,21 @@ const handleNavigate = async (event, item, navigate) => {
   height: 44px;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  border: 1px solid var(--dock-border);
   border-radius: 50%;
-  color: rgba(255, 255, 255, 0.9);
-  background: rgba(6, 8, 10, 0.6);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.26);
+  color: var(--dock-text);
+  background: var(--dock-bg);
+  box-shadow: var(--shadow);
   backdrop-filter: blur(16px);
   transition: transform 0.22s ease, border-color 0.22s ease, background 0.22s ease, color 0.22s ease, box-shadow 0.22s ease;
 }
 
 .floating-dock a:hover,
 .floating-dock a.active {
-  color: #071012;
-  border-color: rgba(210, 238, 244, 0.95);
-  background: #d2eef4;
-  box-shadow: 0 16px 42px rgba(143, 184, 196, 0.28);
+  color: var(--dock-active-text);
+  border-color: var(--dock-active-bg);
+  background: var(--dock-active-bg);
+  box-shadow: var(--shadow);
   transform: translateY(-2px);
 }
 

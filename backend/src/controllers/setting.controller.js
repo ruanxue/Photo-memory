@@ -14,7 +14,9 @@ const booleanKeys = new Set([
 ]);
 const numberKeys = new Set(['uploadMaxSizeMb', 'pageSize']);
 const loadAnimations = new Set(['none', 'blur', 'custom']);
+const themeModes = new Set(['light', 'dark', 'auto']);
 const defaultSettings = {
+  themeMode: 'light',
   waterfallFullBleed: 'false',
   waterfallLoadAnimation: 'blur',
   waterfallLoadDurationMs: '720',
@@ -78,6 +80,7 @@ const sanitizeWaterfallLoadCss = (value = '') => {
 };
 
 const normalizeValue = (key, value) => {
+  if (key === 'themeMode') return themeModes.has(value) ? value : 'light';
   if (booleanKeys.has(key)) return value === 'true';
   if (key === 'waterfallColumns') return value === 'auto' ? 'auto' : Number(value);
   if (key === 'waterfallLoadAnimation') return loadAnimations.has(value) ? value : 'blur';

@@ -179,45 +179,70 @@ onBeforeUnmount(() => {
   height: 18px;
   border-radius: 50%;
   background: var(--accent);
-  border: 3px solid #fff;
+  border: 3px solid var(--map-marker-ring);
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3);
 }
 
-.leaflet-tile {
-  filter: brightness(0.66) contrast(1.18) saturate(0.78);
+.map-shell .leaflet-tile {
+  filter: var(--map-tile-filter);
 }
 
-.leaflet-control-zoom a,
-.leaflet-control-attribution {
-  background: #121619 !important;
-  color: var(--text-soft) !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
+.map-shell .leaflet-control-zoom,
+.map-shell .leaflet-bar {
+  border: 1px solid var(--map-control-border) !important;
+  background: transparent !important;
+  box-shadow: var(--shadow) !important;
 }
 
-.leaflet-popup-content-wrapper,
-.leaflet-popup-tip {
-  background: #121619;
-  color: var(--text);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: var(--shadow);
+.map-shell .leaflet-control-zoom a,
+.map-shell .leaflet-control-attribution,
+.map-shell .leaflet-bar a {
+  background: var(--map-control-bg) !important;
+  color: var(--map-control-text) !important;
+  border-color: var(--map-control-border) !important;
 }
 
-.map-popup {
+.map-shell .leaflet-control-zoom a:hover,
+.map-shell .leaflet-control-zoom a:focus,
+.map-shell .leaflet-bar a:hover,
+.map-shell .leaflet-bar a:focus {
+  background: var(--map-control-hover-bg) !important;
+  color: var(--map-control-hover-text) !important;
+}
+
+.map-shell .leaflet-popup-content-wrapper,
+.map-shell .leaflet-popup-tip {
+  background: var(--map-popup-bg) !important;
+  color: var(--map-popup-text) !important;
+  border: 1px solid var(--map-popup-border) !important;
+  box-shadow: var(--map-popup-shadow) !important;
+}
+
+.map-shell .leaflet-popup-content {
+  color: var(--map-popup-text) !important;
+}
+
+.map-shell .leaflet-container a.map-popup,
+.map-shell .map-popup {
   display: grid;
   gap: 6px;
-  color: var(--text);
+  color: var(--map-popup-text) !important;
   min-width: 160px;
 }
 
-.map-popup img {
+.map-shell .map-popup img {
   width: 160px;
   height: 96px;
   object-fit: cover;
   border-radius: 6px;
 }
 
-.map-popup span {
-  color: var(--muted-strong);
+.map-shell .map-popup strong {
+  color: var(--map-popup-text);
+}
+
+.map-shell .map-popup span {
+  color: var(--map-popup-muted);
   font-size: 12px;
 }
 </style>
@@ -248,11 +273,11 @@ onBeforeUnmount(() => {
   display: grid;
   gap: 4px;
   padding: 12px 14px;
-  border: 1px solid rgba(210, 238, 244, 0.22);
+  border: 1px solid var(--line);
   border-radius: 8px;
   color: var(--text);
-  background: rgba(7, 10, 12, 0.82);
-  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.32);
+  background: var(--surface-glass);
+  box-shadow: var(--shadow);
   backdrop-filter: blur(12px);
 }
 

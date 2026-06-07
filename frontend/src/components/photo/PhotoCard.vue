@@ -158,7 +158,7 @@ onMounted(checkCachedImage);
 }
 
 .photo-card:hover {
-  border-color: rgba(255, 255, 255, 0.22);
+  border-color: var(--button-hover-border);
   box-shadow: var(--shadow);
 }
 
@@ -334,8 +334,8 @@ onMounted(checkCachedImage);
   min-height: var(--overlay-control-size);
   border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: 999px;
-  color: rgba(255, 255, 255, 0.92);
-  background: rgba(7, 10, 12, 0.62);
+  color: var(--image-overlay-text);
+  background: var(--image-overlay-bg);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.12),
     0 5px 18px rgba(0, 0, 0, 0.22);
@@ -369,8 +369,8 @@ onMounted(checkCachedImage);
   place-items: center;
   border: 1px solid rgba(255, 255, 255, 0.86);
   border-radius: 50%;
-  color: rgba(255, 255, 255, 0.92);
-  background: rgba(7, 10, 12, 0.5);
+  color: var(--image-overlay-text);
+  background: var(--image-overlay-bg);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.14),
     0 5px 18px rgba(0, 0, 0, 0.2);
@@ -383,7 +383,7 @@ onMounted(checkCachedImage);
 }
 
 .pinned-icon {
-  color: rgba(214, 238, 242, 0.95);
+  color: var(--image-overlay-text);
 }
 
 .overlay-tags {
@@ -417,10 +417,10 @@ onMounted(checkCachedImage);
   max-width: 100%;
   overflow: hidden;
   padding: var(--overlay-tag-pad-y) var(--overlay-tag-pad-x);
-  border: 1px solid rgba(210, 238, 244, 0.42);
+  border: 1px solid var(--image-overlay-border);
   border-radius: 999px;
-  color: rgba(232, 246, 248, 0.94);
-  background: rgba(7, 10, 12, 0.66);
+  color: var(--image-overlay-text);
+  background: var(--image-overlay-bg);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.1),
     0 5px 16px rgba(0, 0, 0, 0.2);
@@ -432,9 +432,9 @@ onMounted(checkCachedImage);
 }
 
 .overlay-tags a:hover {
-  border-color: rgba(210, 238, 244, 0.68);
+  border-color: var(--image-overlay-border-strong);
   color: #fff;
-  background: rgba(12, 34, 38, 0.82);
+  background: var(--image-overlay-bg-strong);
 }
 
 .exif-trigger {
@@ -590,13 +590,13 @@ onMounted(checkCachedImage);
 
 .photo-card-wall {
   margin-bottom: clamp(5px, 0.45vw, 9px);
-  border: 0;
+  border: 1px solid var(--line-faint);
   border-radius: 4px;
-  background: #0a0d0f;
+  background: var(--wall-card-bg);
 }
 
 .photo-card-wall:hover {
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.38);
+  box-shadow: var(--shadow);
 }
 
 .photo-card-wall .image-button img {
@@ -611,13 +611,13 @@ onMounted(checkCachedImage);
   position: static;
   min-height: 62px;
   padding: 10px 10px 12px;
-  color: #fff;
-  background: linear-gradient(180deg, rgba(16, 19, 22, 0.98), rgba(9, 11, 13, 0.98));
+  color: var(--wall-card-text);
+  background: var(--wall-card-body-bg);
 }
 
 .photo-card-wall .title {
   margin-bottom: 7px;
-  color: #fff;
+  color: var(--wall-card-text);
 }
 
 .photo-card-wall .title:hover {
@@ -625,12 +625,12 @@ onMounted(checkCachedImage);
 }
 
 .photo-card-wall .card-footer {
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--wall-card-muted);
   font-size: 12px;
 }
 
 .photo-card-wall .card-footer span {
-  color: rgba(255, 255, 255, 0.58);
+  color: var(--muted);
 }
 
 @container (max-width: 190px) {

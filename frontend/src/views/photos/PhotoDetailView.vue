@@ -244,20 +244,20 @@ watch(() => route.params.id, load);
   gap: 8px;
   min-height: 42px;
   padding: 0 14px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--dock-border);
   border-radius: 999px;
-  color: rgba(255, 255, 255, 0.9);
-  background: rgba(6, 8, 10, 0.58);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.32);
+  color: var(--dock-text);
+  background: var(--dock-bg);
+  box-shadow: var(--shadow);
   backdrop-filter: blur(16px);
   cursor: pointer;
   transition: transform 0.22s ease, color 0.22s ease, background 0.22s ease, border-color 0.22s ease;
 }
 
 .detail-back:hover {
-  color: #071012;
-  border-color: rgba(210, 238, 244, 0.95);
-  background: #d2eef4;
+  color: var(--dock-active-text);
+  border-color: var(--dock-active-bg);
+  background: var(--dock-active-bg);
   transform: translateY(-2px);
 }
 
@@ -351,10 +351,10 @@ h2 {
   align-items: center;
   min-height: 28px;
   padding: 4px 8px;
-  border: 1px solid rgba(143, 184, 196, 0.22);
+  border: 1px solid var(--tag-border);
   border-radius: 999px;
-  color: color-mix(in srgb, var(--primary) 72%, #ffffff);
-  background: rgba(143, 184, 196, 0.1);
+  color: var(--primary-strong);
+  background: var(--tag-bg);
   font-size: 13px;
 }
 

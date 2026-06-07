@@ -482,8 +482,8 @@ figcaption {
 }
 
 .arrow:hover {
-  color: #071012;
-  background: #d2eef4;
+  color: var(--primary-text);
+  background: var(--primary);
   transform: translateY(-50%) translateY(-1px);
 }
 

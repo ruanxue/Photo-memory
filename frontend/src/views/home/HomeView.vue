@@ -225,10 +225,8 @@ onBeforeUnmount(() => {
 
 .hero-shade {
   min-height: 100vh;
-  color: #fff;
-  background:
-    linear-gradient(90deg, rgba(0, 0, 0, 0.74), rgba(0, 0, 0, 0.08) 46%, rgba(0, 0, 0, 0.72)),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.86));
+  color: var(--hero-text);
+  background: var(--hero-shade-bg);
 }
 
 .hero-frame {
@@ -252,7 +250,7 @@ onBeforeUnmount(() => {
 
 .kicker {
   margin: 0 0 12px;
-  color: color-mix(in srgb, var(--primary) 82%, #ffffff);
+  color: var(--hero-kicker);
   font-weight: 800;
 }
 
@@ -266,7 +264,7 @@ h1 {
 .intro {
   max-width: 620px;
   margin: 20px 0 0;
-  color: rgba(255, 255, 255, 0.76);
+  color: var(--hero-muted);
   font-size: clamp(14px, 1.25vw, 17px);
   line-height: 1.85;
 }
@@ -296,7 +294,7 @@ h1 {
 }
 
 .hero-stats span {
-  color: rgba(255, 255, 255, 0.64);
+  color: var(--hero-subtle);
   font-size: 12px;
 }
 
@@ -305,19 +303,19 @@ h1 {
   height: 44px;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  border: 1px solid var(--hero-control-border);
   border-radius: 50%;
-  color: rgba(255, 255, 255, 0.9);
-  background: rgba(6, 8, 10, 0.56);
+  color: var(--hero-control-text);
+  background: var(--hero-control-bg);
   backdrop-filter: blur(16px);
   cursor: pointer;
   transition: transform 0.22s ease, border-color 0.22s ease, background 0.22s ease, color 0.22s ease;
 }
 
 .hero-refresh:hover {
-  color: #071012;
-  border-color: rgba(210, 238, 244, 0.95);
-  background: #d2eef4;
+  color: var(--dock-active-text);
+  border-color: var(--dock-active-bg);
+  background: var(--dock-active-bg);
   transform: translateY(-2px);
 }
 
@@ -330,10 +328,10 @@ h1 {
   height: 46px;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  border: 1px solid var(--hero-control-border);
   border-radius: 50%;
-  color: rgba(255, 255, 255, 0.9);
-  background: rgba(6, 8, 10, 0.5);
+  color: var(--hero-control-text);
+  background: var(--hero-control-bg);
   backdrop-filter: blur(16px);
   cursor: pointer;
   transform: translateX(-50%);
@@ -341,9 +339,9 @@ h1 {
 }
 
 .hero-scroll:hover {
-  color: #071012;
-  border-color: rgba(210, 238, 244, 0.95);
-  background: #d2eef4;
+  color: var(--dock-active-text);
+  border-color: var(--dock-active-bg);
+  background: var(--dock-active-bg);
   transform: translateX(-50%) translateY(-2px);
 }
 
@@ -351,7 +349,7 @@ h1 {
   width: 100%;
   min-height: 100vh;
   padding: 0 0 92px;
-  background: #050607;
+  background: var(--wall-page-bg);
 }
 
 .home-load-sentinel {

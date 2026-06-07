@@ -219,6 +219,7 @@ async function seedSettings() {
     ['siteSubtitle', '私人影像馆', '网站副标题'],
     ['homeIntro', '记录旅行、生活与摄影作品。', '首页介绍文字'],
     ['faviconUrl', '', 'Favicon 图片地址'],
+    ['themeMode', 'light', '站点主题模式'],
     ['heroMode', 'random', '首页主图模式'],
     ['heroPhotoIds', '[]', '首页主图候选照片 ID'],
     ['heroFixedPhotoId', '', '首页固定主图照片 ID'],

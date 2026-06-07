@@ -55,17 +55,36 @@ defineProps({
   gap: 16px;
   padding: 16px 0;
   border-bottom: 1px solid var(--line);
+  transition: border-color 0.22s ease;
 }
 
 .day {
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  background: var(--text);
-  color: var(--page-bg);
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+  border: 1px solid var(--tag-border);
+  box-shadow: 0 10px 26px color-mix(in srgb, var(--primary) 18%, transparent);
   display: grid;
   place-items: center;
   font-weight: 800;
+  transition:
+    background 0.22s ease,
+    border-color 0.22s ease,
+    color 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.day-card:hover {
+  border-color: var(--button-hover-border);
+}
+
+.day-card:hover .day {
+  background: var(--control-selected-bg);
+  border-color: var(--control-selected-border);
+  color: var(--control-selected-text);
+  box-shadow: 0 14px 32px color-mix(in srgb, var(--primary) 26%, transparent);
 }
 
 h4 {
@@ -75,6 +94,11 @@ h4 {
 p {
   margin: 0 0 8px;
   color: var(--muted-strong);
+}
+
+a {
+  color: var(--primary-strong);
+  font-weight: 600;
 }
 
 .day-photos {

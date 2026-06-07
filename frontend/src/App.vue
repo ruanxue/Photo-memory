@@ -63,8 +63,8 @@ onBeforeUnmount(() => {
   place-items: center;
   padding: 24px;
   background:
-    radial-gradient(circle at 50% 18%, rgba(210, 238, 244, 0.16), transparent 34%),
-    linear-gradient(180deg, rgba(5, 7, 9, 0.68), rgba(2, 3, 4, 0.9));
+    radial-gradient(circle at 50% 18%, var(--rate-limit-backdrop-a), transparent 34%),
+    linear-gradient(180deg, var(--rate-limit-backdrop-b), var(--rate-limit-backdrop-c));
   backdrop-filter: blur(14px);
 }
 
@@ -73,20 +73,18 @@ onBeforeUnmount(() => {
   width: min(420px, 100%);
   overflow: hidden;
   padding: 28px;
-  border: 1px solid rgba(210, 238, 244, 0.22);
+  border: 1px solid var(--line);
   border-radius: 10px;
   color: var(--text);
-  background:
-    linear-gradient(145deg, rgba(18, 24, 28, 0.96), rgba(7, 10, 12, 0.96)),
-    var(--surface);
-  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.48);
+  background: var(--rate-limit-card-bg), var(--surface);
+  box-shadow: var(--shadow);
 }
 
 .rate-limit-mark {
   position: absolute;
   top: -18px;
   right: 18px;
-  color: rgba(255, 255, 255, 0.055);
+  color: var(--rate-limit-mark);
   font-size: 92px;
   font-weight: 900;
   line-height: 1;
@@ -116,15 +114,15 @@ onBeforeUnmount(() => {
 .rate-limit-card small {
   display: block;
   margin-top: 12px;
-  color: rgba(255, 255, 255, 0.58);
+  color: var(--muted);
 }
 
 .rate-limit-card button {
   margin-top: 22px;
   padding: 10px 16px;
-  border: 1px solid rgba(210, 238, 244, 0.36);
+  border: 1px solid var(--primary);
   border-radius: 999px;
-  color: #071012;
+  color: var(--primary-text);
   background: var(--primary);
   font: inherit;
   font-weight: 800;

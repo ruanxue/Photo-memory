@@ -25,6 +25,20 @@
         </div>
       </el-form-item>
 
+      <section class="settings-section theme-section">
+        <div class="settings-section-head">
+          <h2>主题外观</h2>
+          <p>选择站点整体配色。亮色更清爽通透，暗色更适合沉浸浏览，自动会跟随系统外观。</p>
+        </div>
+        <el-form-item label="主题模式">
+          <el-radio-group v-model="form.themeMode">
+            <el-radio-button label="light">亮色</el-radio-button>
+            <el-radio-button label="dark">暗色</el-radio-button>
+            <el-radio-button label="auto">自动</el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+      </section>
+
       <section class="settings-section">
         <div class="settings-section-head">
           <h2>首页主图</h2>
@@ -248,6 +262,7 @@ const form = reactive({
   siteSubtitle: '私人影像馆',
   homeIntro: '',
   faviconUrl: '',
+  themeMode: 'light',
   heroMode: 'random',
   heroPhotoIds: [],
   heroFixedPhotoId: null,
@@ -310,6 +325,7 @@ const numberOrNull = (value) => {
 
 const normalizeLoadAnimation = (value) => ['none', 'blur', 'custom'].includes(value) ? value : 'blur';
 const normalizeMapProvider = (value) => ['amap', 'osm', 'custom'].includes(value) ? value : 'amap';
+const normalizeThemeMode = (value) => ['light', 'dark', 'auto'].includes(value) ? value : 'light';
 const normalizeMapTileUrl = (value) => {
   const url = String(value || '').trim();
   if (!url) return '';
@@ -363,6 +379,7 @@ onMounted(async () => {
     else if (item.key === 'heroPhotoIds') form.heroPhotoIds = normalizeIds(item.value);
     else if (item.key === 'heroFixedPhotoId') form.heroFixedPhotoId = numberOrNull(item.value);
     else if (item.key === 'heroMode') form.heroMode = item.value === 'fixed' ? 'fixed' : 'random';
+    else if (item.key === 'themeMode') form.themeMode = normalizeThemeMode(item.value);
     else if (item.key === 'waterfallLoadAnimation') form.waterfallLoadAnimation = normalizeLoadAnimation(item.value);
     else if (item.key === 'mapTileProvider') form.mapTileProvider = normalizeMapProvider(item.value);
     else if (Object.prototype.hasOwnProperty.call(form, item.key)) form[item.key] = item.value;
@@ -378,6 +395,7 @@ const save = async () => {
     if (key === 'heroPhotoIds') return { key, value: JSON.stringify(normalizeIds(value)) };
     if (key === 'heroFixedPhotoId') return { key, value: value ? String(value) : '' };
     if (key === 'heroMode') return { key, value: value === 'fixed' ? 'fixed' : 'random' };
+    if (key === 'themeMode') return { key, value: normalizeThemeMode(value) };
     if (key === 'trustProxyHops') return { key, value: String(Math.max(0, Math.min(10, Number(value) || 0))) };
     if (key === 'waterfallLoadAnimation') return { key, value: normalizeLoadAnimation(value) };
     if (key === 'waterfallLoadDurationMs') return { key, value: String(Math.max(200, Math.min(1600, Number(value) || 720))) };
@@ -499,11 +517,11 @@ watch(() => form.heroPhotoIds.slice(), async () => {
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--button-bg);
 }
 
 .hero-preview-grid article.active {
-  border-color: color-mix(in srgb, var(--primary) 72%, #ffffff);
+  border-color: var(--primary);
 }
 
 .hero-preview-grid img {
@@ -536,7 +554,7 @@ watch(() => form.heroPhotoIds.slice(), async () => {
   height: 42px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background-color: rgba(255, 255, 255, 0.06);
+  background-color: var(--button-bg);
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;

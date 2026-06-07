@@ -37,15 +37,16 @@ const settings = useSettingsStore();
 }
 
 .admin-side {
-  background: #08090a;
-  color: #f7f4ed;
+  background: var(--admin-side-bg);
+  color: var(--admin-side-text);
+  border-right: 1px solid var(--line);
   padding: 22px 12px;
 }
 
 .side-brand {
   display: block;
   margin: 0 12px 4px;
-  color: #fff;
+  color: var(--admin-side-text);
   font-size: 20px;
   font-weight: 900;
 }
@@ -53,7 +54,7 @@ const settings = useSettingsStore();
 .admin-side small {
   display: block;
   margin: 0 12px 18px;
-  color: #9da3a8;
+  color: var(--admin-side-muted);
 }
 
 .side-menu {
@@ -62,13 +63,13 @@ const settings = useSettingsStore();
 }
 
 .side-menu :deep(.el-menu-item) {
-  color: #d6d7d8;
+  color: var(--text-soft);
 }
 
 .side-menu :deep(.el-menu-item.is-active),
 .side-menu :deep(.el-menu-item:hover) {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.08);
+  color: var(--primary-strong);
+  background: var(--admin-side-hover);
 }
 
 .admin-main {

@@ -13,34 +13,34 @@ body {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
   color: var(--text);
   background:
-    radial-gradient(circle at 18% 8%, rgba(143, 184, 196, 0.08), transparent 28%),
-    linear-gradient(180deg, #050607 0%, var(--page-bg) 48%, #050607 100%);
+    radial-gradient(circle at 18% 8%, var(--body-radial), transparent 28%),
+    linear-gradient(180deg, var(--page-bg-top) 0%, var(--page-bg) 48%, var(--page-bg-bottom) 100%);
   letter-spacing: 0;
 }
 
 :root {
   --el-bg-color: var(--surface);
   --el-bg-color-page: var(--page-bg);
-  --el-bg-color-overlay: #171c20;
+  --el-bg-color-overlay: var(--surface-overlay);
   --el-text-color-primary: var(--text);
   --el-text-color-regular: var(--text-soft);
   --el-text-color-secondary: var(--muted);
-  --el-text-color-placeholder: #8d867c;
+  --el-text-color-placeholder: var(--placeholder);
   --el-border-color: var(--line);
-  --el-border-color-light: rgba(255, 255, 255, 0.12);
-  --el-border-color-lighter: rgba(255, 255, 255, 0.08);
-  --el-fill-color: #1a2025;
-  --el-fill-color-light: #20272d;
-  --el-fill-color-lighter: #252d34;
-  --el-fill-color-extra-light: #15191d;
-  --el-mask-color: rgba(0, 0, 0, 0.72);
+  --el-border-color-light: var(--line-soft);
+  --el-border-color-lighter: var(--line-faint);
+  --el-fill-color: var(--surface-soft);
+  --el-fill-color-light: var(--surface-strong);
+  --el-fill-color-lighter: var(--surface-soft);
+  --el-fill-color-extra-light: var(--surface);
+  --el-mask-color: var(--overlay-bg);
   --el-box-shadow-light: var(--shadow);
   --el-color-primary: var(--primary);
-  --el-color-primary-light-3: #a7c8d2;
-  --el-color-primary-light-5: #385b64;
-  --el-color-primary-light-7: #263f46;
-  --el-color-primary-light-8: #1d3036;
-  --el-color-primary-light-9: #17252a;
+  --el-color-primary-light-3: color-mix(in srgb, var(--primary) 68%, white);
+  --el-color-primary-light-5: color-mix(in srgb, var(--primary) 46%, var(--surface));
+  --el-color-primary-light-7: color-mix(in srgb, var(--primary) 28%, var(--surface));
+  --el-color-primary-light-8: color-mix(in srgb, var(--primary) 20%, var(--surface));
+  --el-color-primary-light-9: color-mix(in srgb, var(--primary) 12%, var(--surface));
   --el-color-primary-dark-2: var(--primary-strong);
   --el-color-success: var(--success);
   --el-color-warning: var(--warning);
@@ -177,29 +177,29 @@ img {
 }
 
 .el-button {
-  --el-button-bg-color: rgba(255, 255, 255, 0.045);
-  --el-button-border-color: rgba(255, 255, 255, 0.14);
-  --el-button-text-color: var(--text-soft);
-  --el-button-hover-bg-color: rgba(143, 184, 196, 0.14);
-  --el-button-hover-border-color: rgba(143, 184, 196, 0.45);
+  --el-button-bg-color: var(--button-bg);
+  --el-button-border-color: var(--button-border);
+  --el-button-text-color: var(--button-text);
+  --el-button-hover-bg-color: var(--button-hover-bg);
+  --el-button-hover-border-color: var(--button-hover-border);
   --el-button-hover-text-color: var(--text);
-  --el-button-active-bg-color: rgba(143, 184, 196, 0.2);
-  --el-button-active-border-color: rgba(143, 184, 196, 0.56);
+  --el-button-active-bg-color: var(--primary-soft);
+  --el-button-active-border-color: var(--button-hover-border);
 }
 
 .el-button--primary {
   --el-button-bg-color: var(--primary);
   --el-button-border-color: var(--primary);
-  --el-button-text-color: #081014;
+  --el-button-text-color: var(--primary-text);
   --el-button-hover-bg-color: var(--primary-strong);
   --el-button-hover-border-color: var(--primary-strong);
-  --el-button-hover-text-color: #081014;
+  --el-button-hover-text-color: var(--primary-text);
 }
 
 .el-button--danger {
-  --el-button-bg-color: rgba(239, 143, 143, 0.18);
-  --el-button-border-color: rgba(239, 143, 143, 0.38);
-  --el-button-text-color: #ffd2d2;
+  --el-button-bg-color: var(--danger-bg);
+  --el-button-border-color: var(--danger-border);
+  --el-button-text-color: var(--danger-text);
 }
 
 .el-input__wrapper,
@@ -208,8 +208,8 @@ img {
 .el-input-number,
 .el-input-number__decrease,
 .el-input-number__increase {
-  background: rgba(255, 255, 255, 0.055) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--input-bg) !important;
+  border: 1px solid var(--input-border);
   box-shadow: none !important;
   color: var(--text);
 }
@@ -224,7 +224,7 @@ img {
 
 .el-input__inner::placeholder,
 .el-textarea__inner::placeholder {
-  color: #90887e;
+  color: var(--placeholder);
 }
 
 .el-form-item__label,
@@ -236,19 +236,43 @@ img {
   color: var(--text-soft);
 }
 
+.el-radio-button__inner {
+  background: var(--button-bg) !important;
+  border-color: var(--button-border) !important;
+  color: var(--button-text) !important;
+  box-shadow: none !important;
+}
+
+.el-radio-button__inner:hover {
+  color: var(--text) !important;
+  background: var(--button-hover-bg) !important;
+  border-color: var(--button-hover-border) !important;
+}
+
+.el-radio-button__original-radio:checked + .el-radio-button__inner {
+  background: var(--control-selected-bg) !important;
+  border-color: var(--control-selected-border) !important;
+  color: var(--control-selected-text) !important;
+  box-shadow: -1px 0 0 0 var(--control-selected-border) !important;
+}
+
+.el-radio-button:first-child .el-radio-button__inner {
+  border-left-color: var(--button-border) !important;
+}
+
 .el-segmented {
-  --el-segmented-bg-color: rgba(255, 255, 255, 0.055);
-  --el-segmented-item-selected-bg-color: rgba(143, 184, 196, 0.24);
+  --el-segmented-bg-color: var(--button-bg);
+  --el-segmented-item-selected-bg-color: var(--primary-soft);
   --el-segmented-item-selected-color: var(--text);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--line-soft);
 }
 
 .el-table {
   --el-table-bg-color: transparent;
   --el-table-tr-bg-color: transparent;
-  --el-table-header-bg-color: rgba(255, 255, 255, 0.055);
-  --el-table-row-hover-bg-color: rgba(143, 184, 196, 0.12);
-  --el-table-border-color: rgba(255, 255, 255, 0.1);
+  --el-table-header-bg-color: var(--table-header-bg);
+  --el-table-row-hover-bg-color: var(--table-hover-bg);
+  --el-table-border-color: var(--line-soft);
   --el-table-text-color: var(--text-soft);
   --el-table-header-text-color: var(--text);
   background: var(--surface-glass) !important;
@@ -268,7 +292,7 @@ img {
 }
 
 .el-table__body tr:hover > td.el-table__cell {
-  background: rgba(143, 184, 196, 0.12) !important;
+  background: var(--table-hover-bg) !important;
 }
 
 .el-table__empty-text {
@@ -282,8 +306,8 @@ img {
 .el-select-dropdown,
 .el-dropdown-menu,
 .el-picker-panel {
-  background: #151a1e !important;
-  border: 1px solid rgba(255, 255, 255, 0.13) !important;
+  background: var(--surface-overlay) !important;
+  border: 1px solid var(--line) !important;
   color: var(--text);
   box-shadow: var(--shadow);
 }
@@ -304,21 +328,21 @@ img {
 }
 
 .el-popper__arrow::before {
-  background: #151a1e !important;
-  border-color: rgba(255, 255, 255, 0.13) !important;
+  background: var(--surface-overlay) !important;
+  border-color: var(--line) !important;
 }
 
 .dock-tooltip {
-  background: #f4f0e8 !important;
-  border: 1px solid rgba(210, 238, 244, 0.72) !important;
-  color: #071012 !important;
+  background: var(--dock-tooltip-bg) !important;
+  border: 1px solid var(--button-hover-border) !important;
+  color: var(--dock-tooltip-text) !important;
   font-weight: 800;
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.32);
+  box-shadow: var(--shadow);
 }
 
 .dock-tooltip .el-popper__arrow::before {
-  background: #f4f0e8 !important;
-  border-color: rgba(210, 238, 244, 0.72) !important;
+  background: var(--dock-tooltip-bg) !important;
+  border-color: var(--button-hover-border) !important;
 }
 
 .el-select-dropdown__item,
@@ -335,36 +359,36 @@ img {
 .el-select-dropdown__item:hover,
 .el-dropdown-menu__item:hover,
 .el-date-table td.available:hover {
-  background: rgba(143, 184, 196, 0.13) !important;
+  background: var(--button-hover-bg) !important;
   color: var(--text);
 }
 
 .el-select-dropdown__item.is-selected {
   color: var(--primary-strong);
-  background: rgba(143, 184, 196, 0.18);
+  background: var(--primary-soft);
 }
 
 .el-pagination button,
 .el-pager li {
-  background: rgba(255, 255, 255, 0.055) !important;
+  background: var(--button-bg) !important;
   color: var(--text-soft) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--line-soft);
 }
 
 .el-pager li.is-active {
   background: var(--primary) !important;
-  color: #081014 !important;
+  color: var(--primary-text) !important;
 }
 
 .el-upload-dragger {
-  background: rgba(255, 255, 255, 0.045) !important;
-  border-color: rgba(255, 255, 255, 0.16) !important;
+  background: var(--button-bg) !important;
+  border-color: var(--line) !important;
   color: var(--text-soft);
 }
 
 .el-upload-dragger:hover {
   border-color: var(--primary) !important;
-  background: rgba(143, 184, 196, 0.09) !important;
+  background: var(--button-hover-bg) !important;
 }
 
 .el-upload-list__item,
@@ -374,7 +398,7 @@ img {
 }
 
 .el-upload-list__item:hover {
-  background: rgba(143, 184, 196, 0.1) !important;
+  background: var(--button-hover-bg) !important;
 }
 
 .el-card {
@@ -386,7 +410,7 @@ img {
 .el-menu {
   --el-menu-bg-color: transparent;
   --el-menu-text-color: var(--text-soft);
-  --el-menu-hover-bg-color: rgba(143, 184, 196, 0.12);
+  --el-menu-hover-bg-color: var(--button-hover-bg);
   --el-menu-hover-text-color: var(--text);
   --el-menu-active-color: var(--primary-strong);
   background: transparent !important;
@@ -399,18 +423,18 @@ img {
 .el-menu-item.is-active,
 .el-menu-item:hover {
   color: var(--primary-strong) !important;
-  background: rgba(143, 184, 196, 0.12) !important;
+  background: var(--button-hover-bg) !important;
 }
 
 .el-tag {
-  background: rgba(143, 184, 196, 0.14) !important;
-  border-color: rgba(143, 184, 196, 0.3) !important;
+  background: var(--tag-bg) !important;
+  border-color: var(--tag-border) !important;
   color: var(--primary-strong) !important;
 }
 
 .el-message,
 .el-notification {
-  background: #151a1e !important;
+  background: var(--surface-overlay) !important;
   border-color: var(--line) !important;
   color: var(--text) !important;
 }
@@ -424,30 +448,59 @@ img {
 }
 
 .el-loading-mask {
-  background: rgba(8, 9, 10, 0.72) !important;
+  background: var(--loading-mask) !important;
 }
 
 .el-overlay {
-  background: rgba(0, 0, 0, 0.68);
+  background: var(--overlay-bg);
 }
 
 .el-skeleton__item {
-  background: linear-gradient(90deg, #151a1e 25%, #20272d 37%, #151a1e 63%) !important;
+  background: linear-gradient(90deg, var(--skeleton-a) 25%, var(--skeleton-b) 37%, var(--skeleton-a) 63%) !important;
 }
 
 .el-switch__core {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.16);
+  background: var(--switch-off-bg) !important;
+  border-color: var(--switch-off-border) !important;
+  box-shadow:
+    inset 0 1px 2px color-mix(in srgb, var(--text) 10%, transparent),
+    var(--switch-shadow);
+  transition:
+    background 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.el-switch__core .el-switch__action {
+  background: var(--switch-off-knob) !important;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--text) 18%, transparent);
+  transition:
+    background 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.el-switch:hover .el-switch__core {
+  border-color: var(--button-hover-border) !important;
+  box-shadow:
+    inset 0 1px 2px color-mix(in srgb, var(--text) 10%, transparent),
+    0 10px 24px color-mix(in srgb, var(--primary) 20%, transparent);
 }
 
 .el-switch.is-checked .el-switch__core {
-  background: var(--primary);
-  border-color: var(--primary);
+  background: var(--switch-on-bg) !important;
+  border-color: var(--switch-on-border) !important;
+  box-shadow:
+    inset 0 1px 2px color-mix(in srgb, #ffffff 16%, transparent),
+    0 10px 24px color-mix(in srgb, var(--switch-on-bg) 30%, transparent);
+}
+
+.el-switch.is-checked .el-switch__core .el-switch__action {
+  background: var(--switch-on-knob) !important;
 }
 
 .el-checkbox__inner {
-  background: rgba(255, 255, 255, 0.055);
-  border-color: rgba(255, 255, 255, 0.22);
+  background: var(--input-bg);
+  border-color: var(--input-border);
 }
 
 .el-checkbox__input.is-checked .el-checkbox__inner {

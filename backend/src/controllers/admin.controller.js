@@ -461,6 +461,7 @@ const sanitizeWaterfallLoadCss = (value = '') => {
 };
 
 const defaultAdminSettings = [
+  { key: 'themeMode', value: 'light', description: '站点主题模式' },
   { key: 'waterfallFullBleed', value: 'false', description: '瀑布流铺满左右空隙' },
   { key: 'waterfallLoadAnimation', value: 'blur', description: '瀑布流图片加载动画' },
   { key: 'waterfallLoadDurationMs', value: '720', description: '瀑布流图片加载动画时长' },
@@ -473,6 +474,7 @@ const defaultAdminSettings = [
 
 const normalizeAdminSettingValue = (key, value) => {
   if (key === 'trustProxyHops') return normalizeTrustProxyHops(value);
+  if (key === 'themeMode') return ['light', 'dark', 'auto'].includes(value) ? value : 'light';
   if (key === 'waterfallFullBleed') return value === true || value === 'true' ? 'true' : 'false';
   if (key === 'waterfallLoadAnimation') {
     return ['none', 'blur', 'custom'].includes(value) ? value : 'blur';

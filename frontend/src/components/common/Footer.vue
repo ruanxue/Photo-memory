@@ -25,7 +25,7 @@ const settings = useSettingsStore();
   padding: 38px 0;
   border-top: 1px solid var(--line);
   color: var(--muted-strong);
-  background: rgba(0, 0, 0, 0.24);
+  background: color-mix(in srgb, var(--page-bg-bottom) 72%, var(--surface));
 }
 
 .footer-grid {

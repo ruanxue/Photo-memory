@@ -9,8 +9,7 @@ import router from './router/index.js';
 import './assets/styles/variables.css';
 import './assets/styles/main.css';
 
-document.documentElement.classList.add('dark');
-localStorage.setItem('photo-memory-dark', '1');
+document.documentElement.classList.add('light');
 
 const app = createApp(App);
 

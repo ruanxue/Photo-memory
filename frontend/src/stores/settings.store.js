@@ -5,6 +5,7 @@ const defaults = {
   siteName: 'Photo Memory',
   siteSubtitle: '私人影像馆',
   homeIntro: '记录旅行、生活与摄影作品。',
+  themeMode: 'light',
   heroMode: 'random',
   heroPhotoIds: [],
   heroFixedPhotoId: null,
@@ -47,6 +48,44 @@ const setFavicon = (href) => {
     document.head.appendChild(icon);
   }
   icon.href = iconHref;
+};
+
+const themeModes = new Set(['light', 'dark', 'auto']);
+let themeMediaQuery;
+let themeMediaReady = false;
+let latestThemeMode = defaults.themeMode;
+
+const resolveTheme = (mode) => {
+  const normalized = themeModes.has(mode) ? mode : defaults.themeMode;
+  if (normalized === 'auto') {
+    if (!themeMediaQuery && typeof window !== 'undefined') {
+      themeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    }
+    return themeMediaQuery?.matches ? 'dark' : 'light';
+  }
+  return normalized;
+};
+
+const applyThemeMode = (mode) => {
+  if (typeof document === 'undefined') return;
+  latestThemeMode = themeModes.has(mode) ? mode : defaults.themeMode;
+  const resolved = resolveTheme(latestThemeMode);
+  const root = document.documentElement;
+  root.classList.remove('light', 'dark');
+  root.classList.add(resolved);
+  root.dataset.themeMode = latestThemeMode;
+  root.dataset.resolvedTheme = resolved;
+};
+
+const ensureThemeMediaListener = () => {
+  if (themeMediaReady || typeof window === 'undefined') return;
+  themeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const handleChange = () => {
+    if (latestThemeMode === 'auto') applyThemeMode('auto');
+  };
+  if (typeof themeMediaQuery.addEventListener === 'function') themeMediaQuery.addEventListener('change', handleChange);
+  else if (typeof themeMediaQuery.addListener === 'function') themeMediaQuery.addListener(handleChange);
+  themeMediaReady = true;
 };
 
 const clearWaterfallLoadVars = () => {
@@ -105,6 +144,8 @@ export const useSettingsStore = defineStore('settings', {
   actions: {
     applyDocumentMeta() {
       document.title = `${this.siteName} · ${this.siteSubtitle}`;
+      ensureThemeMediaListener();
+      applyThemeMode(this.settings.themeMode);
       setFavicon(this.settings.faviconUrl);
       if (this.settings.waterfallLoadAnimation === 'custom') applyCustomWaterfallLoadCss(this.settings.waterfallCustomLoadCss);
       else clearWaterfallLoadVars();

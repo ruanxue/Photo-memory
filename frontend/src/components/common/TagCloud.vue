@@ -23,15 +23,15 @@ defineProps({
 a {
   padding: 8px 12px;
   border-radius: 999px;
-  color: #f6f4ef;
+  color: var(--text);
   border: 1px solid color-mix(in srgb, var(--tag-color) 52%, var(--line));
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--tag-color) 28%, transparent), rgba(255, 255, 255, 0.04));
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+    linear-gradient(135deg, color-mix(in srgb, var(--tag-color) 20%, transparent), var(--button-bg));
+  box-shadow: inset 0 0 0 1px var(--line-faint);
 }
 
 span {
-  color: color-mix(in srgb, var(--tag-color) 60%, #ffffff);
+  color: var(--primary-strong);
   margin-left: 6px;
 }
 </style>

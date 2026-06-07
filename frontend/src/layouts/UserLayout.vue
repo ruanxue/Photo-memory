@@ -39,13 +39,14 @@ const settings = useSettingsStore();
 
 .workspace-side {
   border-right: 1px solid var(--line);
-  background: rgba(8, 9, 10, 0.92);
+  background: var(--admin-side-bg);
   padding: 20px 12px;
 }
 
 .side-brand {
   display: block;
   padding: 8px 12px 22px;
+  color: var(--admin-side-text);
   font-size: 20px;
   font-weight: 900;
 }
