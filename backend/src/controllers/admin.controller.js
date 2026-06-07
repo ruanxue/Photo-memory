@@ -465,7 +465,10 @@ const defaultAdminSettings = [
   { key: 'waterfallLoadAnimation', value: 'blur', description: '瀑布流图片加载动画' },
   { key: 'waterfallLoadDurationMs', value: '720', description: '瀑布流图片加载动画时长' },
   { key: 'waterfallLoadStaggerMs', value: '24', description: '瀑布流图片加载错峰延迟' },
-  { key: 'waterfallCustomLoadCss', value: '', description: '瀑布流图片自定义加载 CSS' }
+  { key: 'waterfallCustomLoadCss', value: '', description: '瀑布流图片自定义加载 CSS' },
+  { key: 'mapTileProvider', value: 'amap', description: '地图底图来源' },
+  { key: 'mapTileUrl', value: '', description: '自定义地图瓦片 URL' },
+  { key: 'mapTileAttribution', value: '© 高德地图', description: '地图底图版权署名' }
 ];
 
 const normalizeAdminSettingValue = (key, value) => {
@@ -483,6 +486,14 @@ const normalizeAdminSettingValue = (key, value) => {
     return String(Math.max(0, Math.min(120, Number.isFinite(stagger) ? Math.round(stagger) : 24)));
   }
   if (key === 'waterfallCustomLoadCss') return sanitizeWaterfallLoadCss(value);
+  if (key === 'mapTileProvider') return ['amap', 'osm', 'custom'].includes(value) ? value : 'amap';
+  if (key === 'mapTileUrl') {
+    const url = String(value || '').trim();
+    if (!url) return '';
+    if (!/^https:\/\/[^<>"'\s]+$/i.test(url)) return '';
+    return url.slice(0, 500);
+  }
+  if (key === 'mapTileAttribution') return String(value || '').replace(/[<>]/g, '').slice(0, 120);
   return String(value ?? '');
 };
 

@@ -19,7 +19,10 @@ const defaultSettings = {
   waterfallLoadAnimation: 'blur',
   waterfallLoadDurationMs: '720',
   waterfallLoadStaggerMs: '24',
-  waterfallCustomLoadCss: ''
+  waterfallCustomLoadCss: '',
+  mapTileProvider: 'amap',
+  mapTileUrl: '',
+  mapTileAttribution: '© 高德地图'
 };
 
 const clampNumber = (value, fallback, min, max) => {
@@ -81,6 +84,13 @@ const normalizeValue = (key, value) => {
   if (key === 'waterfallLoadDurationMs') return clampNumber(value, 720, 200, 1600);
   if (key === 'waterfallLoadStaggerMs') return clampNumber(value, 24, 0, 120);
   if (key === 'waterfallCustomLoadCss') return sanitizeWaterfallLoadCss(value);
+  if (key === 'mapTileProvider') return ['amap', 'osm', 'custom'].includes(value) ? value : 'amap';
+  if (key === 'mapTileUrl') {
+    const url = String(value || '').trim();
+    if (!url || !/^https:\/\/[^<>"'\s]+$/i.test(url)) return '';
+    return url.slice(0, 500);
+  }
+  if (key === 'mapTileAttribution') return String(value || '').replace(/[<>]/g, '').slice(0, 120);
   if (key === 'heroMode') return value === 'fixed' ? 'fixed' : 'random';
   if (key === 'heroPhotoIds') return normalizeIds(value);
   if (key === 'heroFixedPhotoId') {

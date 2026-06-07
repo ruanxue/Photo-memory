@@ -29,6 +29,15 @@ request.interceptors.response.use(
   (error) => {
     const status = error.response?.status;
     const message = error.response?.data?.message || error.message || '请求失败';
+    if (status === 429) {
+      window.dispatchEvent(new CustomEvent('photo-memory:rate-limit', {
+        detail: {
+          message,
+          retryAfter: Number(error.response?.data?.details?.retryAfter || error.response?.headers?.['retry-after'] || 0)
+        }
+      }));
+      return Promise.reject(error);
+    }
     if (status === 401) {
       localStorage.removeItem('photo-memory-token');
       localStorage.removeItem('photo-memory-user');

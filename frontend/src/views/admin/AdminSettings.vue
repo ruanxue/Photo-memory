@@ -164,6 +164,34 @@
         </el-form-item>
       </section>
 
+      <section class="settings-section map-section">
+        <div class="settings-section-head">
+          <h2>地图底图</h2>
+          <p>国内网络访问 OpenStreetMap 可能较慢或失败，可切换为高德瓦片，或填写自己的 HTTPS 瓦片服务。</p>
+        </div>
+        <div class="settings-grid">
+          <el-form-item label="底图来源">
+            <el-select v-model="form.mapTileProvider">
+              <el-option label="高德地图（国内推荐）" value="amap" />
+              <el-option label="OpenStreetMap" value="osm" />
+              <el-option label="自定义瓦片 URL" value="custom" />
+            </el-select>
+            <p class="field-help">自定义 URL 支持 {s}、{z}、{x}、{y} 占位符，必须使用 HTTPS。</p>
+          </el-form-item>
+          <el-form-item label="版权署名">
+            <el-input v-model="form.mapTileAttribution" placeholder="例如：© 高德地图" />
+          </el-form-item>
+        </div>
+        <el-form-item v-if="form.mapTileProvider === 'custom'" label="自定义瓦片 URL">
+          <el-input
+            v-model="form.mapTileUrl"
+            placeholder="例如：https://your-tile.example.com/{z}/{x}/{y}.png"
+            clearable
+          />
+          <p class="field-help">不要填写需要前端暴露密钥的服务；如必须使用密钥，建议在反向代理或后端做转发。</p>
+        </el-form-item>
+      </section>
+
       <section class="settings-section deploy-section">
         <div class="settings-section-head">
           <h2>部署与代理</h2>
@@ -240,6 +268,9 @@ const form = reactive({
   trustProxyHops: 0,
   includeAlbumsInWaterfall: true,
   showExifOnHover: true,
+  mapTileProvider: 'amap',
+  mapTileUrl: '',
+  mapTileAttribution: '© 高德地图',
   defaultSort: 'latest',
   icp: '',
   footerCopyright: '© Photo Memory',
@@ -278,6 +309,12 @@ const numberOrNull = (value) => {
 };
 
 const normalizeLoadAnimation = (value) => ['none', 'blur', 'custom'].includes(value) ? value : 'blur';
+const normalizeMapProvider = (value) => ['amap', 'osm', 'custom'].includes(value) ? value : 'amap';
+const normalizeMapTileUrl = (value) => {
+  const url = String(value || '').trim();
+  if (!url) return '';
+  return /^https:\/\/[^<>"'\s]+$/i.test(url) ? url.slice(0, 500) : '';
+};
 
 const mergeHeroOptions = (photos = []) => {
   const map = new Map(heroOptions.value.map((photo) => [photo.id, photo]));
@@ -327,6 +364,7 @@ onMounted(async () => {
     else if (item.key === 'heroFixedPhotoId') form.heroFixedPhotoId = numberOrNull(item.value);
     else if (item.key === 'heroMode') form.heroMode = item.value === 'fixed' ? 'fixed' : 'random';
     else if (item.key === 'waterfallLoadAnimation') form.waterfallLoadAnimation = normalizeLoadAnimation(item.value);
+    else if (item.key === 'mapTileProvider') form.mapTileProvider = normalizeMapProvider(item.value);
     else if (Object.prototype.hasOwnProperty.call(form, item.key)) form[item.key] = item.value;
   });
   await loadHeroOptions();
@@ -344,6 +382,9 @@ const save = async () => {
     if (key === 'waterfallLoadAnimation') return { key, value: normalizeLoadAnimation(value) };
     if (key === 'waterfallLoadDurationMs') return { key, value: String(Math.max(200, Math.min(1600, Number(value) || 720))) };
     if (key === 'waterfallLoadStaggerMs') return { key, value: String(Math.max(0, Math.min(120, Number(value) || 24))) };
+    if (key === 'mapTileProvider') return { key, value: normalizeMapProvider(value) };
+    if (key === 'mapTileUrl') return { key, value: normalizeMapTileUrl(value) };
+    if (key === 'mapTileAttribution') return { key, value: String(value || '').replace(/[<>]/g, '').slice(0, 120) };
     return { key, value: String(value) };
   });
   await adminApi.updateSettings(payload);
@@ -378,6 +419,7 @@ watch(() => form.heroPhotoIds.slice(), async () => {
 }
 
 .deploy-section,
+.map-section,
 .waterfall-section {
   margin-top: 4px;
 }

@@ -8,7 +8,5 @@ export const exifRows = (photo) => [
   ['ISO', photo?.iso],
   ['曝光补偿', photo?.exposureCompensation],
   ['白平衡', photo?.whiteBalance],
-  ['分辨率', photo?.width && photo?.height ? `${photo.width} x ${photo.height}` : null],
-  ['文件类型', photo?.mimeType],
-  ['GPS', photo?.latitude && photo?.longitude ? `${photo.latitude}, ${photo.longitude}` : null]
+  ['分辨率', photo?.width && photo?.height ? `${photo.width} x ${photo.height}` : null]
 ].filter((row) => row[1] !== undefined && row[1] !== null && row[1] !== '');
