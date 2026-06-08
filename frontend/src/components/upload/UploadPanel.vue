@@ -155,7 +155,7 @@ onMounted(loadOptions);
 }
 
 .drop-tip {
-  color: var(--muted-strong);
+  color: var(--theme-muted-strong);
   font-size: 13px;
 }
 

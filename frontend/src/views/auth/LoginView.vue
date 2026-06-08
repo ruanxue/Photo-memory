@@ -64,6 +64,6 @@ h1 {
 }
 
 p {
-  color: var(--muted-strong);
+  color: var(--theme-muted-strong);
 }
 </style>

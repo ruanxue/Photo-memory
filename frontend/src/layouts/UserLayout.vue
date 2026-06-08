@@ -34,19 +34,19 @@ const settings = useSettingsStore();
   min-height: 100vh;
   display: grid;
   grid-template-columns: 230px 1fr;
-  background: var(--page-bg);
+  background: var(--theme-page-bg);
 }
 
 .workspace-side {
-  border-right: 1px solid var(--line);
-  background: var(--admin-side-bg);
+  border-right: 1px solid var(--theme-line);
+  background: var(--theme-admin-side-bg);
   padding: 20px 12px;
 }
 
 .side-brand {
   display: block;
   padding: 8px 12px 22px;
-  color: var(--admin-side-text);
+  color: var(--theme-admin-side-text);
   font-size: 20px;
   font-weight: 900;
 }
@@ -71,7 +71,7 @@ const settings = useSettingsStore();
     top: 0;
     z-index: 20;
     border-right: 0;
-    border-bottom: 1px solid var(--line);
+    border-bottom: 1px solid var(--theme-line);
   }
 
   .side-menu {

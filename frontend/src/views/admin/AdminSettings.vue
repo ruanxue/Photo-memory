@@ -28,15 +28,167 @@
       <section class="settings-section theme-section">
         <div class="settings-section-head">
           <h2>主题外观</h2>
-          <p>选择站点整体配色。亮色更清爽通透，暗色更适合沉浸浏览，自动会跟随系统外观。</p>
+          <p>选择站点整体配色。启用自定义主题后，自定义主题会覆盖全站色彩，亮色 / 暗色 / 自动只作为关闭自定义后的备用预设。</p>
         </div>
         <el-form-item label="主题模式">
-          <el-radio-group v-model="form.themeMode">
+          <el-radio-group v-model="form.themeMode" :disabled="form.themeCustomEnabled">
             <el-radio-button label="light">亮色</el-radio-button>
             <el-radio-button label="dark">暗色</el-radio-button>
             <el-radio-button label="auto">自动</el-radio-button>
           </el-radio-group>
+          <p v-if="form.themeCustomEnabled" class="field-help">当前已启用自定义主题，预设主题模式暂不参与页面配色。</p>
         </el-form-item>
+        <el-collapse v-model="themeEditorPanels" class="theme-custom-collapse">
+          <el-collapse-item name="custom-theme">
+            <template #title>
+              <div class="theme-collapse-title">
+                <strong>自定义主题</strong>
+                <span>{{ form.themeCustomEnabled ? `${form.themeCustomName || '未命名主题'} · ${form.themeCustomEditorMode === 'simple' ? '简单模式' : '高级模式'}` : '未启用，点击展开配置' }}</span>
+              </div>
+            </template>
+            <div class="theme-custom-editor">
+              <div class="theme-custom-toolbar">
+            <el-form-item label="启用自定义主题">
+              <el-switch v-model="form.themeCustomEnabled" />
+            </el-form-item>
+            <el-form-item label="主题名称">
+              <el-input v-model="form.themeCustomName" maxlength="32" placeholder="例如：暖白摄影主题" />
+            </el-form-item>
+            <el-form-item label="编辑模式">
+              <el-radio-group v-model="form.themeCustomEditorMode">
+                <el-radio-button label="simple">简单</el-radio-button>
+                <el-radio-button label="advanced">高级</el-radio-button>
+              </el-radio-group>
+            </el-form-item>
+            <el-form-item label="已保存方案">
+              <div class="saved-theme-row">
+                <el-select v-model="savedThemeId" placeholder="选择已保存主题" clearable>
+                  <el-option v-for="theme in form.savedThemes" :key="theme.id" :label="theme.name" :value="theme.id" />
+                </el-select>
+                <el-button @click="applySavedTheme" :disabled="!savedThemeId">应用</el-button>
+                <el-button @click="removeSavedTheme" :disabled="!savedThemeId">删除</el-button>
+              </div>
+            </el-form-item>
+          </div>
+          <div class="theme-editor-actions">
+            <el-button @click="resetCustomThemeColors">恢复推荐色</el-button>
+            <el-button type="primary" @click="saveCurrentThemePreset">保存当前配色为方案</el-button>
+            <el-button @click="exportCurrentTheme">导出当前方案</el-button>
+            <el-button @click="triggerThemeImport">导入方案</el-button>
+            <input
+              ref="themeImportInput"
+              class="theme-import-input"
+              type="file"
+              accept="application/json,.json"
+              @change="importThemeFile"
+            />
+          </div>
+          <p class="field-help theme-mode-help">
+            {{ form.themeCustomEditorMode === 'simple'
+              ? '简单模式会把相近页面场景合并控制，适合快速调出统一风格。'
+              : '高级模式可精细调整每类组件颜色，适合已经确定完整视觉方案时使用。' }}
+          </p>
+          <div class="theme-color-grid" :class="{ simple: form.themeCustomEditorMode === 'simple' }">
+            <label v-for="field in displayedColorFields" :key="field.key" class="theme-color-field">
+              <span>
+                <strong>{{ field.label }}</strong>
+                <small>{{ field.description }}</small>
+              </span>
+              <div class="color-input-row">
+                <el-color-picker
+                  v-model="form.themeCustomColors[field.key]"
+                  :predefine="colorPredefines"
+                  @change="updateThemeColorField(field, form.themeCustomColors[field.key])"
+                />
+                <el-input
+                  v-model="form.themeCustomColors[field.key]"
+                  maxlength="7"
+                  @blur="updateThemeColorField(field, form.themeCustomColors[field.key])"
+                />
+              </div>
+            </label>
+          </div>
+          <div class="theme-preview-board" :style="{ background: form.themeCustomColors.pageBg, color: form.themeCustomColors.text, borderColor: form.themeCustomColors.line }">
+            <article class="theme-preview-panel" :style="{ background: form.themeCustomColors.surface, borderColor: form.themeCustomColors.line }">
+              <div class="preview-head">
+                <strong :style="{ color: form.themeCustomColors.text }">页面与卡片</strong>
+                <span :style="{ color: form.themeCustomColors.muted }">背景、正文、辅助文字、边框</span>
+              </div>
+              <p :style="{ color: form.themeCustomColors.text }">Photo Memory</p>
+              <small :style="{ color: form.themeCustomColors.muted }">2026/06/07 · 128 浏览</small>
+              <div class="preview-soft" :style="{ background: form.themeCustomColors.surfaceSoft, borderColor: form.themeCustomColors.line, color: form.themeCustomColors.textSoft }">
+                柔和面板 / 侧栏 / 次级区域
+              </div>
+            </article>
+
+            <article class="theme-preview-panel" :style="{ background: form.themeCustomColors.surface, borderColor: form.themeCustomColors.line }">
+              <div class="preview-head">
+                <strong :style="{ color: form.themeCustomColors.text }">按钮与控件</strong>
+                <span :style="{ color: form.themeCustomColors.muted }">主按钮、普通按钮、悬停状态</span>
+              </div>
+              <div class="preview-controls">
+                <button :style="{ background: form.themeCustomColors.primary, color: readableOn(form.themeCustomColors.primary), borderColor: form.themeCustomColors.primary }">保存</button>
+                <button :style="{ background: form.themeCustomColors.buttonBg, color: form.themeCustomColors.buttonText, borderColor: form.themeCustomColors.line }">取消</button>
+                <button :style="{ background: form.themeCustomColors.buttonHoverBg, color: form.themeCustomColors.buttonText, borderColor: form.themeCustomColors.primary }">悬停</button>
+              </div>
+            </article>
+
+            <article class="theme-preview-panel" :style="{ background: form.themeCustomColors.surface, borderColor: form.themeCustomColors.line }">
+              <div class="preview-head">
+                <strong :style="{ color: form.themeCustomColors.text }">标签与导航</strong>
+                <span :style="{ color: form.themeCustomColors.muted }">标签、强调色、右下角导航选中态</span>
+              </div>
+              <div class="preview-chip-row">
+                <span class="preview-tag" :style="{ background: form.themeCustomColors.tagBg, color: form.themeCustomColors.tagText, borderColor: form.themeCustomColors.line }">#旅行</span>
+                <span class="preview-tag" :style="{ background: form.themeCustomColors.tagBg, color: form.themeCustomColors.tagText, borderColor: form.themeCustomColors.line }">#街头</span>
+                <span class="preview-dot" :style="{ background: form.themeCustomColors.accent }" />
+                <span class="preview-dock" :style="{ background: form.themeCustomColors.dockActiveBg, color: form.themeCustomColors.dockActiveText }">⌂</span>
+              </div>
+            </article>
+
+            <article class="theme-preview-panel photo-preview-panel" :style="{ borderColor: form.themeCustomColors.line }">
+              <div class="preview-photo-image">
+                <div class="preview-photo-overlay" :style="{ background: form.themeCustomColors.imageOverlayBg, color: form.themeCustomColors.imageOverlayText, borderColor: form.themeCustomColors.imageOverlayText }">
+                  <strong>Exif</strong>
+                  <span>ISO 400 · f/2.8 · 35mm</span>
+                </div>
+                <span class="preview-photo-tag" :style="{ background: form.themeCustomColors.imageOverlayBg, color: form.themeCustomColors.imageOverlayText, borderColor: form.themeCustomColors.imageOverlayText }">精选</span>
+              </div>
+            </article>
+
+            <article class="theme-preview-panel map-preview-panel" :style="{ background: form.themeCustomColors.surface, borderColor: form.themeCustomColors.line }">
+              <div class="preview-head">
+                <strong :style="{ color: form.themeCustomColors.text }">地图弹窗</strong>
+                <span :style="{ color: form.themeCustomColors.muted }">地图控件、弹窗和点位</span>
+              </div>
+              <div class="preview-map-box">
+                <div class="preview-map-controls">
+                  <button :style="{ background: form.themeCustomColors.mapControlBg, color: form.themeCustomColors.mapControlText, borderColor: form.themeCustomColors.line }">+</button>
+                  <button :style="{ background: form.themeCustomColors.mapControlBg, color: form.themeCustomColors.mapControlText, borderColor: form.themeCustomColors.line }">−</button>
+                </div>
+                <span class="preview-marker" :style="{ background: form.themeCustomColors.accent }" />
+                <div class="preview-map-popup" :style="{ background: form.themeCustomColors.mapPopupBg, color: form.themeCustomColors.mapPopupText, borderColor: form.themeCustomColors.line }">
+                  <strong>上海街角</strong>
+                  <span :style="{ color: form.themeCustomColors.muted }">上海 · 2026/06/07</span>
+                </div>
+              </div>
+            </article>
+          </div>
+          <div class="contrast-grid">
+            <article v-for="check in contrastChecks" :key="check.label" :class="['contrast-card', check.level]">
+              <div>
+                <strong>{{ check.label }}</strong>
+                <span>{{ check.ratio.toFixed(2) }} : 1</span>
+              </div>
+              <p>{{ check.message }}</p>
+              <el-button v-if="check.level !== 'pass'" size="small" @click="applyContrastSuggestion(check)">
+                采用建议色 {{ check.suggestion }}
+              </el-button>
+            </article>
+          </div>
+            </div>
+          </el-collapse-item>
+        </el-collapse>
       </section>
 
       <section class="settings-section">
@@ -249,7 +401,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { adminApi } from '../../api/admin.api.js';
-import { useSettingsStore } from '../../stores/settings.store.js';
+import { defaultCustomThemeColors, useSettingsStore } from '../../stores/settings.store.js';
 import { imageUrl } from '../../utils/image.js';
 import { formatDate } from '../../utils/format.js';
 
@@ -263,6 +415,11 @@ const form = reactive({
   homeIntro: '',
   faviconUrl: '',
   themeMode: 'light',
+  themeCustomEnabled: false,
+  themeCustomName: '',
+  themeCustomEditorMode: 'simple',
+  themeCustomColors: { ...defaultCustomThemeColors },
+  savedThemes: [],
   heroMode: 'random',
   heroPhotoIds: [],
   heroFixedPhotoId: null,
@@ -301,9 +458,11 @@ const boolKeys = [
   'watermarkEnabled',
   'includeAlbumsInWaterfall',
   'showExifOnHover',
-  'waterfallFullBleed'
+  'waterfallFullBleed',
+  'themeCustomEnabled'
 ];
 
+const themeEditorPanels = ref([]);
 const heroLoading = ref(false);
 const heroOptions = ref([]);
 
@@ -326,10 +485,356 @@ const numberOrNull = (value) => {
 const normalizeLoadAnimation = (value) => ['none', 'blur', 'custom'].includes(value) ? value : 'blur';
 const normalizeMapProvider = (value) => ['amap', 'osm', 'custom'].includes(value) ? value : 'amap';
 const normalizeThemeMode = (value) => ['light', 'dark', 'auto'].includes(value) ? value : 'light';
+const normalizeThemeEditorMode = (value) => ['simple', 'advanced'].includes(value) ? value : 'simple';
+const normalizeHexColor = (value, fallback = '#000000') => {
+  const color = String(value || '').trim();
+  if (/^#[0-9a-f]{3}$/i.test(color)) {
+    return `#${color[1]}${color[1]}${color[2]}${color[2]}${color[3]}${color[3]}`.toLowerCase();
+  }
+  return /^#[0-9a-f]{6}$/i.test(color) ? color.toLowerCase() : fallback;
+};
 const normalizeMapTileUrl = (value) => {
   const url = String(value || '').trim();
   if (!url) return '';
   return /^https:\/\/[^<>"'\s]+$/i.test(url) ? url.slice(0, 500) : '';
+};
+
+const colorFields = [
+  { key: 'primary', label: '主色', description: '主要按钮、选中态、强调操作' },
+  { key: 'accent', label: '强调色', description: '地图点位、局部强调' },
+  { key: 'pageBg', label: '页面背景', description: '全站页面底色' },
+  { key: 'surface', label: '卡片背景', description: '卡片、弹层主体背景' },
+  { key: 'surfaceSoft', label: '柔和背景', description: '侧栏、次级面板背景' },
+  { key: 'surfaceOverlay', label: '浮层背景', description: '弹窗、下拉菜单背景' },
+  { key: 'text', label: '正文文字', description: '主要文本颜色' },
+  { key: 'textSoft', label: '次级文字', description: '说明、表格次级文本' },
+  { key: 'muted', label: '弱化文字', description: '日期、统计等弱信息' },
+  { key: 'line', label: '边框线', description: '卡片、表格和分割线' },
+  { key: 'buttonBg', label: '按钮背景', description: '普通按钮底色' },
+  { key: 'buttonText', label: '按钮文字', description: '普通按钮文字' },
+  { key: 'buttonHoverBg', label: '按钮悬停', description: '普通按钮悬停背景' },
+  { key: 'tagBg', label: '标签背景', description: '标签、标签云底色' },
+  { key: 'tagText', label: '标签文字', description: '标签文字颜色' },
+  { key: 'mapControlBg', label: '地图控件背景', description: '缩放按钮和控件背景' },
+  { key: 'mapControlText', label: '地图控件文字', description: '地图按钮和控件文字' },
+  { key: 'mapPopupBg', label: '地图弹窗背景', description: '地图照片悬浮弹窗背景' },
+  { key: 'mapPopupText', label: '地图弹窗文字', description: '地图照片悬浮弹窗文字' },
+  { key: 'dockActiveBg', label: '导航选中背景', description: '右下角圆形导航选中态' },
+  { key: 'dockActiveText', label: '导航选中文字', description: '右下角圆形导航图标文字' },
+  { key: 'imageOverlayBg', label: '照片悬浮背景', description: '照片卡片内悬浮信息底色' },
+  { key: 'imageOverlayText', label: '照片悬浮文字', description: '照片卡片内悬浮信息文字' }
+];
+const savedThemeId = ref('');
+const themeImportInput = ref(null);
+const colorPredefines = ['#172026', '#ffffff', '#f6f1e9', '#fffaf3', '#3f3328', '#8d7155', '#b66f54', '#8fb8c4', '#071012'];
+
+const parseJsonObject = (value, fallback) => {
+  if (value && typeof value === 'object' && !Array.isArray(value)) return value;
+  try {
+    const parsed = JSON.parse(value || '{}');
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const parseJsonArray = (value) => {
+  if (Array.isArray(value)) return value;
+  try {
+    const parsed = JSON.parse(value || '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const normalizeThemeColors = (colors = {}) => Object.fromEntries(
+  Object.entries(defaultCustomThemeColors).map(([key, fallback]) => [key, normalizeHexColor(colors[key], fallback)])
+);
+
+const normalizeThemeName = (value) => String(value || '').replace(/[<>]/g, '').trim().slice(0, 32);
+
+const safeThemeFileName = (value) => {
+  const name = normalizeThemeName(value) || 'photo-memory-theme';
+  return `${name.replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, '-').slice(0, 40) || 'photo-memory-theme'}.json`;
+};
+
+const hasThemeColorValue = (colors = {}) => Object.keys(defaultCustomThemeColors)
+  .some((key) => Boolean(normalizeHexColor(colors?.[key], '')));
+
+const normalizeSavedThemes = (themes = []) => parseJsonArray(themes)
+  .map((theme, index) => {
+    if (!theme || typeof theme !== 'object') return null;
+    const name = normalizeThemeName(theme.name) || `主题 ${index + 1}`;
+    return {
+      id: String(theme.id || `theme_${Date.now()}_${index}`).replace(/[^\w-]/g, '').slice(0, 48),
+      name,
+      colors: normalizeThemeColors(theme.colors || {}),
+      savedAt: String(theme.savedAt || '').replace(/[<>]/g, '').slice(0, 32)
+    };
+  })
+  .filter(Boolean)
+  .slice(0, 16);
+
+const buildThemeExportPayload = () => ({
+  type: 'photo-memory-theme',
+  version: 1,
+  app: 'Photo Memory',
+  name: normalizeThemeName(form.themeCustomName) || '未命名主题',
+  editorMode: normalizeThemeEditorMode(form.themeCustomEditorMode),
+  colors: normalizeThemeColors(form.themeCustomColors),
+  exportedAt: new Date().toISOString()
+});
+
+const exportCurrentTheme = () => {
+  const payload = buildThemeExportPayload();
+  const blob = new Blob([`${JSON.stringify(payload, null, 2)}\n`], { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = safeThemeFileName(payload.name);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  ElMessage.success('主题方案已导出');
+};
+
+const triggerThemeImport = () => {
+  themeImportInput.value?.click();
+};
+
+const parseImportedTheme = (payload) => {
+  const theme = payload?.theme && typeof payload.theme === 'object' ? payload.theme : payload;
+  if (!theme || typeof theme !== 'object' || Array.isArray(theme)) return null;
+  const colors = theme.colors || theme.themeCustomColors || {};
+  if (!hasThemeColorValue(colors)) return null;
+  return {
+    id: `theme_${Date.now()}`,
+    name: normalizeThemeName(theme.name || theme.themeCustomName) || `导入主题 ${form.savedThemes.length + 1}`,
+    editorMode: normalizeThemeEditorMode(theme.editorMode || theme.themeCustomEditorMode),
+    colors: normalizeThemeColors(colors),
+    savedAt: new Date().toISOString().slice(0, 10)
+  };
+};
+
+const applyImportedTheme = (theme) => {
+  form.themeCustomName = theme.name;
+  form.themeCustomEditorMode = theme.editorMode;
+  form.themeCustomColors = normalizeThemeColors(theme.colors);
+  if (form.themeCustomEditorMode === 'simple') syncSimpleThemeColors();
+  form.savedThemes = [theme, ...form.savedThemes.filter((item) => item.name !== theme.name)].slice(0, 16);
+  savedThemeId.value = theme.id;
+};
+
+const importThemeFile = async (event) => {
+  const file = event.target.files?.[0];
+  event.target.value = '';
+  if (!file) return;
+  if (!file.name.toLowerCase().endsWith('.json') || file.size > 128 * 1024) {
+    ElMessage.error('请选择 128KB 以内的 JSON 主题文件');
+    return;
+  }
+  try {
+    const text = await file.text();
+    const payload = JSON.parse(text);
+    const theme = parseImportedTheme(payload);
+    if (!theme) {
+      ElMessage.error('主题文件格式不正确，或没有可用颜色');
+      return;
+    }
+    applyImportedTheme(theme);
+    ElMessage.success('主题方案已导入，请保存设置后生效');
+  } catch {
+    ElMessage.error('主题文件解析失败');
+  }
+};
+
+const hexToRgb = (hex) => {
+  const color = normalizeHexColor(hex).slice(1);
+  return {
+    r: Number.parseInt(color.slice(0, 2), 16),
+    g: Number.parseInt(color.slice(2, 4), 16),
+    b: Number.parseInt(color.slice(4, 6), 16)
+  };
+};
+
+const relativeLuminance = (hex) => {
+  const rgb = hexToRgb(hex);
+  const channel = (value) => {
+    const normalized = value / 255;
+    return normalized <= 0.03928 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * channel(rgb.r) + 0.7152 * channel(rgb.g) + 0.0722 * channel(rgb.b);
+};
+
+const contrastRatio = (foreground, background) => {
+  const a = relativeLuminance(foreground);
+  const b = relativeLuminance(background);
+  const lighter = Math.max(a, b);
+  const darker = Math.min(a, b);
+  return (lighter + 0.05) / (darker + 0.05);
+};
+
+const readableOn = (background) => {
+  const whiteRatio = contrastRatio('#ffffff', background);
+  const darkRatio = contrastRatio('#071012', background);
+  return whiteRatio >= darkRatio ? '#ffffff' : '#071012';
+};
+
+const simpleColorFields = [
+  {
+    key: 'primary',
+    label: '品牌主色',
+    description: '主要按钮、强调色、选中导航等统一跟随',
+    targets: [
+      'primary',
+      'accent',
+      'dockActiveBg',
+      { key: 'dockActiveText', value: (color) => readableOn(color) }
+    ]
+  },
+  {
+    key: 'pageBg',
+    label: '页面底色',
+    description: '全站最底层背景'
+  },
+  {
+    key: 'surface',
+    label: '卡片 / 浮层背景',
+    description: '卡片、弹窗、下拉、地图弹窗和地图控件背景',
+    targets: ['surface', 'surfaceOverlay', 'mapControlBg', 'mapPopupBg']
+  },
+  {
+    key: 'surfaceSoft',
+    label: '柔和面板 / 普通按钮',
+    description: '侧栏、次级面板、普通按钮与悬停背景',
+    targets: ['surfaceSoft', 'buttonBg', 'buttonHoverBg']
+  },
+  {
+    key: 'text',
+    label: '主要文字',
+    description: '正文、按钮文字、地图控件和弹窗文字',
+    targets: ['text', 'textSoft', 'buttonText', 'mapControlText', 'mapPopupText']
+  },
+  {
+    key: 'muted',
+    label: '辅助文字',
+    description: '日期、统计、说明等弱化信息'
+  },
+  {
+    key: 'line',
+    label: '边框 / 分割线',
+    description: '卡片、表格、输入框和分割线'
+  },
+  {
+    key: 'tagBg',
+    label: '标签',
+    description: '标签底色，文字会自动选择高对比度颜色',
+    targets: [
+      'tagBg',
+      { key: 'tagText', value: (color) => readableOn(color) }
+    ]
+  },
+  {
+    key: 'imageOverlayBg',
+    label: '照片悬浮遮罩',
+    description: '照片卡片内的 EXIF、标签和悬浮信息',
+    targets: [
+      'imageOverlayBg',
+      { key: 'imageOverlayText', value: (color) => readableOn(color) }
+    ]
+  }
+];
+
+const displayedColorFields = computed(() => form.themeCustomEditorMode === 'advanced' ? colorFields : simpleColorFields);
+
+const applySimpleColorTargets = (field, color) => {
+  if (!field.targets?.length) return;
+  field.targets.forEach((target) => {
+    const key = typeof target === 'string' ? target : target.key;
+    const nextValue = typeof target?.value === 'function' ? target.value(color, form.themeCustomColors) : color;
+    form.themeCustomColors[key] = normalizeHexColor(nextValue, defaultCustomThemeColors[key]);
+  });
+};
+
+const updateThemeColorField = (field, value) => {
+  const color = normalizeHexColor(value, defaultCustomThemeColors[field.key]);
+  form.themeCustomColors[field.key] = color;
+  if (form.themeCustomEditorMode === 'simple') applySimpleColorTargets(field, color);
+};
+
+const syncSimpleThemeColors = () => {
+  simpleColorFields.forEach((field) => updateThemeColorField(field, form.themeCustomColors[field.key]));
+};
+
+const contrastPairs = [
+  { label: '正文 / 页面背景', fg: 'text', bg: 'pageBg', min: 4.5 },
+  { label: '正文 / 卡片背景', fg: 'text', bg: 'surface', min: 4.5 },
+  { label: '弱化文字 / 卡片背景', fg: 'muted', bg: 'surface', min: 3 },
+  { label: '按钮文字 / 按钮背景', fg: 'buttonText', bg: 'buttonBg', min: 4.5 },
+  { label: '标签文字 / 标签背景', fg: 'tagText', bg: 'tagBg', min: 4.5 },
+  { label: '地图控件文字 / 背景', fg: 'mapControlText', bg: 'mapControlBg', min: 4.5 },
+  { label: '地图弹窗文字 / 背景', fg: 'mapPopupText', bg: 'mapPopupBg', min: 4.5 },
+  { label: '悬浮导航图标 / 背景', fg: 'dockActiveText', bg: 'dockActiveBg', min: 3 },
+  { label: '照片悬浮信息 / 背景', fg: 'imageOverlayText', bg: 'imageOverlayBg', min: 3 }
+];
+
+const contrastChecks = computed(() => contrastPairs.map((item) => {
+  const foreground = normalizeHexColor(form.themeCustomColors[item.fg], defaultCustomThemeColors[item.fg]);
+  const background = normalizeHexColor(form.themeCustomColors[item.bg], defaultCustomThemeColors[item.bg]);
+  const ratio = contrastRatio(foreground, background);
+  const suggestion = readableOn(background);
+  return {
+    ...item,
+    foreground,
+    background,
+    ratio,
+    suggestion,
+    level: ratio >= item.min ? 'pass' : ratio >= item.min - 1 ? 'warn' : 'fail',
+    message: ratio >= item.min
+      ? '对比度良好'
+      : `建议将“${colorFields.find((field) => field.key === item.fg)?.label || item.fg}”改为 ${suggestion}`
+  };
+}));
+
+const applyContrastSuggestion = (check) => {
+  form.themeCustomColors[check.fg] = check.suggestion;
+};
+
+const resetCustomThemeColors = () => {
+  form.themeCustomColors = { ...defaultCustomThemeColors };
+  if (form.themeCustomEditorMode === 'simple') syncSimpleThemeColors();
+};
+
+const applySavedTheme = () => {
+  const theme = form.savedThemes.find((item) => item.id === savedThemeId.value);
+  if (!theme) return;
+  form.themeCustomName = theme.name;
+  form.themeCustomColors = normalizeThemeColors(theme.colors);
+  if (form.themeCustomEditorMode === 'simple') syncSimpleThemeColors();
+  ElMessage.success('已应用保存的主题方案');
+};
+
+const saveCurrentThemePreset = () => {
+  const name = normalizeThemeName(form.themeCustomName) || `主题 ${form.savedThemes.length + 1}`;
+  const existing = form.savedThemes.find((item) => item.name === name);
+  const preset = {
+    id: existing?.id || `theme_${Date.now()}`,
+    name: name.slice(0, 32),
+    colors: normalizeThemeColors(form.themeCustomColors),
+    savedAt: new Date().toISOString().slice(0, 10)
+  };
+  form.savedThemes = [preset, ...form.savedThemes.filter((item) => item.id !== preset.id)].slice(0, 16);
+  savedThemeId.value = preset.id;
+  ElMessage.success('主题方案已保存');
+};
+
+const removeSavedTheme = () => {
+  if (!savedThemeId.value) return;
+  form.savedThemes = form.savedThemes.filter((item) => item.id !== savedThemeId.value);
+  savedThemeId.value = '';
+  ElMessage.success('主题方案已删除');
 };
 
 const mergeHeroOptions = (photos = []) => {
@@ -380,6 +885,10 @@ onMounted(async () => {
     else if (item.key === 'heroFixedPhotoId') form.heroFixedPhotoId = numberOrNull(item.value);
     else if (item.key === 'heroMode') form.heroMode = item.value === 'fixed' ? 'fixed' : 'random';
     else if (item.key === 'themeMode') form.themeMode = normalizeThemeMode(item.value);
+    else if (item.key === 'themeCustomEditorMode') form.themeCustomEditorMode = normalizeThemeEditorMode(item.value);
+    else if (item.key === 'themeCustomName') form.themeCustomName = normalizeThemeName(item.value);
+    else if (item.key === 'themeCustomColors') form.themeCustomColors = normalizeThemeColors(parseJsonObject(item.value, defaultCustomThemeColors));
+    else if (item.key === 'savedThemes') form.savedThemes = normalizeSavedThemes(item.value);
     else if (item.key === 'waterfallLoadAnimation') form.waterfallLoadAnimation = normalizeLoadAnimation(item.value);
     else if (item.key === 'mapTileProvider') form.mapTileProvider = normalizeMapProvider(item.value);
     else if (Object.prototype.hasOwnProperty.call(form, item.key)) form[item.key] = item.value;
@@ -390,12 +899,18 @@ onMounted(async () => {
 
 const save = async () => {
   form.heroPhotoIds = normalizeIds(form.heroPhotoIds);
+  form.themeCustomEditorMode = normalizeThemeEditorMode(form.themeCustomEditorMode);
+  if (form.themeCustomEditorMode === 'simple') syncSimpleThemeColors();
   syncFixedHero();
   const payload = Object.entries(form).map(([key, value]) => {
     if (key === 'heroPhotoIds') return { key, value: JSON.stringify(normalizeIds(value)) };
     if (key === 'heroFixedPhotoId') return { key, value: value ? String(value) : '' };
     if (key === 'heroMode') return { key, value: value === 'fixed' ? 'fixed' : 'random' };
     if (key === 'themeMode') return { key, value: normalizeThemeMode(value) };
+    if (key === 'themeCustomEditorMode') return { key, value: normalizeThemeEditorMode(value) };
+    if (key === 'themeCustomName') return { key, value: normalizeThemeName(value) };
+    if (key === 'themeCustomColors') return { key, value: JSON.stringify(normalizeThemeColors(value)) };
+    if (key === 'savedThemes') return { key, value: JSON.stringify(normalizeSavedThemes(value)) };
     if (key === 'trustProxyHops') return { key, value: String(Math.max(0, Math.min(10, Number(value) || 0))) };
     if (key === 'waterfallLoadAnimation') return { key, value: normalizeLoadAnimation(value) };
     if (key === 'waterfallLoadDurationMs') return { key, value: String(Math.max(200, Math.min(1600, Number(value) || 720))) };
@@ -413,6 +928,11 @@ const save = async () => {
 watch(() => form.heroPhotoIds.slice(), async () => {
   await ensureSelectedHeroOptions();
   syncFixedHero();
+});
+
+watch(() => form.themeCustomEditorMode, (mode) => {
+  form.themeCustomEditorMode = normalizeThemeEditorMode(mode);
+  if (form.themeCustomEditorMode === 'simple') syncSimpleThemeColors();
 });
 </script>
 
@@ -432,8 +952,8 @@ watch(() => form.heroPhotoIds.slice(), async () => {
   display: grid;
   gap: 14px;
   padding: 18px 0;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
+  border-top: 1px solid var(--theme-line);
+  border-bottom: 1px solid var(--theme-line);
 }
 
 .deploy-section,
@@ -449,7 +969,7 @@ watch(() => form.heroPhotoIds.slice(), async () => {
 
 .settings-section-head p {
   margin: 0;
-  color: var(--muted-strong);
+  color: var(--theme-muted-strong);
   font-size: 13px;
   line-height: 1.7;
 }
@@ -457,7 +977,7 @@ watch(() => form.heroPhotoIds.slice(), async () => {
 .field-help {
   width: 100%;
   margin: 8px 0 0;
-  color: var(--muted-strong);
+  color: var(--theme-muted-strong);
   font-size: 12px;
   line-height: 1.6;
 }
@@ -489,14 +1009,14 @@ watch(() => form.heroPhotoIds.slice(), async () => {
 .photo-option strong,
 .photo-option span {
   overflow: hidden;
-  color: var(--text);
+  color: var(--theme-text);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .photo-option small {
   overflow: hidden;
-  color: var(--muted-strong);
+  color: var(--theme-muted-strong);
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -515,13 +1035,13 @@ watch(() => form.heroPhotoIds.slice(), async () => {
 
 .hero-preview-grid article {
   overflow: hidden;
-  border: 1px solid var(--line);
+  border: 1px solid var(--theme-line);
   border-radius: 6px;
-  background: var(--button-bg);
+  background: var(--theme-button-bg);
 }
 
 .hero-preview-grid article.active {
-  border-color: var(--primary);
+  border-color: var(--theme-primary);
 }
 
 .hero-preview-grid img {
@@ -535,7 +1055,7 @@ watch(() => form.heroPhotoIds.slice(), async () => {
   display: block;
   overflow: hidden;
   padding: 8px;
-  color: var(--muted-strong);
+  color: var(--theme-muted-strong);
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -552,11 +1072,368 @@ watch(() => form.heroPhotoIds.slice(), async () => {
 .favicon-preview {
   width: 42px;
   height: 42px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--theme-line);
   border-radius: 8px;
-  background-color: var(--button-bg);
+  background-color: var(--theme-button-bg);
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
+}
+
+.theme-custom-collapse {
+  border: 1px solid var(--theme-line);
+  border-radius: 8px;
+  background: var(--theme-surface-soft);
+}
+
+.theme-custom-collapse :deep(.el-collapse-item__header) {
+  height: auto;
+  min-height: 54px;
+  padding: 0 16px;
+  border-bottom-color: var(--theme-line);
+  background: transparent;
+  color: var(--theme-text);
+}
+
+.theme-custom-collapse :deep(.el-collapse-item__wrap) {
+  border-bottom: 0;
+  background: transparent;
+}
+
+.theme-custom-collapse :deep(.el-collapse-item__content) {
+  padding: 0;
+}
+
+.theme-collapse-title {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  line-height: 1.3;
+}
+
+.theme-collapse-title strong {
+  color: var(--theme-text);
+  font-size: 15px;
+}
+
+.theme-collapse-title span {
+  overflow: hidden;
+  color: var(--theme-muted-strong);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.theme-custom-editor {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+  border-top: 1px solid var(--theme-line);
+  background: transparent;
+}
+
+.theme-custom-toolbar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+}
+
+.saved-theme-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.saved-theme-row :deep(.el-button) {
+  min-width: 56px;
+  background-color: var(--el-button-bg-color);
+  border-color: var(--el-button-border-color);
+  color: var(--el-button-text-color);
+}
+
+.saved-theme-row :deep(.el-button:not(.is-disabled):hover) {
+  background-color: var(--el-button-hover-bg-color);
+  border-color: var(--el-button-hover-border-color);
+  color: var(--el-button-hover-text-color);
+}
+
+.theme-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.theme-import-input {
+  display: none;
+}
+
+.theme-mode-help {
+  margin-top: -4px;
+}
+
+.theme-color-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 10px;
+}
+
+.theme-color-grid.simple {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.theme-color-field {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--theme-line);
+  border-radius: 8px;
+  background: var(--theme-surface);
+}
+
+.theme-color-field span {
+  display: grid;
+  gap: 4px;
+}
+
+.theme-color-field strong {
+  color: var(--theme-text);
+  font-size: 13px;
+}
+
+.theme-color-field small {
+  color: var(--theme-muted-strong);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.color-input-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.theme-preview-board,
+.contrast-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.theme-preview-board {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  padding: 14px;
+  border: 1px solid;
+  border-radius: 8px;
+}
+
+.theme-preview-panel {
+  min-height: 138px;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid;
+  border-radius: 8px;
+}
+
+.preview-head {
+  display: grid;
+  gap: 4px;
+}
+
+.preview-head strong,
+.theme-preview-panel p {
+  margin: 0;
+}
+
+.preview-head span,
+.theme-preview-panel small {
+  font-size: 12px;
+}
+
+.preview-soft {
+  margin-top: 4px;
+  padding: 9px 10px;
+  border: 1px solid;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.preview-controls,
+.preview-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.preview-controls button {
+  padding: 8px 14px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.preview-tag {
+  padding: 6px 10px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.preview-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.preview-dock {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  font-weight: 800;
+}
+
+.photo-preview-panel {
+  overflow: hidden;
+  padding: 0;
+}
+
+.preview-photo-image {
+  min-height: 170px;
+  position: relative;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.22), rgba(0, 0, 0, 0.18)),
+    linear-gradient(135deg, #7da5b5, #1c2830 58%, #b88b5e);
+}
+
+.preview-photo-overlay {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  max-width: calc(100% - 24px);
+  display: grid;
+  gap: 3px;
+  padding: 8px 10px;
+  border: 1px solid;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.preview-photo-tag {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 5px 9px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.preview-map-box {
+  min-height: 102px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  background:
+    linear-gradient(45deg, rgba(255, 255, 255, 0.13) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.13) 50%, rgba(255, 255, 255, 0.13) 75%, transparent 75%),
+    linear-gradient(135deg, #8da6ad, #617c83);
+  background-size: 22px 22px, auto;
+}
+
+.preview-map-controls {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: grid;
+}
+
+.preview-map-controls button {
+  width: 28px;
+  height: 28px;
+  border: 1px solid;
+  font-weight: 800;
+}
+
+.preview-marker {
+  position: absolute;
+  left: 45%;
+  top: 48%;
+  width: 16px;
+  height: 16px;
+  border: 3px solid #fff;
+  border-radius: 999px;
+}
+
+.preview-map-popup {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  min-width: 128px;
+  display: grid;
+  gap: 4px;
+  padding: 9px 10px;
+  border: 1px solid;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.preview-map-popup span {
+  font-size: 11px;
+}
+
+.contrast-grid {
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+
+.contrast-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--theme-line);
+  border-radius: 8px;
+  background: var(--theme-surface);
+}
+
+.contrast-card > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--theme-text);
+  font-size: 13px;
+}
+
+.contrast-card p {
+  margin: 0;
+  color: var(--theme-muted-strong);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.contrast-card.pass {
+  border-color: color-mix(in srgb, var(--theme-success) 52%, var(--theme-line));
+}
+
+.contrast-card.warn {
+  border-color: color-mix(in srgb, var(--theme-warning) 60%, var(--theme-line));
+  background: color-mix(in srgb, var(--theme-warning) 7%, var(--theme-surface));
+}
+
+.contrast-card.fail {
+  border-color: color-mix(in srgb, var(--theme-danger) 58%, var(--theme-line));
+  background: color-mix(in srgb, var(--theme-danger) 7%, var(--theme-surface));
+}
+
+@media (max-width: 760px) {
+  .saved-theme-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 </style>

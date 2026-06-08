@@ -13,7 +13,7 @@
         v-for="item in column"
         :key="item.key"
         class="waterfall-item"
-        :class="{ 'waterfall-item-enter-pending': pendingEnterKeys.has(item.key) }"
+        :class="{ 'waterfall-item-enter-pending': scrollRevealEnabled && pendingEnterKeys.has(item.key) }"
         :data-waterfall-key="item.key"
       >
         <WaterfallAlbumCard v-if="item.type === 'album'" :album="item.data" :load-index="item.loadIndex" @preview="openAlbumPreview" @detail="openAlbumDetail" />
@@ -60,6 +60,7 @@ import { Flip } from 'gsap/Flip';
 import { ElMessage } from 'element-plus';
 import { albumApi } from '../../api/album.api.js';
 import { useSettingsStore } from '../../stores/settings.store.js';
+import { albumCover, imageUrl } from '../../utils/image.js';
 import LoadingState from '../common/LoadingState.vue';
 import EmptyState from '../common/EmptyState.vue';
 import WaterfallCreditCard from '../common/WaterfallCreditCard.vue';
@@ -76,6 +77,7 @@ const props = defineProps({
   loading: { type: Boolean, default: false },
   variant: { type: String, default: 'card' },
   animateInitial: { type: Boolean, default: false },
+  scrollReveal: { type: Boolean, default: true },
   showCreditCard: { type: Boolean, default: false }
 });
 
@@ -101,7 +103,14 @@ let enterObserver = null;
 let resizeTimer = null;
 let flipTween = null;
 let resizeListening = false;
+let observedWallWidth = 0;
 let albumPreviewRequest = 0;
+let itemsChangeRunId = 0;
+let revealQueue = [];
+let revealQueueRunning = false;
+let revealQueueRunId = 0;
+const revealQueueKeys = new Set();
+const preloadCache = new Map();
 
 gsap.registerPlugin(Flip);
 
@@ -112,9 +121,11 @@ const photoKeysFrom = (keys) => keys.filter((key) => key.startsWith('photo-'));
 const isFullBleed = computed(() => props.variant === 'wall' && settings.settings.waterfallFullBleed === true);
 const animationDuration = computed(() => Math.max(200, Math.min(1600, Number(settings.settings.waterfallLoadDurationMs) || 720)));
 const animationStagger = computed(() => Math.max(0, Math.min(120, Number(settings.settings.waterfallLoadStaggerMs) || 24)));
+const scrollRevealEnabled = computed(() => props.scrollReveal !== false);
+const shouldAnimateInitial = computed(() => scrollRevealEnabled.value && (props.animateInitial || props.variant === 'wall'));
 const cardEnterDistance = computed(() => {
   const width = window.innerWidth || 1280;
-  return Math.max(28, Math.min(42, width * 0.026));
+  return Math.max(18, Math.min(34, width * 0.024));
 });
 const waterfallStyle = computed(() => ({
   '--waterfall-columns': resolvedColumns.value,
@@ -227,41 +238,131 @@ const removePendingKey = (key) => {
   pendingEnterKeys.value = next;
 };
 
+const wait = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
+const imageForItem = (item) => {
+  if (!item) return '';
+  if (item.type === 'album') return albumCover(item.data);
+  const photo = item.data;
+  const source = props.variant === 'wall'
+    ? (photo.mediumUrl || photo.originalUrl || photo.thumbnailUrl)
+    : (photo.thumbnailUrl || photo.mediumUrl || photo.originalUrl);
+  return imageUrl(source);
+};
+
+const preloadImage = (url) => {
+  if (!url || typeof Image === 'undefined') return Promise.resolve();
+  if (preloadCache.has(url)) return preloadCache.get(url);
+  const promise = new Promise((resolve) => {
+    const image = new Image();
+    let settled = false;
+    const done = () => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timer);
+      resolve();
+    };
+    const timer = window.setTimeout(done, 1800);
+    image.onload = done;
+    image.onerror = done;
+    image.decoding = 'async';
+    image.src = url;
+    if (image.complete) done();
+  });
+  preloadCache.set(url, promise);
+  return promise;
+};
+
+const preloadCardImage = (key) => preloadImage(imageForItem(wallItems.value.find((item) => item.key === key)));
+
+const cardVisualTarget = (card) => card?.firstElementChild || card;
+
+const settleRevealCard = (card) => {
+  const key = card?.dataset.waterfallKey;
+  if (key) removePendingKey(key);
+  enterObserver?.unobserve(card);
+  card?.classList.remove('waterfall-item-enter-pending');
+  const target = cardVisualTarget(card);
+  gsap.killTweensOf(target);
+  gsap.set(target, { clearProps: 'transform,opacity' });
+};
+
 const revealPendingCard = (card) => {
   const key = card.dataset.waterfallKey;
   if (!key || !pendingEnterKeys.value.has(key)) return;
   enterObserver?.unobserve(card);
+  const target = cardVisualTarget(card);
 
   if (reducedMotion()) {
-    removePendingKey(key);
+    settleRevealCard(card);
     return;
   }
 
+  gsap.killTweensOf(target);
+  gsap.set(target, {
+    y: cardEnterDistance.value,
+    opacity: 0.96,
+    force3D: true
+  });
   removePendingKey(key);
   card.classList.remove('waterfall-item-enter-pending');
-  const duration = Math.max(1.25, Math.min(2.25, animationDuration.value / 1000 * 1.65));
-  gsap.fromTo(
-    card,
-    {
-      y: cardEnterDistance.value,
-      scale: 0.992,
-      force3D: true
-    },
+  const duration = Math.max(0.42, Math.min(0.68, animationDuration.value / 1000 * 0.62));
+  gsap.to(
+    target,
     {
       y: 0,
-      scale: 1,
+      opacity: 1,
       duration,
-      ease: 'expo.out',
+      ease: 'power3.out',
       overwrite: 'auto',
-      clearProps: 'transform'
+      clearProps: 'transform,opacity'
     }
   );
+};
+
+const revealQueueGap = () => Math.max(190, Math.min(360, animationStagger.value * 3.2 || 220));
+
+const clearRevealQueue = () => {
+  revealQueueRunId += 1;
+  revealQueueRunning = false;
+  revealQueue = [];
+  revealQueueKeys.clear();
+};
+
+const processRevealQueue = async () => {
+  if (revealQueueRunning || !revealQueue.length) return;
+  revealQueueRunning = true;
+  const runId = revealQueueRunId;
+
+  while (revealQueue.length && runId === revealQueueRunId) {
+    const card = revealQueue.shift();
+    const key = card?.dataset.waterfallKey;
+    if (key) revealQueueKeys.delete(key);
+    if (key) await preloadCardImage(key);
+    if (runId !== revealQueueRunId) break;
+    if (card?.isConnected) revealPendingCard(card);
+    await wait(revealQueueGap());
+  }
+
+  if (runId === revealQueueRunId) revealQueueRunning = false;
+};
+
+const enqueueRevealCard = (card) => {
+  const key = card?.dataset.waterfallKey;
+  if (!key || !pendingEnterKeys.value.has(key) || revealQueueKeys.has(key)) return;
+  enterObserver?.unobserve(card);
+  revealQueueKeys.add(key);
+  preloadCardImage(key);
+  revealQueue.push(card);
+  revealQueue.sort((first, second) => first.getBoundingClientRect().top - second.getBoundingClientRect().top);
+  processRevealQueue();
 };
 
 const observePendingEnterCards = async (keys) => {
   await nextTick();
   if (!keys.length || reducedMotion()) {
     pendingEnterKeys.value = new Set();
+    clearRevealQueue();
     return;
   }
 
@@ -279,19 +380,43 @@ const observePendingEnterCards = async (keys) => {
         .filter((entry) => entry.isIntersecting)
         .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
         .forEach((entry, index) => {
-          window.setTimeout(() => revealPendingCard(entry.target), index * Math.max(48, Math.min(130, animationStagger.value * 1.45 || 64)));
+          window.setTimeout(() => revealPendingCard(entry.target), Math.min(index * 18, 90));
         });
     },
     {
       root: null,
-      rootMargin: '0px 0px 10% 0px',
+      rootMargin: '0px 0px -5% 0px',
       threshold: 0.01
     }
   );
 
   keys.forEach((key) => {
+    if (!pendingEnterKeys.value.has(key)) return;
     const card = wallRef.value?.querySelector(`[data-waterfall-key="${CSS.escape(key)}"]`);
     if (card) enterObserver.observe(card);
+  });
+};
+
+const observeCurrentPendingCards = async ({ settleVisible = false } = {}) => {
+  if (!scrollRevealEnabled.value) return;
+  await nextTick();
+  const keys = [...pendingEnterKeys.value];
+  if (!keys.length) return;
+  if (settleVisible) settleInitiallyVisibleCards(keys);
+  const remainingKeys = [...pendingEnterKeys.value];
+  if (remainingKeys.length) await observePendingEnterCards(remainingKeys);
+};
+
+const settleInitiallyVisibleCards = (keys) => {
+  if (!keys.length || typeof window === 'undefined') return;
+  const viewportBottom = window.innerHeight || 0;
+  keys.forEach((key) => {
+    const card = wallRef.value?.querySelector(`[data-waterfall-key="${CSS.escape(key)}"]`);
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    const alreadyInView = rect.top < viewportBottom && rect.bottom > 0;
+    if (!alreadyInView) return;
+    settleRevealCard(card);
   });
 };
 
@@ -319,6 +444,7 @@ const requestColumnUpdate = (animate = true) => {
 const onWindowResize = () => requestColumnUpdate(true);
 
 const handleItemsChange = async (signature, previousSignature) => {
+  const runId = ++itemsChangeRunId;
   const keys = keysFromSignature(signature);
   const previousKeyList = keysFromSignature(previousSignature);
   const previousKeys = new Set(previousKeyList);
@@ -328,11 +454,17 @@ const handleItemsChange = async (signature, previousSignature) => {
     previousPhotoKeys.length > 0 &&
     nextPhotoKeys.length > previousPhotoKeys.length &&
     previousPhotoKeys.every((key) => keys.includes(key));
-  const addedKeys = isPhotoAppend
-    ? keys.filter((key) => !previousKeys.has(key))
-    : (!previousKeyList.length && props.animateInitial ? keys : []);
+  const isInitialBatch = !previousKeyList.length;
+  const addedKeys = scrollRevealEnabled.value
+    ? (isPhotoAppend
+      ? keys.filter((key) => !previousKeys.has(key))
+      : (isInitialBatch && shouldAnimateInitial.value ? keys : []))
+    : [];
+  clearRevealQueue();
   pendingEnterKeys.value = addedKeys.length ? new Set(addedKeys) : new Set();
   await applyColumns({ animateLayout: false });
+  if (runId !== itemsChangeRunId) return;
+  if (isInitialBatch && addedKeys.length) settleInitiallyVisibleCards(addedKeys);
   if (addedKeys.length) await observePendingEnterCards(addedKeys);
 };
 
@@ -374,28 +506,49 @@ const observeWall = async () => {
   if (!wallRef.value) return;
   resizeObserver?.disconnect();
   if (typeof ResizeObserver !== 'undefined') {
-    resizeObserver = new ResizeObserver(() => requestColumnUpdate(true));
+    resizeObserver = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect?.width || wallRef.value?.clientWidth || 0;
+      if (Math.abs(width - observedWallWidth) < 2) return;
+      observedWallWidth = width;
+      requestColumnUpdate(true);
+    });
+    observedWallWidth = wallRef.value.clientWidth || 0;
     resizeObserver.observe(wallRef.value);
   } else if (!resizeListening) {
     window.addEventListener('resize', onWindowResize);
     resizeListening = true;
   }
   await updateColumns(false);
+  await observeCurrentPendingCards({ settleVisible: true });
 };
 
 watch(() => wallItems.value.map((item) => item.key).join('|'), handleItemsChange, { immediate: true, flush: 'post' });
 watch(wallRef, observeWall, { flush: 'post' });
-watch(() => [props.loading, props.variant], () => requestColumnUpdate(false), { flush: 'post' });
+watch(
+  () => props.loading,
+  async (loading) => {
+    requestColumnUpdate(false);
+    if (!loading) {
+      await nextTick();
+      await observeCurrentPendingCards({ settleVisible: true });
+    }
+  },
+  { flush: 'post' }
+);
+watch(() => props.variant, () => requestColumnUpdate(false), { flush: 'post' });
 watch(() => settings.settings.waterfallColumns, () => requestColumnUpdate(true));
 watch(() => settings.settings.waterfallFullBleed, () => requestColumnUpdate(true));
 
-onMounted(observeWall);
+onMounted(() => {
+  observeWall();
+});
 
 onBeforeUnmount(() => {
   resizeObserver?.disconnect();
   enterObserver?.disconnect();
   if (resizeTimer) window.clearTimeout(resizeTimer);
   if (resizeListening) window.removeEventListener('resize', onWindowResize);
+  clearRevealQueue();
   flipTween?.kill();
 });
 </script>
@@ -449,9 +602,13 @@ onBeforeUnmount(() => {
 }
 
 .waterfall-item-enter-pending {
-  visibility: hidden;
-  transform: translate3d(0, var(--waterfall-card-enter-y, 36px), 0) scale(0.992);
-  will-change: transform;
+  will-change: auto;
+}
+
+.waterfall-item-enter-pending > :is(.photo-card, .wall-album-card) {
+  opacity: 0.96;
+  transform: translate3d(0, var(--waterfall-card-enter-y), 0);
+  will-change: transform, opacity;
 }
 
 @media (max-width: 760px) {
@@ -475,7 +632,6 @@ onBeforeUnmount(() => {
 
 @media (prefers-reduced-motion: reduce) {
   .waterfall-item-enter-pending {
-    visibility: visible;
     transform: none;
   }
 }

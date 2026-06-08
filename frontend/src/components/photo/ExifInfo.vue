@@ -29,14 +29,14 @@ const rows = computed(() => exifRows(props.photo));
 
 .exif-item {
   padding: 12px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--theme-line);
   border-radius: var(--radius);
-  background: var(--surface-glass);
+  background: var(--theme-surface-glass);
 }
 
 .exif-item span {
   display: block;
-  color: var(--muted-strong);
+  color: var(--theme-muted-strong);
   font-size: 12px;
   margin-bottom: 6px;
 }

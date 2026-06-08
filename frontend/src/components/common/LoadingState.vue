@@ -7,8 +7,8 @@
 <style scoped>
 .state-box {
   padding: 28px;
-  background: var(--surface-glass);
+  background: var(--theme-surface-glass);
   border-radius: var(--radius);
-  border: 1px solid var(--line);
+  border: 1px solid var(--theme-line);
 }
 </style>

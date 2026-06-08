@@ -1,0 +1,33 @@
+{
+  "type": "photo-memory-theme",
+  "version": 1,
+  "app": "Photo Memory",
+  "name": "绿意",
+  "editorMode": "simple",
+  "colors": {
+    "primary": "#84ae64",
+    "accent": "#9ac47a",
+    "pageBg": "#f6fbef",
+    "surface": "#ffffff",
+    "surfaceSoft": "#edf7e5",
+    "surfaceOverlay": "#fbfff6",
+    "text": "#1c2a18",
+    "textSoft": "#34462d",
+    "muted": "#637454",
+    "line": "#c5d9b6",
+    "buttonBg": "#eef7e6",
+    "buttonText": "#1f311b",
+    "buttonHoverBg": "#dcffbb",
+    "tagBg": "#afdb8f",
+    "tagText": "#22391b",
+    "mapControlBg": "#fbfff6",
+    "mapControlText": "#1c2a18",
+    "mapPopupBg": "#f7fff0",
+    "mapPopupText": "#1c2a18",
+    "dockActiveBg": "#55783d",
+    "dockActiveText": "#ffffff",
+    "imageOverlayBg": "#1f331a",
+    "imageOverlayText": "#dcffbb"
+  },
+  "exportedAt": "2026-06-07T00:00:00.000Z"
+}

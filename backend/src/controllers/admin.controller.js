@@ -460,7 +460,87 @@ const sanitizeWaterfallLoadCss = (value = '') => {
   return safeRules.slice(0, 6).join('; ');
 };
 
+const themeColorKeys = new Set([
+  'primary',
+  'accent',
+  'pageBg',
+  'surface',
+  'surfaceSoft',
+  'surfaceOverlay',
+  'text',
+  'textSoft',
+  'muted',
+  'line',
+  'buttonBg',
+  'buttonText',
+  'buttonHoverBg',
+  'tagBg',
+  'tagText',
+  'mapControlBg',
+  'mapControlText',
+  'mapPopupBg',
+  'mapPopupText',
+  'dockActiveBg',
+  'dockActiveText',
+  'imageOverlayBg',
+  'imageOverlayText'
+]);
+const colorPattern = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
+
+const normalizeHexColor = (value) => {
+  const color = String(value || '').trim();
+  if (!colorPattern.test(color)) return '';
+  if (color.length === 4) {
+    return `#${color[1]}${color[1]}${color[2]}${color[2]}${color[3]}${color[3]}`.toLowerCase();
+  }
+  return color.toLowerCase();
+};
+
+const sanitizeThemeColors = (value) => {
+  let parsed = value;
+  if (typeof value === 'string') {
+    try {
+      parsed = JSON.parse(value || '{}');
+    } catch {
+      parsed = {};
+    }
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+  return Object.fromEntries(
+    Object.entries(parsed)
+      .filter(([key]) => themeColorKeys.has(key))
+      .map(([key, color]) => [key, normalizeHexColor(color)])
+      .filter(([, color]) => color)
+  );
+};
+
+const sanitizeSavedThemes = (value) => {
+  let parsed = value;
+  if (typeof value === 'string') {
+    try {
+      parsed = JSON.parse(value || '[]');
+    } catch {
+      parsed = [];
+    }
+  }
+  if (!Array.isArray(parsed)) return [];
+  return parsed.slice(0, 16).map((theme, index) => {
+    const name = String(theme?.name || `主题 ${index + 1}`).replace(/[<>]/g, '').trim().slice(0, 32);
+    return {
+      id: String(theme?.id || Date.now() + index).replace(/[^a-z0-9_-]/gi, '').slice(0, 40) || String(index + 1),
+      name: name || `主题 ${index + 1}`,
+      colors: sanitizeThemeColors(theme?.colors || {}),
+      savedAt: String(theme?.savedAt || '').replace(/[<>]/g, '').slice(0, 32)
+    };
+  }).filter((theme) => Object.keys(theme.colors).length);
+};
+
 const defaultAdminSettings = [
+  { key: 'themeCustomEnabled', value: 'false', description: '自定义主题开关' },
+  { key: 'themeCustomName', value: '', description: '自定义主题名称' },
+  { key: 'themeCustomEditorMode', value: 'simple', description: '自定义主题编辑模式' },
+  { key: 'themeCustomColors', value: '{}', description: '自定义主题颜色' },
+  { key: 'savedThemes', value: '[]', description: '已保存主题方案' },
   { key: 'themeMode', value: 'light', description: '站点主题模式' },
   { key: 'waterfallFullBleed', value: 'false', description: '瀑布流铺满左右空隙' },
   { key: 'waterfallLoadAnimation', value: 'blur', description: '瀑布流图片加载动画' },
@@ -475,6 +555,11 @@ const defaultAdminSettings = [
 const normalizeAdminSettingValue = (key, value) => {
   if (key === 'trustProxyHops') return normalizeTrustProxyHops(value);
   if (key === 'themeMode') return ['light', 'dark', 'auto'].includes(value) ? value : 'light';
+  if (key === 'themeCustomEnabled') return value === true || value === 'true' ? 'true' : 'false';
+  if (key === 'themeCustomName') return String(value || '').replace(/[<>]/g, '').trim().slice(0, 32);
+  if (key === 'themeCustomEditorMode') return ['simple', 'advanced'].includes(value) ? value : 'simple';
+  if (key === 'themeCustomColors') return JSON.stringify(sanitizeThemeColors(value));
+  if (key === 'savedThemes') return JSON.stringify(sanitizeSavedThemes(value));
   if (key === 'waterfallFullBleed') return value === true || value === 'true' ? 'true' : 'false';
   if (key === 'waterfallLoadAnimation') {
     return ['none', 'blur', 'custom'].includes(value) ? value : 'blur';

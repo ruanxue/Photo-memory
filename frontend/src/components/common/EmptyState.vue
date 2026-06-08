@@ -17,15 +17,15 @@ defineProps({
 .empty-state {
   text-align: center;
   padding: 42px 20px;
-  background: var(--surface-glass);
-  border: 1px dashed var(--line);
+  background: var(--theme-surface-glass);
+  border: 1px dashed var(--theme-line);
   border-radius: var(--radius);
-  color: var(--muted-strong);
+  color: var(--theme-muted-strong);
 }
 
 .empty-state strong {
   display: block;
-  color: var(--text);
+  color: var(--theme-text);
   font-size: 18px;
   margin-bottom: 8px;
 }

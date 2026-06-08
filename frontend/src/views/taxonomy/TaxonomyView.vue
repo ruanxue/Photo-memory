@@ -108,10 +108,10 @@ watch(() => route.params.id, loadPhotos);
   gap: 7px;
   min-height: 38px;
   padding: 8px 12px;
-  border: 1px solid var(--tag-border);
+  border: 1px solid var(--theme-tag-border);
   border-radius: 999px;
-  color: var(--primary-strong);
-  background: var(--tag-bg);
+  color: var(--theme-primary-strong);
+  background: var(--theme-tag-bg);
 }
 
 .tag-item span {
@@ -120,16 +120,16 @@ watch(() => route.params.id, loadPhotos);
   display: grid;
   place-items: center;
   border-radius: 50%;
-  color: var(--primary-text);
-  background: var(--primary-strong);
+  color: var(--theme-primary-text);
+  background: var(--theme-primary-strong);
   font-size: 12px;
   font-weight: 900;
 }
 
 .tag-item.active,
 .tag-item:hover {
-  border-color: var(--primary-strong);
-  background: var(--primary-soft);
+  border-color: var(--theme-primary-strong);
+  background: var(--theme-primary-soft);
 }
 
 .nested {
@@ -138,6 +138,6 @@ watch(() => route.params.id, loadPhotos);
 
 .select-tip {
   padding: 24px;
-  color: var(--muted-strong);
+  color: var(--theme-muted-strong);
 }
 </style>

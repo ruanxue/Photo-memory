@@ -7,6 +7,7 @@
       :aria-label="`预览相册 ${album.title}`"
       :style="imageFrameStyle"
       @click="$emit('preview', album)"
+      @dragstart.prevent
     >
       <img
         ref="imageRef"
@@ -15,6 +16,8 @@
         :width="coverPhoto?.width || undefined"
         :height="coverPhoto?.height || undefined"
         loading="lazy"
+        draggable="false"
+        @dragstart.prevent
         @load="markImageLoaded"
         @error="markImageLoaded"
       />
@@ -98,15 +101,15 @@ onMounted(checkCachedImage);
   display: block;
   width: 100%;
   overflow: hidden;
-  border: 1px solid var(--line-faint);
+  border: 1px solid var(--theme-line-faint);
   border-radius: 4px;
-  background: var(--wall-card-bg);
+  background: var(--theme-wall-card-bg);
   transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .wall-album-card:hover {
-  border-color: var(--button-hover-border);
-  box-shadow: var(--shadow);
+  border-color: var(--theme-button-hover-border);
+  box-shadow: var(--theme-shadow);
 }
 
 .album-image {
@@ -119,7 +122,7 @@ onMounted(checkCachedImage);
   border: 0;
   border-radius: 4px 4px 0 0;
   background: transparent;
-  cursor: zoom-in;
+  cursor: pointer;
 }
 
 .album-image::before {
@@ -129,8 +132,8 @@ onMounted(checkCachedImage);
   z-index: 0;
   border-radius: 4px 4px 0 0;
   background:
-    linear-gradient(110deg, transparent 0%, rgba(255, 255, 255, 0.08) 44%, transparent 74%),
-    rgba(255, 255, 255, 0.045);
+    linear-gradient(110deg, transparent 0%, var(--theme-image-skeleton-sheen) 44%, transparent 74%),
+    var(--theme-image-skeleton-base);
   background-size: 220% 100%;
   opacity: 1;
   pointer-events: none;
@@ -150,13 +153,13 @@ onMounted(checkCachedImage);
   inset: 0;
   z-index: 1;
   border-radius: 4px 4px 0 0;
-  background: rgba(0, 0, 0, 0.08);
+  background: var(--theme-image-hover-scrim);
   opacity: 0;
   pointer-events: none;
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
-    inset 0 20px 44px rgba(0, 0, 0, 0.38),
-    inset 0 -24px 64px rgba(0, 0, 0, 0.68);
+    inset 0 0 0 1px var(--theme-image-hover-ring),
+    inset 0 20px 44px var(--theme-image-hover-top-shadow),
+    inset 0 -24px 64px var(--theme-image-hover-bottom-shadow);
   transition: opacity 0.28s ease;
 }
 
@@ -166,6 +169,8 @@ onMounted(checkCachedImage);
   height: auto;
   object-fit: contain;
   border-radius: 4px 4px 0 0;
+  user-select: none;
+  -webkit-user-drag: none;
   opacity: var(--image-load-opacity, 1);
   filter: var(--image-load-filter, none);
   transform: var(--image-load-transform, none);
@@ -241,10 +246,10 @@ onMounted(checkCachedImage);
   align-items: center;
   gap: 6px;
   padding: 0 11px;
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--theme-image-overlay-border);
   border-radius: 999px;
-  color: #fff;
-  background: rgba(5, 7, 9, 0.42);
+  color: var(--theme-image-overlay-text);
+  background: var(--theme-image-overlay-chip-bg);
   backdrop-filter: blur(10px);
   font-size: 13px;
   transition: opacity 0.22s ease;
@@ -255,11 +260,11 @@ onMounted(checkCachedImage);
   gap: 7px;
   min-height: 104px;
   padding: 10px 10px 12px;
-  background: var(--wall-card-body-bg);
+  background: var(--theme-wall-card-body-bg);
 }
 
 .album-label {
-  color: var(--primary);
+  color: var(--theme-primary);
   font-size: 10px;
   font-weight: 900;
 }
@@ -270,7 +275,7 @@ onMounted(checkCachedImage);
   padding: 0;
   overflow: hidden;
   border: 0;
-  color: var(--wall-card-text);
+  color: var(--theme-wall-card-text);
   background: transparent;
   font: inherit;
   font-size: 15px;
@@ -282,13 +287,13 @@ onMounted(checkCachedImage);
 }
 
 .album-title:hover {
-  color: var(--primary);
+  color: var(--theme-primary);
 }
 
 p {
   margin: 0;
   overflow: hidden;
-  color: var(--wall-card-muted);
+  color: var(--theme-wall-card-muted);
   font-size: 12px;
   line-height: 1.45;
   text-overflow: ellipsis;

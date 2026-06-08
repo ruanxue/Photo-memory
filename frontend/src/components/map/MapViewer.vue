@@ -178,55 +178,55 @@ onBeforeUnmount(() => {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: var(--accent);
-  border: 3px solid var(--map-marker-ring);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3);
+  background: var(--theme-map-marker-fill);
+  border: 3px solid var(--theme-map-marker-ring);
+  box-shadow: var(--theme-map-marker-shadow);
 }
 
 .map-shell .leaflet-tile {
-  filter: var(--map-tile-filter);
+  filter: var(--theme-map-tile-filter);
 }
 
 .map-shell .leaflet-control-zoom,
 .map-shell .leaflet-bar {
-  border: 1px solid var(--map-control-border) !important;
+  border: 1px solid var(--theme-map-control-border) !important;
   background: transparent !important;
-  box-shadow: var(--shadow) !important;
+  box-shadow: var(--theme-shadow) !important;
 }
 
 .map-shell .leaflet-control-zoom a,
 .map-shell .leaflet-control-attribution,
 .map-shell .leaflet-bar a {
-  background: var(--map-control-bg) !important;
-  color: var(--map-control-text) !important;
-  border-color: var(--map-control-border) !important;
+  background: var(--theme-map-control-bg) !important;
+  color: var(--theme-map-control-text) !important;
+  border-color: var(--theme-map-control-border) !important;
 }
 
 .map-shell .leaflet-control-zoom a:hover,
 .map-shell .leaflet-control-zoom a:focus,
 .map-shell .leaflet-bar a:hover,
 .map-shell .leaflet-bar a:focus {
-  background: var(--map-control-hover-bg) !important;
-  color: var(--map-control-hover-text) !important;
+  background: var(--theme-map-control-hover-bg) !important;
+  color: var(--theme-map-control-hover-text) !important;
 }
 
 .map-shell .leaflet-popup-content-wrapper,
 .map-shell .leaflet-popup-tip {
-  background: var(--map-popup-bg) !important;
-  color: var(--map-popup-text) !important;
-  border: 1px solid var(--map-popup-border) !important;
-  box-shadow: var(--map-popup-shadow) !important;
+  background: var(--theme-map-popup-bg) !important;
+  color: var(--theme-map-popup-text) !important;
+  border: 1px solid var(--theme-map-popup-border) !important;
+  box-shadow: var(--theme-map-popup-shadow) !important;
 }
 
 .map-shell .leaflet-popup-content {
-  color: var(--map-popup-text) !important;
+  color: var(--theme-map-popup-text) !important;
 }
 
 .map-shell .leaflet-container a.map-popup,
 .map-shell .map-popup {
   display: grid;
   gap: 6px;
-  color: var(--map-popup-text) !important;
+  color: var(--theme-map-popup-text) !important;
   min-width: 160px;
 }
 
@@ -238,11 +238,11 @@ onBeforeUnmount(() => {
 }
 
 .map-shell .map-popup strong {
-  color: var(--map-popup-text);
+  color: var(--theme-map-popup-text);
 }
 
 .map-shell .map-popup span {
-  color: var(--map-popup-muted);
+  color: var(--theme-map-popup-muted);
   font-size: 12px;
 }
 </style>
@@ -252,10 +252,10 @@ onBeforeUnmount(() => {
   position: relative;
   width: 100%;
   min-height: 260px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--theme-line);
   border-radius: var(--radius);
   overflow: hidden;
-  background: var(--surface-soft);
+  background: var(--theme-surface-soft);
 }
 
 .map-canvas {
@@ -273,11 +273,11 @@ onBeforeUnmount(() => {
   display: grid;
   gap: 4px;
   padding: 12px 14px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--theme-line);
   border-radius: 8px;
-  color: var(--text);
-  background: var(--surface-glass);
-  box-shadow: var(--shadow);
+  color: var(--theme-text);
+  background: var(--theme-surface-glass);
+  box-shadow: var(--theme-shadow);
   backdrop-filter: blur(12px);
 }
 
@@ -286,7 +286,7 @@ onBeforeUnmount(() => {
 }
 
 .map-hint span {
-  color: var(--muted-strong);
+  color: var(--theme-muted-strong);
   font-size: 12px;
   line-height: 1.6;
 }

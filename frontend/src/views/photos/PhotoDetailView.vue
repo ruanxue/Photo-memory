@@ -244,20 +244,20 @@ watch(() => route.params.id, load);
   gap: 8px;
   min-height: 42px;
   padding: 0 14px;
-  border: 1px solid var(--dock-border);
+  border: 1px solid var(--theme-dock-border);
   border-radius: 999px;
-  color: var(--dock-text);
-  background: var(--dock-bg);
-  box-shadow: var(--shadow);
+  color: var(--theme-dock-text);
+  background: var(--theme-dock-bg);
+  box-shadow: var(--theme-shadow);
   backdrop-filter: blur(16px);
   cursor: pointer;
   transition: transform 0.22s ease, color 0.22s ease, background 0.22s ease, border-color 0.22s ease;
 }
 
 .detail-back:hover {
-  color: var(--dock-active-text);
-  border-color: var(--dock-active-bg);
-  background: var(--dock-active-bg);
+  color: var(--theme-dock-active-text);
+  border-color: var(--theme-dock-active-bg);
+  background: var(--theme-dock-active-bg);
   transform: translateY(-2px);
 }
 
@@ -320,7 +320,7 @@ h2 {
 }
 
 .detail-title p {
-  color: var(--muted-strong);
+  color: var(--theme-muted-strong);
   line-height: 1.8;
 }
 
@@ -336,7 +336,7 @@ h2 {
   flex-wrap: wrap;
   gap: 12px 22px;
   padding: 14px;
-  color: var(--muted-strong);
+  color: var(--theme-muted-strong);
 }
 
 .story-links {
@@ -351,10 +351,10 @@ h2 {
   align-items: center;
   min-height: 28px;
   padding: 4px 8px;
-  border: 1px solid var(--tag-border);
+  border: 1px solid var(--theme-tag-border);
   border-radius: 999px;
-  color: var(--primary-strong);
-  background: var(--tag-bg);
+  color: var(--theme-primary-strong);
+  background: var(--theme-tag-bg);
   font-size: 13px;
 }
 
@@ -380,16 +380,16 @@ h2 {
 
 .comment-disabled {
   padding: 18px;
-  color: var(--muted-strong);
+  color: var(--theme-muted-strong);
 }
 
 .comment-list article {
   padding: 14px 0;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--theme-line);
 }
 
 .comment-list span {
-  color: var(--muted-strong);
+  color: var(--theme-muted-strong);
   margin-left: 10px;
   font-size: 13px;
 }
@@ -423,7 +423,7 @@ h2 {
 
 .location-panel small,
 .no-location {
-  color: var(--muted-strong);
+  color: var(--theme-muted-strong);
   margin: 0;
 }
 

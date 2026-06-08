@@ -74,7 +74,8 @@ const lightboxVisible = ref(false);
 const lightboxIndex = ref(0);
 const lightboxPhotos = ref([]);
 const page = ref(1);
-const pageSize = ref(Number(settings.settings.pageSize || 24));
+const WALL_PAGE_SIZE = 100;
+const pageSize = ref(WALL_PAGE_SIZE);
 const totalPhotos = ref(0);
 const wallMode = ref('latest');
 let wallObserver = null;
@@ -162,15 +163,15 @@ const load = async () => {
   loading.value = true;
   try {
     page.value = 1;
-    pageSize.value = Number(settings.settings.pageSize || pageSize.value || 24);
+    pageSize.value = WALL_PAGE_SIZE;
     const heroIds = configuredHeroIds.value;
     const heroRequest = heroIds.length
-      ? photoApi.list({ ids: heroIds.join(','), pageSize: Math.min(heroIds.length, 60) })
+      ? photoApi.list({ ids: heroIds.join(','), pageSize: Math.min(heroIds.length, WALL_PAGE_SIZE) })
       : Promise.resolve({ data: [] });
     const [featuredRes, latestRes, albumRes, tagRes, cityRes, heroRes] = await Promise.all([
-      photoApi.list({ featured: true, page: 1, pageSize: pageSize.value, sort: 'latest' }),
-      photoApi.list({ page: 1, pageSize: pageSize.value, sort: settings.settings.defaultSort || 'latest' }),
-      albumApi.list({ pageSize: 12 }),
+      photoApi.list({ featured: true, page: 1, pageSize: WALL_PAGE_SIZE, sort: 'latest' }),
+      photoApi.list({ page: 1, pageSize: WALL_PAGE_SIZE, sort: settings.settings.defaultSort || 'latest' }),
+      albumApi.list({ pageSize: WALL_PAGE_SIZE }),
       tagApi.list(),
       request.get('/map/cities'),
       heroRequest
@@ -225,8 +226,8 @@ onBeforeUnmount(() => {
 
 .hero-shade {
   min-height: 100vh;
-  color: var(--hero-text);
-  background: var(--hero-shade-bg);
+  color: var(--theme-hero-text);
+  background: var(--theme-hero-shade-bg);
 }
 
 .hero-frame {
@@ -250,7 +251,7 @@ onBeforeUnmount(() => {
 
 .kicker {
   margin: 0 0 12px;
-  color: var(--hero-kicker);
+  color: var(--theme-hero-kicker);
   font-weight: 800;
 }
 
@@ -264,7 +265,7 @@ h1 {
 .intro {
   max-width: 620px;
   margin: 20px 0 0;
-  color: var(--hero-muted);
+  color: var(--theme-hero-muted);
   font-size: clamp(14px, 1.25vw, 17px);
   line-height: 1.85;
 }
@@ -294,7 +295,7 @@ h1 {
 }
 
 .hero-stats span {
-  color: var(--hero-subtle);
+  color: var(--theme-hero-subtle);
   font-size: 12px;
 }
 
@@ -303,19 +304,19 @@ h1 {
   height: 44px;
   display: grid;
   place-items: center;
-  border: 1px solid var(--hero-control-border);
+  border: 1px solid var(--theme-hero-control-border);
   border-radius: 50%;
-  color: var(--hero-control-text);
-  background: var(--hero-control-bg);
+  color: var(--theme-hero-control-text);
+  background: var(--theme-hero-control-bg);
   backdrop-filter: blur(16px);
   cursor: pointer;
   transition: transform 0.22s ease, border-color 0.22s ease, background 0.22s ease, color 0.22s ease;
 }
 
 .hero-refresh:hover {
-  color: var(--dock-active-text);
-  border-color: var(--dock-active-bg);
-  background: var(--dock-active-bg);
+  color: var(--theme-dock-active-text);
+  border-color: var(--theme-dock-active-bg);
+  background: var(--theme-dock-active-bg);
   transform: translateY(-2px);
 }
 
@@ -328,10 +329,10 @@ h1 {
   height: 46px;
   display: grid;
   place-items: center;
-  border: 1px solid var(--hero-control-border);
+  border: 1px solid var(--theme-hero-control-border);
   border-radius: 50%;
-  color: var(--hero-control-text);
-  background: var(--hero-control-bg);
+  color: var(--theme-hero-control-text);
+  background: var(--theme-hero-control-bg);
   backdrop-filter: blur(16px);
   cursor: pointer;
   transform: translateX(-50%);
@@ -339,9 +340,9 @@ h1 {
 }
 
 .hero-scroll:hover {
-  color: var(--dock-active-text);
-  border-color: var(--dock-active-bg);
-  background: var(--dock-active-bg);
+  color: var(--theme-dock-active-text);
+  border-color: var(--theme-dock-active-bg);
+  background: var(--theme-dock-active-bg);
   transform: translateX(-50%) translateY(-2px);
 }
 
@@ -349,7 +350,7 @@ h1 {
   width: 100%;
   min-height: 100vh;
   padding: 0 0 92px;
-  background: var(--wall-page-bg);
+  background: var(--theme-wall-page-bg);
 }
 
 .home-load-sentinel {

@@ -40,13 +40,13 @@ defineProps({
 }
 
 .month-block {
-  border-left: 2px solid var(--line);
+  border-left: 2px solid var(--theme-line);
   padding-left: 22px;
   margin-left: 18px;
 }
 
 .month-block h3 {
-  color: var(--muted-strong);
+  color: var(--theme-muted-strong);
 }
 
 .day-card {
@@ -54,7 +54,7 @@ defineProps({
   grid-template-columns: 54px 1fr 260px;
   gap: 16px;
   padding: 16px 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--theme-line);
   transition: border-color 0.22s ease;
 }
 
@@ -62,10 +62,10 @@ defineProps({
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  background: var(--primary-soft);
-  color: var(--primary-strong);
-  border: 1px solid var(--tag-border);
-  box-shadow: 0 10px 26px color-mix(in srgb, var(--primary) 18%, transparent);
+  background: var(--theme-primary-soft);
+  color: var(--theme-primary-strong);
+  border: 1px solid var(--theme-tag-border);
+  box-shadow: 0 10px 26px color-mix(in srgb, var(--theme-primary) 18%, transparent);
   display: grid;
   place-items: center;
   font-weight: 800;
@@ -77,14 +77,14 @@ defineProps({
 }
 
 .day-card:hover {
-  border-color: var(--button-hover-border);
+  border-color: var(--theme-button-hover-border);
 }
 
 .day-card:hover .day {
-  background: var(--control-selected-bg);
-  border-color: var(--control-selected-border);
-  color: var(--control-selected-text);
-  box-shadow: 0 14px 32px color-mix(in srgb, var(--primary) 26%, transparent);
+  background: var(--theme-control-selected-bg);
+  border-color: var(--theme-control-selected-border);
+  color: var(--theme-control-selected-text);
+  box-shadow: 0 14px 32px color-mix(in srgb, var(--theme-primary) 26%, transparent);
 }
 
 h4 {
@@ -93,11 +93,11 @@ h4 {
 
 p {
   margin: 0 0 8px;
-  color: var(--muted-strong);
+  color: var(--theme-muted-strong);
 }
 
 a {
-  color: var(--primary-strong);
+  color: var(--theme-primary-strong);
   font-weight: 600;
 }
 

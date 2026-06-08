@@ -89,7 +89,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
   position: fixed;
   inset: 0;
   z-index: 1050;
-  background: var(--overlay-bg);
+  background: var(--theme-overlay-bg);
   backdrop-filter: blur(3px);
 }
 
@@ -101,11 +101,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
   left: 0;
   height: 90dvh;
   overflow: hidden;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--theme-line);
   border-radius: 10px 10px 0 0;
-  color: var(--text);
-  background: var(--surface-overlay);
-  box-shadow: var(--shadow);
+  color: var(--theme-text);
+  background: var(--theme-surface-overlay);
+  box-shadow: var(--theme-shadow);
 }
 
 .sheet-header {
@@ -117,8 +117,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
   align-items: center;
   gap: 18px;
   padding: 20px clamp(18px, 4vw, 44px);
-  border-bottom: 1px solid var(--line);
-  background: color-mix(in srgb, var(--surface-overlay) 94%, transparent);
+  border-bottom: 1px solid var(--theme-line);
+  background: color-mix(in srgb, var(--theme-surface-overlay) 94%, transparent);
   backdrop-filter: blur(18px);
 }
 
@@ -129,13 +129,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
   width: 42px;
   height: 4px;
   border-radius: 99px;
-  background: var(--line);
+  background: var(--theme-line);
   transform: translateX(-50%);
 }
 
 .eyebrow {
   margin: 0 0 5px;
-  color: var(--primary);
+  color: var(--theme-primary);
   font-size: 10px;
   font-weight: 900;
 }
@@ -147,7 +147,7 @@ h2 {
 
 .count {
   margin-left: auto;
-  color: var(--muted-strong);
+  color: var(--theme-muted-strong);
   font-size: 13px;
 }
 
@@ -156,10 +156,10 @@ h2 {
   height: 42px;
   display: grid;
   place-items: center;
-  border: 1px solid var(--line);
+  border: 1px solid var(--theme-line);
   border-radius: 50%;
-  color: var(--text);
-  background: var(--button-bg);
+  color: var(--theme-text);
+  background: var(--theme-button-bg);
   cursor: pointer;
 }
 
@@ -187,13 +187,13 @@ h2 {
 .album-intro p {
   max-width: 720px;
   margin: 0 0 13px;
-  color: var(--text-soft);
+  color: var(--theme-text-soft);
   font-size: 15px;
   line-height: 1.85;
 }
 
 .album-intro span {
-  color: var(--muted-strong);
+  color: var(--theme-muted-strong);
   font-size: 13px;
 }
 
@@ -221,12 +221,12 @@ figcaption {
   justify-content: space-between;
   gap: 14px;
   margin-top: 10px;
-  color: var(--muted-strong);
+  color: var(--theme-muted-strong);
   font-size: 13px;
 }
 
 figcaption strong {
-  color: var(--text);
+  color: var(--theme-text);
 }
 
 .album-sheet-enter-active,

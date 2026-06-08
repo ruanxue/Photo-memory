@@ -37,7 +37,7 @@ article {
 }
 
 p {
-  color: var(--muted-strong);
+  color: var(--theme-muted-strong);
   line-height: 1.8;
 }
 </style>

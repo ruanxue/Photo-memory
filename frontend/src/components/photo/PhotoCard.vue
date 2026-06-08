@@ -1,7 +1,7 @@
 <template>
   <article class="photo-card" :class="{ 'photo-card-wall': variant === 'wall' }" :data-photo-id="photo.id">
     <div class="image-frame" :class="imageFrameClass" :style="imageFrameStyle">
-      <button class="image-button" type="button" @click="$emit('preview', photo)">
+      <button class="image-button" type="button" @click="$emit('preview', photo)" @dragstart.prevent>
         <img
           ref="imageRef"
           :src="cardImageUrl"
@@ -9,6 +9,8 @@
           :width="photo.width || undefined"
           :height="photo.height || undefined"
           loading="lazy"
+          draggable="false"
+          @dragstart.prevent
           @load="markImageLoaded"
           @error="markImageLoaded"
         />
@@ -150,16 +152,16 @@ onMounted(checkCachedImage);
   margin: 0 0 14px;
   overflow: hidden;
   break-inside: avoid;
-  border: 1px solid var(--line);
+  border: 1px solid var(--theme-line);
   border-radius: var(--radius);
-  background: var(--surface-glass, var(--surface));
+  background: var(--theme-surface-glass, var(--theme-surface));
   transform-origin: center;
   transition: box-shadow 0.24s ease, border-color 0.24s ease;
 }
 
 .photo-card:hover {
-  border-color: var(--button-hover-border);
-  box-shadow: var(--shadow);
+  border-color: var(--theme-button-hover-border);
+  box-shadow: var(--theme-shadow);
 }
 
 .image-frame,
@@ -191,8 +193,8 @@ onMounted(checkCachedImage);
   inset: 0;
   z-index: 0;
   background:
-    linear-gradient(110deg, transparent 0%, rgba(255, 255, 255, 0.08) 44%, transparent 74%),
-    rgba(255, 255, 255, 0.045);
+    linear-gradient(110deg, transparent 0%, var(--theme-image-skeleton-sheen) 44%, transparent 74%),
+    var(--theme-image-skeleton-base);
   background-size: 220% 100%;
   opacity: 1;
   pointer-events: none;
@@ -214,7 +216,7 @@ onMounted(checkCachedImage);
   overflow: hidden;
   border: 0;
   background: transparent;
-  cursor: zoom-in;
+  cursor: pointer;
   opacity: var(--image-load-opacity, 1);
   filter: var(--image-load-filter, none);
   transform: var(--image-load-transform, none);
@@ -270,9 +272,9 @@ onMounted(checkCachedImage);
   pointer-events: none;
   opacity: 0;
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
-    inset 0 18px 42px rgba(0, 0, 0, 0.36),
-    inset 0 -22px 58px rgba(0, 0, 0, 0.62);
+    inset 0 0 0 1px var(--theme-image-hover-ring),
+    inset 0 18px 42px var(--theme-image-hover-top-shadow),
+    inset 0 -22px 58px var(--theme-image-hover-bottom-shadow);
   transition: opacity 0.28s ease;
 }
 
@@ -281,6 +283,8 @@ onMounted(checkCachedImage);
   width: 100%;
   height: auto;
   object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
   transform: scale(1);
   transition: transform 0.32s ease, filter 0.32s ease;
   will-change: transform;
@@ -332,13 +336,13 @@ onMounted(checkCachedImage);
   align-items: center;
   gap: clamp(3px, 2cqw, 5px);
   min-height: var(--overlay-control-size);
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--theme-image-overlay-border);
   border-radius: 999px;
-  color: var(--image-overlay-text);
-  background: var(--image-overlay-bg);
+  color: var(--theme-image-overlay-text);
+  background: var(--theme-image-overlay-bg);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    0 5px 18px rgba(0, 0, 0, 0.22);
+    inset 0 1px 0 var(--theme-image-hover-ring),
+    var(--theme-image-overlay-shadow);
   opacity: 0.66;
   transform: none;
   font-size: var(--overlay-font-size);
@@ -367,13 +371,13 @@ onMounted(checkCachedImage);
   height: var(--overlay-control-size);
   display: grid;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.86);
+  border: 1px solid var(--theme-image-overlay-border-strong);
   border-radius: 50%;
-  color: var(--image-overlay-text);
-  background: var(--image-overlay-bg);
+  color: var(--theme-image-overlay-text);
+  background: var(--theme-image-overlay-bg);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    0 5px 18px rgba(0, 0, 0, 0.2);
+    inset 0 1px 0 var(--theme-image-hover-ring),
+    var(--theme-image-overlay-shadow);
 }
 
 .status-icon :deep(svg) {
@@ -383,7 +387,7 @@ onMounted(checkCachedImage);
 }
 
 .pinned-icon {
-  color: var(--image-overlay-text);
+  color: var(--theme-image-overlay-text);
 }
 
 .overlay-tags {
@@ -417,13 +421,13 @@ onMounted(checkCachedImage);
   max-width: 100%;
   overflow: hidden;
   padding: var(--overlay-tag-pad-y) var(--overlay-tag-pad-x);
-  border: 1px solid var(--image-overlay-border);
+  border: 1px solid var(--theme-image-overlay-border);
   border-radius: 999px;
-  color: var(--image-overlay-text);
-  background: var(--image-overlay-bg);
+  color: var(--theme-image-overlay-text);
+  background: var(--theme-image-overlay-bg);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 5px 16px rgba(0, 0, 0, 0.2);
+    inset 0 1px 0 var(--theme-image-hover-ring),
+    var(--theme-image-overlay-shadow);
   font-size: var(--overlay-tag-font-size);
   line-height: 1.35;
   text-overflow: ellipsis;
@@ -432,9 +436,9 @@ onMounted(checkCachedImage);
 }
 
 .overlay-tags a:hover {
-  border-color: var(--image-overlay-border-strong);
-  color: #fff;
-  background: var(--image-overlay-bg-strong);
+  border-color: var(--theme-image-overlay-border-strong);
+  color: var(--theme-lightbox-text);
+  background: var(--theme-image-overlay-bg-strong);
 }
 
 .exif-trigger {
@@ -455,7 +459,7 @@ onMounted(checkCachedImage);
 }
 
 .image-frame :is(a, button, img) {
-  cursor: zoom-in;
+  cursor: pointer;
 }
 
 .capture-overlay {
@@ -470,7 +474,7 @@ onMounted(checkCachedImage);
   flex-direction: column-reverse;
   align-items: flex-start;
   gap: clamp(3px, 1.8cqw, 4px);
-  color: rgba(255, 255, 255, 0.86);
+  color: var(--theme-image-overlay-muted);
   font-size: var(--overlay-font-size);
   line-height: 1.45;
   opacity: 0;
@@ -486,7 +490,7 @@ onMounted(checkCachedImage);
   overflow: hidden;
   padding: clamp(2px, 1.4cqw, 3px) clamp(5px, 3cqw, 7px);
   border-radius: 4px;
-  background: rgba(5, 7, 9, 0.42);
+  background: var(--theme-image-overlay-chip-bg);
   line-height: 1.2;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -502,7 +506,7 @@ onMounted(checkCachedImage);
 .capture-overlay.detailed span {
   max-width: min(100%, 240px);
   padding: clamp(1px, 1cqw, 2px) clamp(5px, 2.4cqw, 7px);
-  background: rgba(5, 7, 9, 0.62);
+  background: var(--theme-image-overlay-chip-bg-strong);
   opacity: 0;
   transform: translateY(6px);
   animation: exifLineIn 0.34s cubic-bezier(0.2, 0.72, 0.22, 1) both;
@@ -560,7 +564,7 @@ onMounted(checkCachedImage);
   padding: 0;
   overflow: hidden;
   border: 0;
-  color: var(--text);
+  color: var(--theme-text);
   background: transparent;
   font: inherit;
   font-weight: 800;
@@ -572,7 +576,7 @@ onMounted(checkCachedImage);
 }
 
 .title:hover {
-  color: var(--primary);
+  color: var(--theme-primary);
 }
 
 .card-footer {
@@ -580,23 +584,23 @@ onMounted(checkCachedImage);
   justify-content: space-between;
   align-items: center;
   gap: 10px;
-  color: var(--muted-strong);
+  color: var(--theme-muted-strong);
   font-size: 12px;
 }
 
 .card-footer span {
-  color: var(--muted);
+  color: var(--theme-muted);
 }
 
 .photo-card-wall {
   margin-bottom: clamp(5px, 0.45vw, 9px);
-  border: 1px solid var(--line-faint);
+  border: 1px solid var(--theme-line-faint);
   border-radius: 4px;
-  background: var(--wall-card-bg);
+  background: var(--theme-wall-card-bg);
 }
 
 .photo-card-wall:hover {
-  box-shadow: var(--shadow);
+  box-shadow: var(--theme-shadow);
 }
 
 .photo-card-wall .image-button img {
@@ -611,26 +615,26 @@ onMounted(checkCachedImage);
   position: static;
   min-height: 62px;
   padding: 10px 10px 12px;
-  color: var(--wall-card-text);
-  background: var(--wall-card-body-bg);
+  color: var(--theme-wall-card-text);
+  background: var(--theme-wall-card-body-bg);
 }
 
 .photo-card-wall .title {
   margin-bottom: 7px;
-  color: var(--wall-card-text);
+  color: var(--theme-wall-card-text);
 }
 
 .photo-card-wall .title:hover {
-  color: var(--primary);
+  color: var(--theme-primary);
 }
 
 .photo-card-wall .card-footer {
-  color: var(--wall-card-muted);
+  color: var(--theme-wall-card-muted);
   font-size: 12px;
 }
 
 .photo-card-wall .card-footer span {
-  color: var(--muted);
+  color: var(--theme-muted);
 }
 
 @container (max-width: 190px) {

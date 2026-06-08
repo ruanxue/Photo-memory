@@ -396,7 +396,7 @@ onBeforeUnmount(() => {
 .lightbox-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.94);
+  background: var(--theme-lightbox-bg);
   opacity: 0;
   pointer-events: none;
 }
@@ -424,7 +424,7 @@ figure {
   max-height: calc(100dvh - var(--vertical-pad) * 2);
   margin: auto;
   object-fit: contain;
-  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.48);
+  box-shadow: var(--theme-lightbox-shadow);
   cursor: default;
   will-change: transform;
 }
@@ -444,14 +444,14 @@ figcaption {
   display: flex;
   justify-content: space-between;
   gap: 16px;
-  color: rgba(255, 255, 255, 0.84);
+  color: var(--theme-lightbox-muted);
   font-size: 14px;
 }
 
 .caption-title {
   padding: 0;
   border: 0;
-  color: #fff;
+  color: var(--theme-lightbox-text);
   background: transparent;
   font: inherit;
   font-weight: 800;
@@ -459,7 +459,7 @@ figcaption {
 }
 
 .caption-title:hover {
-  color: var(--primary);
+  color: var(--theme-primary);
 }
 
 .arrow {
@@ -470,10 +470,10 @@ figcaption {
   height: 72px;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid var(--theme-lightbox-control-border);
   border-radius: 999px;
-  color: #fff;
-  background: rgba(10, 12, 14, 0.62);
+  color: var(--theme-lightbox-text);
+  background: var(--theme-lightbox-control-bg);
   backdrop-filter: blur(14px);
   cursor: pointer;
   transform: translateY(-50%);
@@ -482,8 +482,8 @@ figcaption {
 }
 
 .arrow:hover {
-  color: var(--primary-text);
-  background: var(--primary);
+  color: var(--theme-primary-text);
+  background: var(--theme-primary);
   transform: translateY(-50%) translateY(-1px);
 }
 

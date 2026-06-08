@@ -1,0 +1,149 @@
+:root {
+  /*
+   * Theme contract
+   * 组件只消费这一层的 --theme-* 变量；新增主题时优先修改 variables.css
+   * 中的色板变量，必要时再扩展这里的接口变量。
+   */
+
+  /* Page / text / surface */
+  --theme-page-bg: var(--page-bg);
+  --theme-page-bg-top: var(--page-bg-top);
+  --theme-page-bg-bottom: var(--page-bg-bottom);
+  --theme-body-radial: var(--body-radial);
+  --theme-surface: var(--surface);
+  --theme-surface-soft: var(--surface-soft);
+  --theme-surface-strong: var(--surface-strong);
+  --theme-surface-overlay: var(--surface-overlay);
+  --theme-surface-glass: var(--surface-glass);
+  --theme-text: var(--text);
+  --theme-text-soft: var(--text-soft);
+  --theme-muted: var(--muted);
+  --theme-muted-strong: var(--muted-strong);
+  --theme-line: var(--line);
+  --theme-line-soft: var(--line-soft);
+  --theme-line-faint: var(--line-faint);
+  --theme-primary: var(--primary);
+  --theme-primary-strong: var(--primary-strong);
+  --theme-primary-soft: var(--primary-soft);
+  --theme-primary-text: var(--primary-text);
+  --theme-accent: var(--accent);
+  --theme-success: var(--success);
+  --theme-danger: var(--danger);
+  --theme-warning: var(--warning);
+  --theme-shadow: var(--shadow);
+
+  /* Form / button / selectable controls */
+  --theme-input-bg: var(--input-bg);
+  --theme-input-border: var(--input-border);
+  --theme-placeholder: var(--placeholder);
+  --theme-button-bg: var(--button-bg);
+  --theme-button-border: var(--button-border);
+  --theme-button-text: var(--button-text);
+  --theme-button-hover-bg: var(--button-hover-bg);
+  --theme-button-hover-border: var(--button-hover-border);
+  --theme-button-disabled-bg: color-mix(in srgb, var(--theme-button-bg) 70%, var(--theme-surface) 30%);
+  --theme-button-disabled-border: color-mix(in srgb, var(--theme-button-border) 62%, transparent);
+  --theme-button-disabled-text: color-mix(in srgb, var(--theme-button-text) 48%, var(--theme-muted));
+  --theme-control-selected-bg: var(--control-selected-bg);
+  --theme-control-selected-border: var(--control-selected-border);
+  --theme-control-selected-text: var(--control-selected-text);
+  --theme-switch-off-bg: var(--switch-off-bg);
+  --theme-switch-off-border: var(--switch-off-border);
+  --theme-switch-off-knob: var(--switch-off-knob);
+  --theme-switch-on-bg: var(--switch-on-bg);
+  --theme-switch-on-border: var(--switch-on-border);
+  --theme-switch-on-knob: var(--switch-on-knob);
+  --theme-switch-shadow: var(--switch-shadow);
+
+  /* Table / status */
+  --theme-danger-bg: var(--danger-bg);
+  --theme-danger-border: var(--danger-border);
+  --theme-danger-text: var(--danger-text);
+  --theme-table-header-bg: var(--table-header-bg);
+  --theme-table-hover-bg: var(--table-hover-bg);
+  --theme-loading-mask: var(--loading-mask);
+  --theme-overlay-bg: var(--overlay-bg);
+  --theme-skeleton-a: var(--skeleton-a);
+  --theme-skeleton-b: var(--skeleton-b);
+
+  /* Tags */
+  --theme-tag-bg: var(--tag-bg);
+  --theme-tag-border: var(--tag-border);
+  --theme-tag-text: var(--primary-strong);
+  --theme-tag-fallback: var(--primary);
+  --theme-tag-gradient-bg: color-mix(in srgb, var(--theme-tag-fallback) 20%, transparent);
+
+  /* Layout surfaces */
+  --theme-admin-side-bg: var(--admin-side-bg);
+  --theme-admin-side-text: var(--admin-side-text);
+  --theme-admin-side-muted: var(--admin-side-muted);
+  --theme-admin-side-hover: var(--admin-side-hover);
+  --theme-dock-bg: var(--dock-bg);
+  --theme-dock-border: var(--dock-border);
+  --theme-dock-text: var(--dock-text);
+  --theme-dock-active-bg: var(--dock-active-bg);
+  --theme-dock-active-text: var(--dock-active-text);
+  --theme-dock-tooltip-bg: var(--dock-tooltip-bg);
+  --theme-dock-tooltip-text: var(--dock-tooltip-text);
+
+  /* Photo wall / hero */
+  --theme-wall-page-bg: var(--wall-page-bg);
+  --theme-wall-card-bg: var(--wall-card-bg);
+  --theme-wall-card-body-bg: var(--wall-card-body-bg);
+  --theme-wall-card-text: var(--wall-card-text);
+  --theme-wall-card-muted: var(--wall-card-muted);
+  --theme-hero-shade-bg: var(--hero-shade-bg);
+  --theme-hero-text: var(--hero-text);
+  --theme-hero-kicker: var(--hero-kicker);
+  --theme-hero-muted: var(--hero-muted);
+  --theme-hero-subtle: var(--hero-subtle);
+  --theme-hero-control-bg: var(--hero-control-bg);
+  --theme-hero-control-border: var(--hero-control-border);
+  --theme-hero-control-text: var(--hero-control-text);
+
+  /* Image overlays / loading / lightbox */
+  --theme-image-skeleton-base: color-mix(in srgb, var(--theme-surface) 84%, var(--theme-primary));
+  --theme-image-skeleton-sheen: color-mix(in srgb, #ffffff 14%, transparent);
+  --theme-image-hover-ring: color-mix(in srgb, #ffffff 12%, transparent);
+  --theme-image-hover-top-shadow: rgba(0, 0, 0, 0.36);
+  --theme-image-hover-bottom-shadow: rgba(0, 0, 0, 0.64);
+  --theme-image-hover-scrim: rgba(0, 0, 0, 0.08);
+  --theme-image-overlay-bg: var(--image-overlay-bg);
+  --theme-image-overlay-bg-strong: var(--image-overlay-bg-strong);
+  --theme-image-overlay-border: var(--image-overlay-border);
+  --theme-image-overlay-border-strong: var(--image-overlay-border-strong);
+  --theme-image-overlay-text: var(--image-overlay-text);
+  --theme-image-overlay-muted: color-mix(in srgb, var(--image-overlay-text) 86%, transparent);
+  --theme-image-overlay-shadow: 0 5px 18px rgba(0, 0, 0, 0.22);
+  --theme-image-overlay-chip-bg: rgba(5, 7, 9, 0.42);
+  --theme-image-overlay-chip-bg-strong: rgba(5, 7, 9, 0.62);
+  --theme-lightbox-bg: rgba(0, 0, 0, 0.94);
+  --theme-lightbox-text: #ffffff;
+  --theme-lightbox-muted: rgba(255, 255, 255, 0.84);
+  --theme-lightbox-control-bg: rgba(10, 12, 14, 0.62);
+  --theme-lightbox-control-border: rgba(255, 255, 255, 0.18);
+  --theme-lightbox-shadow: 0 20px 80px rgba(0, 0, 0, 0.48);
+
+  /* Map */
+  --theme-map-tile-filter: var(--map-tile-filter);
+  --theme-map-control-bg: var(--map-control-bg);
+  --theme-map-control-text: var(--map-control-text);
+  --theme-map-control-border: var(--map-control-border);
+  --theme-map-control-hover-bg: var(--map-control-hover-bg);
+  --theme-map-control-hover-text: var(--map-control-hover-text);
+  --theme-map-popup-bg: var(--map-popup-bg);
+  --theme-map-popup-text: var(--map-popup-text);
+  --theme-map-popup-muted: var(--map-popup-muted);
+  --theme-map-popup-border: var(--map-popup-border);
+  --theme-map-popup-shadow: var(--map-popup-shadow);
+  --theme-map-marker-fill: var(--accent);
+  --theme-map-marker-ring: var(--map-marker-ring);
+  --theme-map-marker-shadow: 0 4px 18px rgba(0, 0, 0, 0.3);
+
+  /* Rate limit / error page */
+  --theme-rate-limit-backdrop-a: var(--rate-limit-backdrop-a);
+  --theme-rate-limit-backdrop-b: var(--rate-limit-backdrop-b);
+  --theme-rate-limit-backdrop-c: var(--rate-limit-backdrop-c);
+  --theme-rate-limit-card-bg: var(--rate-limit-card-bg);
+  --theme-rate-limit-mark: var(--rate-limit-mark);
+}

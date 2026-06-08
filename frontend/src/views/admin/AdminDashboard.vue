@@ -74,7 +74,7 @@ onMounted(async () => {
   gap: 10px;
   align-items: center;
   padding: 8px 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--theme-line);
 }
 
 .rank-row img {
@@ -85,7 +85,7 @@ onMounted(async () => {
 }
 
 .rank-row small {
-  color: var(--muted-strong);
+  color: var(--theme-muted-strong);
 }
 
 .tag-bars {
@@ -101,6 +101,6 @@ onMounted(async () => {
 .tag-bars b {
   height: 8px;
   border-radius: 999px;
-  background: var(--primary);
+  background: var(--theme-primary);
 }
 </style>

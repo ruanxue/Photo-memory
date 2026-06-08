@@ -24,15 +24,15 @@ defineProps({
   gap: 16px;
   min-height: 132px;
   padding: 12px;
-  background: var(--surface-glass);
-  border: 1px solid var(--line);
+  background: var(--theme-surface-glass);
+  border: 1px solid var(--theme-line);
   border-radius: var(--radius);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .album-card:hover {
   transform: translateY(-3px);
-  box-shadow: var(--shadow);
+  box-shadow: var(--theme-shadow);
 }
 
 img {
@@ -49,13 +49,13 @@ strong {
 }
 
 p {
-  color: var(--muted-strong);
+  color: var(--theme-muted-strong);
   line-height: 1.6;
   margin: 0 0 10px;
 }
 
 span {
-  color: var(--primary);
+  color: var(--theme-primary);
 }
 
 @media (max-width: 560px) {

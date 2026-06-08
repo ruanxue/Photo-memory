@@ -1,6 +1,6 @@
 <template>
   <div class="tag-cloud">
-    <router-link v-for="tag in tags" :key="tag.id" :to="`/tags/${tag.id}`" :style="{ '--tag-color': tag.color || '#8fb8c4' }">
+    <router-link v-for="tag in tags" :key="tag.id" :to="`/tags/${tag.id}`" :style="{ '--tag-color': tag.color || 'var(--theme-tag-fallback)' }">
       #{{ tag.name }}
       <span>{{ tag.photoCount }}</span>
     </router-link>
@@ -23,15 +23,15 @@ defineProps({
 a {
   padding: 8px 12px;
   border-radius: 999px;
-  color: var(--text);
-  border: 1px solid color-mix(in srgb, var(--tag-color) 52%, var(--line));
+  color: var(--theme-text);
+  border: 1px solid color-mix(in srgb, var(--tag-color) 52%, var(--theme-line));
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--tag-color) 20%, transparent), var(--button-bg));
-  box-shadow: inset 0 0 0 1px var(--line-faint);
+    linear-gradient(135deg, color-mix(in srgb, var(--tag-color) 20%, transparent), var(--theme-button-bg));
+  box-shadow: inset 0 0 0 1px var(--theme-line-faint);
 }
 
 span {
-  color: var(--primary-strong);
+  color: var(--theme-tag-text);
   margin-left: 6px;
 }
 </style>

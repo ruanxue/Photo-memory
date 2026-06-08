@@ -28,6 +28,7 @@
         :albums="albums"
         :include-albums="settings.settings.includeAlbumsInWaterfall"
         :loading="initialLoading"
+        :scroll-reveal="false"
         @preview="openLightbox"
       />
       <div v-if="allPhotos.length" ref="loadMoreRef" class="load-more-sentinel">
@@ -59,7 +60,8 @@ const initialLoading = ref(false);
 const loadingMore = ref(false);
 const loadMoreRef = ref(null);
 const page = ref(1);
-const pageSize = ref(Number(settings.settings.pageSize || 24));
+const WALL_PAGE_SIZE = 100;
+const pageSize = ref(WALL_PAGE_SIZE);
 const total = ref(0);
 const lightboxVisible = ref(false);
 const lightboxIndex = ref(0);
@@ -123,7 +125,7 @@ const openLightbox = (photo) => {
 };
 
 onMounted(async () => {
-  const [tagRes, albumRes] = await Promise.all([tagApi.list(), albumApi.list({ pageSize: 12 })]);
+  const [tagRes, albumRes] = await Promise.all([tagApi.list(), albumApi.list({ pageSize: WALL_PAGE_SIZE })]);
   tags.value = tagRes.data;
   albums.value = albumRes.data;
   await load({ append: false });
@@ -131,7 +133,7 @@ onMounted(async () => {
 
 watch(() => settings.loaded, () => {
   if (!route.query.sort) filters.sort = settings.settings.defaultSort || 'latest';
-  pageSize.value = Number(settings.settings.pageSize || pageSize.value);
+  pageSize.value = WALL_PAGE_SIZE;
 });
 
 watch(() => route.query, () => {
@@ -177,7 +179,7 @@ onBeforeUnmount(() => observer?.disconnect());
   min-height: 96px;
   display: grid;
   place-items: center;
-  color: var(--muted-strong);
+  color: var(--theme-muted-strong);
   font-size: 13px;
 }
 

@@ -65,8 +65,8 @@ onMounted(async () => {
 }
 
 .map-list a {
-  background: var(--surface-glass);
-  border: 1px solid var(--line);
+  background: var(--theme-surface-glass);
+  border: 1px solid var(--theme-line);
   border-radius: var(--radius);
   overflow: hidden;
 }
@@ -84,7 +84,7 @@ onMounted(async () => {
 }
 
 .map-list small {
-  color: var(--muted-strong);
+  color: var(--theme-muted-strong);
   padding-bottom: 10px;
 }
 </style>

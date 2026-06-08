@@ -63,8 +63,8 @@ onBeforeUnmount(() => {
   place-items: center;
   padding: 24px;
   background:
-    radial-gradient(circle at 50% 18%, var(--rate-limit-backdrop-a), transparent 34%),
-    linear-gradient(180deg, var(--rate-limit-backdrop-b), var(--rate-limit-backdrop-c));
+    radial-gradient(circle at 50% 18%, var(--theme-rate-limit-backdrop-a), transparent 34%),
+    linear-gradient(180deg, var(--theme-rate-limit-backdrop-b), var(--theme-rate-limit-backdrop-c));
   backdrop-filter: blur(14px);
 }
 
@@ -73,18 +73,18 @@ onBeforeUnmount(() => {
   width: min(420px, 100%);
   overflow: hidden;
   padding: 28px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--theme-line);
   border-radius: 10px;
-  color: var(--text);
-  background: var(--rate-limit-card-bg), var(--surface);
-  box-shadow: var(--shadow);
+  color: var(--theme-text);
+  background: var(--theme-rate-limit-card-bg), var(--theme-surface);
+  box-shadow: var(--theme-shadow);
 }
 
 .rate-limit-mark {
   position: absolute;
   top: -18px;
   right: 18px;
-  color: var(--rate-limit-mark);
+  color: var(--theme-rate-limit-mark);
   font-size: 92px;
   font-weight: 900;
   line-height: 1;
@@ -92,7 +92,7 @@ onBeforeUnmount(() => {
 
 .rate-limit-kicker {
   margin: 0 0 12px;
-  color: var(--primary);
+  color: var(--theme-primary);
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 0;
@@ -107,23 +107,23 @@ onBeforeUnmount(() => {
 
 .rate-limit-card p {
   margin: 0;
-  color: var(--muted-strong);
+  color: var(--theme-muted-strong);
   line-height: 1.8;
 }
 
 .rate-limit-card small {
   display: block;
   margin-top: 12px;
-  color: var(--muted);
+  color: var(--theme-muted);
 }
 
 .rate-limit-card button {
   margin-top: 22px;
   padding: 10px 16px;
-  border: 1px solid var(--primary);
+  border: 1px solid var(--theme-primary);
   border-radius: 999px;
-  color: var(--primary-text);
-  background: var(--primary);
+  color: var(--theme-primary-text);
+  background: var(--theme-primary);
   font: inherit;
   font-weight: 800;
   cursor: pointer;

@@ -10,13 +10,20 @@ const booleanKeys = new Set([
   'watermarkEnabled',
   'includeAlbumsInWaterfall',
   'showExifOnHover',
-  'waterfallFullBleed'
+  'waterfallFullBleed',
+  'themeCustomEnabled'
 ]);
 const numberKeys = new Set(['uploadMaxSizeMb', 'pageSize']);
 const loadAnimations = new Set(['none', 'blur', 'custom']);
 const themeModes = new Set(['light', 'dark', 'auto']);
+const themeEditorModes = new Set(['simple', 'advanced']);
 const defaultSettings = {
   themeMode: 'light',
+  themeCustomEnabled: 'false',
+  themeCustomName: '',
+  themeCustomEditorMode: 'simple',
+  themeCustomColors: '{}',
+  savedThemes: '[]',
   waterfallFullBleed: 'false',
   waterfallLoadAnimation: 'blur',
   waterfallLoadDurationMs: '720',
@@ -25,6 +32,81 @@ const defaultSettings = {
   mapTileProvider: 'amap',
   mapTileUrl: '',
   mapTileAttribution: '© 高德地图'
+};
+
+const themeColorKeys = new Set([
+  'primary',
+  'accent',
+  'pageBg',
+  'surface',
+  'surfaceSoft',
+  'surfaceOverlay',
+  'text',
+  'textSoft',
+  'muted',
+  'line',
+  'buttonBg',
+  'buttonText',
+  'buttonHoverBg',
+  'tagBg',
+  'tagText',
+  'mapControlBg',
+  'mapControlText',
+  'mapPopupBg',
+  'mapPopupText',
+  'dockActiveBg',
+  'dockActiveText',
+  'imageOverlayBg',
+  'imageOverlayText'
+]);
+const colorPattern = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
+
+const normalizeHexColor = (value) => {
+  const color = String(value || '').trim();
+  if (!colorPattern.test(color)) return '';
+  if (color.length === 4) {
+    return `#${color[1]}${color[1]}${color[2]}${color[2]}${color[3]}${color[3]}`.toLowerCase();
+  }
+  return color.toLowerCase();
+};
+
+const sanitizeThemeColors = (value) => {
+  let parsed = value;
+  if (typeof value === 'string') {
+    try {
+      parsed = JSON.parse(value || '{}');
+    } catch {
+      parsed = {};
+    }
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+  return Object.fromEntries(
+    Object.entries(parsed)
+      .filter(([key]) => themeColorKeys.has(key))
+      .map(([key, color]) => [key, normalizeHexColor(color)])
+      .filter(([, color]) => color)
+  );
+};
+
+const sanitizeSavedThemes = (value) => {
+  let parsed = value;
+  if (typeof value === 'string') {
+    try {
+      parsed = JSON.parse(value || '[]');
+    } catch {
+      parsed = [];
+    }
+  }
+  if (!Array.isArray(parsed)) return [];
+  return parsed.slice(0, 16).map((theme, index) => {
+    const name = String(theme?.name || `主题 ${index + 1}`).replace(/[<>]/g, '').trim().slice(0, 32);
+    return {
+      id: String(theme?.id || Date.now() + index).replace(/[^a-z0-9_-]/gi, '').slice(0, 40) || String(index + 1),
+      name: name || `主题 ${index + 1}`,
+      colors: sanitizeThemeColors(theme?.colors || {}),
+      savedAt: String(theme?.savedAt || '').replace(/[<>]/g, '').slice(0, 32)
+    };
+  }).filter((theme) => Object.keys(theme.colors).length);
 };
 
 const clampNumber = (value, fallback, min, max) => {
@@ -81,6 +163,10 @@ const sanitizeWaterfallLoadCss = (value = '') => {
 
 const normalizeValue = (key, value) => {
   if (key === 'themeMode') return themeModes.has(value) ? value : 'light';
+  if (key === 'themeCustomEditorMode') return themeEditorModes.has(value) ? value : 'simple';
+  if (key === 'themeCustomName') return String(value || '').replace(/[<>]/g, '').trim().slice(0, 32);
+  if (key === 'themeCustomColors') return sanitizeThemeColors(value);
+  if (key === 'savedThemes') return sanitizeSavedThemes(value);
   if (booleanKeys.has(key)) return value === 'true';
   if (key === 'waterfallColumns') return value === 'auto' ? 'auto' : Number(value);
   if (key === 'waterfallLoadAnimation') return loadAnimations.has(value) ? value : 'blur';

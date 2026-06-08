@@ -23,9 +23,9 @@ const settings = useSettingsStore();
 <style scoped>
 .site-footer {
   padding: 38px 0;
-  border-top: 1px solid var(--line);
-  color: var(--muted-strong);
-  background: color-mix(in srgb, var(--page-bg-bottom) 72%, var(--surface));
+  border-top: 1px solid var(--theme-line);
+  color: var(--theme-muted-strong);
+  background: color-mix(in srgb, var(--theme-page-bg-bottom) 72%, var(--theme-surface));
 }
 
 .footer-grid {

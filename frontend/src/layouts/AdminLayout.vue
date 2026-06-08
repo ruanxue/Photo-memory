@@ -37,16 +37,16 @@ const settings = useSettingsStore();
 }
 
 .admin-side {
-  background: var(--admin-side-bg);
-  color: var(--admin-side-text);
-  border-right: 1px solid var(--line);
+  background: var(--theme-admin-side-bg);
+  color: var(--theme-admin-side-text);
+  border-right: 1px solid var(--theme-line);
   padding: 22px 12px;
 }
 
 .side-brand {
   display: block;
   margin: 0 12px 4px;
-  color: var(--admin-side-text);
+  color: var(--theme-admin-side-text);
   font-size: 20px;
   font-weight: 900;
 }
@@ -54,7 +54,7 @@ const settings = useSettingsStore();
 .admin-side small {
   display: block;
   margin: 0 12px 18px;
-  color: var(--admin-side-muted);
+  color: var(--theme-admin-side-muted);
 }
 
 .side-menu {
@@ -63,18 +63,18 @@ const settings = useSettingsStore();
 }
 
 .side-menu :deep(.el-menu-item) {
-  color: var(--text-soft);
+  color: var(--theme-text-soft);
 }
 
 .side-menu :deep(.el-menu-item.is-active),
 .side-menu :deep(.el-menu-item:hover) {
-  color: var(--primary-strong);
-  background: var(--admin-side-hover);
+  color: var(--theme-primary-strong);
+  background: var(--theme-admin-side-hover);
 }
 
 .admin-main {
   min-width: 0;
-  background: var(--page-bg);
+  background: var(--theme-page-bg);
 }
 
 @media (max-width: 900px) {

@@ -53,7 +53,7 @@ watch(() => route.params.id, load);
 <style scoped>
 .album-hero {
   padding: 82px 0 42px;
-  background: var(--surface-soft);
+  background: var(--theme-surface-soft);
 }
 
 h1 {
@@ -63,7 +63,7 @@ h1 {
 
 p {
   max-width: 680px;
-  color: var(--muted-strong);
+  color: var(--theme-muted-strong);
   line-height: 1.8;
 }
 </style>
