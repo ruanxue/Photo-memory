@@ -11,7 +11,34 @@ export const photoInclude = {
 
 export const photoIncludeForViewer = () => photoInclude;
 
+export const photoWallSelect = {
+  id: true,
+  title: true,
+  mediumUrl: true,
+  thumbnailUrl: true,
+  width: true,
+  height: true,
+  takenAt: true,
+  uploadedAt: true,
+  city: true,
+  locationName: true,
+  viewCount: true,
+  isPinned: true,
+  isFeatured: true,
+  cameraMake: true,
+  cameraModel: true,
+  lensModel: true,
+  focalLength: true,
+  aperture: true,
+  shutterSpeed: true,
+  iso: true,
+  tags: { select: { tag: { select: { id: true, name: true, slug: true, color: true } } } },
+  album: { select: { id: true, title: true } }
+};
+
 export const attachViewerState = (items) => items;
+
+export const attachWallCardFields = (items) => items.map((photo) => ({ ...photo, cardType: 'photo' }));
 
 export const visibilityFilter = (user) => {
   if (user?.role === 'admin') return { status: { not: 'deleted' } };
@@ -70,8 +97,44 @@ export const upsertTags = async (tagNames) => {
   return tags;
 };
 
+const uniqueIds = (values = []) => [...new Set(values.map(Number).filter((id) => Number.isInteger(id) && id > 0))];
+
+export const refreshCategoryCounters = async (categoryIds = []) => {
+  const ids = uniqueIds(categoryIds);
+  await Promise.all(ids.map(async (id) => {
+    const count = await prisma.photo.count({ where: { categoryId: id, status: 'normal' } });
+    await prisma.category.updateMany({ where: { id }, data: { photoCount: count } });
+  }));
+};
+
+export const refreshTagCounters = async (tagIds = []) => {
+  const ids = uniqueIds(tagIds);
+  await Promise.all(ids.map(async (id) => {
+    const count = await prisma.photoTag.count({ where: { tagId: id, photo: { status: 'normal' } } });
+    await prisma.tag.updateMany({ where: { id }, data: { photoCount: count } });
+  }));
+};
+
+export const refreshAlbumCounters = async (albumIds = []) => {
+  const ids = uniqueIds(albumIds);
+  await Promise.all(ids.map(async (id) => {
+    const count = await prisma.photo.count({ where: { albumId: id, status: 'normal' } });
+    await prisma.album.updateMany({ where: { id }, data: { photoCount: count } });
+  }));
+};
+
+export const refreshPhotoRelatedCounters = async ({ categoryIds = [], tagIds = [], albumIds = [] } = {}) => {
+  await Promise.all([
+    refreshCategoryCounters(categoryIds),
+    refreshTagCounters(tagIds),
+    refreshAlbumCounters(albumIds)
+  ]);
+};
+
 export const setPhotoTags = async (photoId, tagNames) => {
-  if (tagNames === undefined) return;
+  if (tagNames === undefined) return { previousTagIds: [], tagIds: [], affectedTagIds: [] };
+  const previousLinks = await prisma.photoTag.findMany({ where: { photoId }, select: { tagId: true } });
+  const previousTagIds = previousLinks.map((link) => link.tagId);
   await prisma.photoTag.deleteMany({ where: { photoId } });
   const tags = await upsertTags(tagNames);
   if (tags.length) {
@@ -79,7 +142,10 @@ export const setPhotoTags = async (photoId, tagNames) => {
       data: tags.map((tag) => ({ photoId, tagId: tag.id }))
     });
   }
-  await refreshCounters();
+  const tagIds = tags.map((tag) => tag.id);
+  const affectedTagIds = uniqueIds([...previousTagIds, ...tagIds]);
+  await refreshTagCounters(affectedTagIds);
+  return { previousTagIds, tagIds, affectedTagIds };
 };
 
 export const refreshCounters = async () => {

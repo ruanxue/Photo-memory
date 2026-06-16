@@ -91,7 +91,7 @@ const load = async ({ append = false } = {}) => {
   if (append) loadingMore.value = true;
   else initialLoading.value = true;
   try {
-    const res = await photoApi.list(params());
+    const res = await photoApi.wall(params());
     if (append) {
       const existing = new Set(allPhotos.value.map((photo) => photo.id));
       const nextPhotos = res.data.filter((photo) => !existing.has(photo.id));

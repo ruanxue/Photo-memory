@@ -3,7 +3,20 @@ import { buildPageMeta, getPagination } from '../utils/pagination.js';
 import { created, fail, success } from '../utils/response.js';
 import { safeUnlinkUpload } from '../utils/file.js';
 import { getClientIp, getUserAgent } from '../utils/request.js';
-import { attachViewerState, deletePhotoFiles, parseTagNames, photoInclude, photoIncludeForViewer, refreshCounters, requirePhotoAccess, setPhotoTags, visibilityFilter, buildPhotoOrder } from '../services/photo.service.js';
+import {
+  attachViewerState,
+  attachWallCardFields,
+  buildPhotoOrder,
+  deletePhotoFiles,
+  parseTagNames,
+  photoInclude,
+  photoIncludeForViewer,
+  photoWallSelect,
+  refreshPhotoRelatedCounters,
+  requirePhotoAccess,
+  setPhotoTags,
+  visibilityFilter
+} from '../services/photo.service.js';
 import { processUploadedFile } from '../services/upload.service.js';
 
 const toInt = (value) => {
@@ -34,8 +47,9 @@ const parseDate = (value) => {
   return Number.isNaN(date.getTime()) ? undefined : date;
 };
 
-const sanitizeComment = (content) => String(content || '').replace(/<[^>]*>/g, '').trim();
+const sanitizeComment = (content) => String(content || '').replace(/<[^>]*>/g, '').trim().slice(0, 1000);
 const sanitizeText = (value, maxLength = 120) => String(value || '').replace(/<[^>]*>/g, '').trim().slice(0, maxLength);
+const countLinks = (value) => (String(value || '').match(/https?:\/\/|www\./gi) || []).length;
 const getDeviceId = (req) => sanitizeText(req.headers['x-photo-device-id'], 128);
 const getVisitorAudit = (req) => ({
   deviceId: getDeviceId(req) || null,
@@ -187,6 +201,16 @@ export const listPhotos = async (req, res) => {
   success(res, items, 'ok', buildPageMeta(total, page, pageSize));
 };
 
+export const listWallPhotos = async (req, res) => {
+  const { page, pageSize, skip, take } = getPagination(req.query);
+  const where = buildPhotoWhere(req);
+  const [rows, total] = await Promise.all([
+    prisma.photo.findMany({ where, select: photoWallSelect, orderBy: buildPhotoOrder(req.query.sort), skip, take }),
+    prisma.photo.count({ where })
+  ]);
+  success(res, attachWallCardFields(rows), 'ok', buildPageMeta(total, page, pageSize));
+};
+
 export const getPhoto = async (req, res) => {
   const { photo } = await requirePhotoAccess(req.params.id, req.user);
   const visitor = getVisitorAudit(req);
@@ -227,7 +251,7 @@ export const uploadPhoto = async (req, res) => {
   });
   await setPhotoTags(photo.id, parseTagNames(req.body.tags));
   const fresh = await prisma.photo.findUnique({ where: { id: photo.id }, include: photoInclude });
-  await refreshCounters();
+  await refreshPhotoRelatedCounters({ albumIds: [fresh.albumId], categoryIds: [fresh.categoryId] });
   created(res, fresh, '照片上传成功');
 };
 
@@ -247,7 +271,10 @@ export const batchUploadPhotos = async (req, res) => {
     await setPhotoTags(photo.id, parseTagNames(req.body.tags));
     photos.push(photo);
   }
-  await refreshCounters();
+  await refreshPhotoRelatedCounters({
+    albumIds: photos.map((photo) => photo.albumId),
+    categoryIds: photos.map((photo) => photo.categoryId)
+  });
   success(res, photos, '批量上传成功');
 };
 
@@ -256,8 +283,11 @@ export const updatePhoto = async (req, res) => {
   if (!canManage) return fail(res, 403, '没有权限编辑该照片');
   await prisma.photo.update({ where: { id: photo.id }, data: updatePhotoData(req.body) });
   if (Object.prototype.hasOwnProperty.call(req.body, 'tags')) await setPhotoTags(photo.id, parseTagNames(req.body.tags));
-  await refreshCounters();
   const fresh = await prisma.photo.findUnique({ where: { id: photo.id }, include: photoInclude });
+  await refreshPhotoRelatedCounters({
+    albumIds: [photo.albumId, fresh.albumId],
+    categoryIds: [photo.categoryId, fresh.categoryId]
+  });
   success(res, fresh, '照片已更新');
 };
 
@@ -266,7 +296,12 @@ export const deletePhoto = async (req, res) => {
   if (!canManage) return fail(res, 403, '没有权限删除该照片');
   await deletePhotoFiles(photo);
   await prisma.photo.update({ where: { id: photo.id }, data: { status: 'deleted' } });
-  await refreshCounters();
+  const tagLinks = await prisma.photoTag.findMany({ where: { photoId: photo.id }, select: { tagId: true } });
+  await refreshPhotoRelatedCounters({
+    albumIds: [photo.albumId],
+    categoryIds: [photo.categoryId],
+    tagIds: tagLinks.map((link) => link.tagId)
+  });
   success(res, null, '照片已删除');
 };
 
@@ -317,12 +352,26 @@ export const addComment = async (req, res) => {
   const enabled = await prisma.systemSetting.findUnique({ where: { key: 'commentsEnabled' } });
   if (enabled?.value === 'false') return fail(res, 403, '评论区已关闭');
   const content = sanitizeComment(req.body.content);
+  if (countLinks(content) > 2) return fail(res, 422, '评论中的链接过多');
   if (!content) return fail(res, 422, '评论内容不能为空');
   const guestName = sanitizeText(req.body.guestName, 40);
   const guestEmail = sanitizeText(req.body.guestEmail, 160).toLowerCase();
   if (!req.user && !guestName) return fail(res, 422, '请填写用户名');
   if (!req.user && !validEmail(guestEmail)) return fail(res, 422, '请填写有效邮箱');
   const visitor = getVisitorAudit(req);
+  const duplicateIdentity = req.user
+    ? [{ userId: req.user.id }]
+    : [{ guestEmail }, visitor.ip ? { ip: visitor.ip } : null, visitor.deviceId ? { deviceId: visitor.deviceId } : null].filter(Boolean);
+  const duplicate = await prisma.comment.findFirst({
+    where: {
+      photoId: photo.id,
+      content,
+      createdAt: { gte: new Date(Date.now() - 60 * 1000) },
+      OR: duplicateIdentity
+    },
+    select: { id: true }
+  });
+  if (duplicate) return fail(res, 429, '请不要重复提交相同评论');
   const review = await prisma.systemSetting.findUnique({ where: { key: 'commentReview' } });
   const comment = await prisma.comment.create({
     data: {

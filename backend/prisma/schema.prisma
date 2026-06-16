@@ -89,6 +89,14 @@ model Photo {
   @@index([visibility, status])
   @@index([isPinned, isFeatured])
   @@index([takenAt])
+  @@index([status, visibility, uploadedAt])
+  @@index([status, visibility, takenAt])
+  @@index([status, visibility, isPinned, sortOrder])
+  @@index([status, visibility, isFeatured, uploadedAt])
+  @@index([albumId, status])
+  @@index([city, status])
+  @@index([country, status])
+  @@index([latitude, longitude, status])
 }
 
 model Album {
@@ -225,4 +233,16 @@ model UploadLog {
 
   @@index([userId])
   @@index([status])
+}
+
+model LoginGuardBucket {
+  id          Int       @id @default(autoincrement())
+  key         String    @unique
+  count       Int       @default(0)
+  firstAt     DateTime  @default(now())
+  lockedUntil DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  @@index([lockedUntil])
+  @@index([updatedAt])
 }

@@ -137,7 +137,7 @@ const observeHomeLoadMore = async () => {
 const loadWallPhotos = async ({ append = false } = {}) => {
   if (append) loadingMore.value = true;
   try {
-    const res = await photoApi.list(wallPhotoParams());
+    const res = await photoApi.wall(wallPhotoParams());
     const nextPhotos = res.data || [];
     if (append) {
       const existing = new Set(featured.value.map((photo) => photo.id));
@@ -169,8 +169,8 @@ const load = async () => {
       ? photoApi.list({ ids: heroIds.join(','), pageSize: Math.min(heroIds.length, WALL_PAGE_SIZE) })
       : Promise.resolve({ data: [] });
     const [featuredRes, latestRes, albumRes, tagRes, cityRes, heroRes] = await Promise.all([
-      photoApi.list({ featured: true, page: 1, pageSize: WALL_PAGE_SIZE, sort: 'latest' }),
-      photoApi.list({ page: 1, pageSize: WALL_PAGE_SIZE, sort: settings.settings.defaultSort || 'latest' }),
+      photoApi.wall({ featured: true, page: 1, pageSize: WALL_PAGE_SIZE, sort: 'latest' }),
+      photoApi.wall({ page: 1, pageSize: WALL_PAGE_SIZE, sort: settings.settings.defaultSort || 'latest' }),
       albumApi.list({ pageSize: WALL_PAGE_SIZE }),
       tagApi.list(),
       request.get('/map/cities'),

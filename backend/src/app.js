@@ -6,7 +6,7 @@ import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { env } from './config/env.js';
-import { prisma } from './config/prisma.js';
+import { configureSqlite, prisma } from './config/prisma.js';
 import { backendRoot, ensureUploadDirs, uploadRoot } from './utils/file.js';
 import { parseTrustProxyValue } from './utils/proxy.js';
 import { errorHandler, notFound } from './middlewares/error.middleware.js';
@@ -24,7 +24,26 @@ import adminRoutes from './routes/admin.routes.js';
 import settingRoutes from './routes/setting.routes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+await configureSqlite();
 await ensureUploadDirs();
+
+const setUploadCacheHeaders = (res, filePath) => {
+  const normalized = filePath.replace(/\\/g, '/');
+  if (normalized.includes('/mediums/') || normalized.includes('/thumbnails/')) {
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    return;
+  }
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+};
+
+const setFrontendCacheHeaders = (res, filePath) => {
+  const normalized = filePath.replace(/\\/g, '/');
+  if (normalized.includes('/assets/')) {
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    return;
+  }
+  res.setHeader('Cache-Control', 'no-cache');
+};
 
 const renderRateLimitPage = (retryAfter) => `<!doctype html>
 <html lang="zh-CN">
@@ -167,7 +186,7 @@ app.use(
     }
   })
 );
-app.use('/uploads', express.static(uploadRoot));
+app.use('/uploads', express.static(uploadRoot, { setHeaders: setUploadCacheHeaders }));
 
 app.get('/api/health', (req, res) => res.json({ success: true, message: 'Photo Memory API is running' }));
 app.use('/api/auth', authRoutes);
@@ -184,7 +203,7 @@ app.use('/api/admin', adminRoutes);
 
 const frontendDist = process.env.FRONTEND_DIST_DIR || path.resolve(backendRoot, '../frontend/dist');
 if (env.nodeEnv === 'production') {
-  app.use(express.static(frontendDist));
+  app.use(express.static(frontendDist, { setHeaders: setFrontendCacheHeaders }));
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) return next();
     res.sendFile(path.join(frontendDist, 'index.html'));

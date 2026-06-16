@@ -1,7 +1,7 @@
 import { prisma } from '../config/prisma.js';
 import { buildPageMeta, getPagination } from '../utils/pagination.js';
 import { created, fail, success } from '../utils/response.js';
-import { attachViewerState, photoInclude, photoIncludeForViewer, refreshCounters, visibilityFilter } from '../services/photo.service.js';
+import { attachViewerState, photoInclude, photoIncludeForViewer, refreshPhotoRelatedCounters, visibilityFilter } from '../services/photo.service.js';
 
 const canManageAlbum = (album, user) => user && (user.role === 'admin' || album.userId === user.id);
 
@@ -105,7 +105,7 @@ export const deleteAlbum = async (req, res) => {
   if (!canManageAlbum(album, req.user)) return fail(res, 403, '没有权限删除该相册');
   await prisma.photo.updateMany({ where: { albumId: id }, data: { albumId: null } });
   await prisma.album.delete({ where: { id } });
-  await refreshCounters();
+  await refreshPhotoRelatedCounters({ albumIds: [id] });
   success(res, null, '相册已删除');
 };
 

@@ -1,5 +1,5 @@
 import { prisma } from '../config/prisma.js';
-import { processImage } from './image.service.js';
+import { deleteImageArtifacts, processImage } from './image.service.js';
 import { readExif } from './exif.service.js';
 
 export const processUploadedFile = async (file, userId) => {
@@ -16,6 +16,7 @@ export const processUploadedFile = async (file, userId) => {
     });
     return { imageInfo, exifInfo };
   } catch (error) {
+    await deleteImageArtifacts(file);
     await prisma.uploadLog.create({
       data: {
         userId,

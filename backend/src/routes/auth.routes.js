@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { body } from 'express-validator';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { requireAuth } from '../middlewares/auth.middleware.js';
+import { loginLimiter, registerLimiter } from '../middlewares/rate-limit.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import { changePassword, login, logout, profile, register, updateProfile } from '../controllers/auth.controller.js';
 
@@ -13,6 +14,7 @@ const passwordRule = body('password')
 
 router.post(
   '/register',
+  registerLimiter,
   [
     body('username')
       .trim()
@@ -30,6 +32,7 @@ router.post(
 
 router.post(
   '/login',
+  loginLimiter,
   [
     body('account').trim().isLength({ min: 1, max: 160 }).withMessage('请输入用户名或邮箱'),
     body('password').isLength({ min: 1, max: 128 }).withMessage('请输入密码'),

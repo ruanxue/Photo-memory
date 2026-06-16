@@ -6,7 +6,14 @@ import { buildPageMeta, getPagination } from '../utils/pagination.js';
 import { hashPassword } from '../utils/password.js';
 import { normalizeTrustProxyHops, parseTrustProxyValue } from '../utils/proxy.js';
 import { getAdminStatistics } from '../services/statistics.service.js';
-import { buildPhotoOrder, deletePhotoFiles, parseTagNames, photoInclude, refreshCounters, setPhotoTags } from '../services/photo.service.js';
+import {
+  buildPhotoOrder,
+  deletePhotoFiles,
+  parseTagNames,
+  photoInclude,
+  refreshPhotoRelatedCounters,
+  setPhotoTags
+} from '../services/photo.service.js';
 
 const toBool = (value) => value === true || value === 'true' || value === '1';
 const toInt = (value) => {
@@ -195,9 +202,13 @@ export const listPhotos = async (req, res) => {
 
 export const updatePhoto = async (req, res) => {
   const id = Number(req.params.id);
+  const before = await prisma.photo.findUnique({ where: { id }, select: { albumId: true, categoryId: true } });
   const photo = await prisma.photo.update({ where: { id }, data: adminPhotoData(req.body), include: photoInclude });
   if (Object.prototype.hasOwnProperty.call(req.body, 'tags')) await setPhotoTags(id, parseTagNames(req.body.tags));
-  await refreshCounters();
+  await refreshPhotoRelatedCounters({
+    albumIds: [before?.albumId, photo.albumId],
+    categoryIds: [before?.categoryId, photo.categoryId]
+  });
   success(res, photo, '照片已更新');
 };
 
@@ -205,9 +216,14 @@ export const deletePhoto = async (req, res) => {
   const id = Number(req.params.id);
   const photo = await prisma.photo.findUnique({ where: { id } });
   if (!photo) return fail(res, 404, '照片不存在');
+  const tagLinks = await prisma.photoTag.findMany({ where: { photoId: id }, select: { tagId: true } });
   await deletePhotoFiles(photo);
   await prisma.photo.update({ where: { id }, data: { status: 'deleted' } });
-  await refreshCounters();
+  await refreshPhotoRelatedCounters({
+    albumIds: [photo.albumId],
+    categoryIds: [photo.categoryId],
+    tagIds: tagLinks.map((link) => link.tagId)
+  });
   success(res, null, '照片已删除');
 };
 
@@ -235,6 +251,14 @@ export const batchPhotos = async (req, res) => {
   const ids = Array.isArray(req.body.ids) ? req.body.ids.map(Number).filter(Boolean) : [];
   if (!ids.length) return fail(res, 422, '请选择照片');
   const { action } = req.body;
+  const affectedPhotos = await prisma.photo.findMany({
+    where: { id: { in: ids } },
+    select: { albumId: true, categoryId: true }
+  });
+  const affectedTagLinks = await prisma.photoTag.findMany({ where: { photoId: { in: ids } }, select: { tagId: true } });
+  const affectedAlbumIds = affectedPhotos.map((photo) => photo.albumId);
+  const affectedCategoryIds = affectedPhotos.map((photo) => photo.categoryId);
+  const affectedTagIds = affectedTagLinks.map((link) => link.tagId);
   if (action === 'delete') {
     const photos = await prisma.photo.findMany({ where: { id: { in: ids } } });
     await Promise.all(photos.map(deletePhotoFiles));
@@ -242,9 +266,13 @@ export const batchPhotos = async (req, res) => {
   } else if (action === 'visibility') {
     await prisma.photo.updateMany({ where: { id: { in: ids } }, data: { visibility: req.body.visibility === 'private' ? 'private' : 'public' } });
   } else if (action === 'category') {
-    await prisma.photo.updateMany({ where: { id: { in: ids } }, data: { categoryId: toInt(req.body.categoryId) || null } });
+    const categoryId = toInt(req.body.categoryId) || null;
+    affectedCategoryIds.push(categoryId);
+    await prisma.photo.updateMany({ where: { id: { in: ids } }, data: { categoryId } });
   } else if (action === 'album') {
-    await prisma.photo.updateMany({ where: { id: { in: ids } }, data: { albumId: toInt(req.body.albumId) || null } });
+    const albumId = toInt(req.body.albumId) || null;
+    affectedAlbumIds.push(albumId);
+    await prisma.photo.updateMany({ where: { id: { in: ids } }, data: { albumId } });
   } else if (action === 'pin') {
     await prisma.photo.updateMany({ where: { id: { in: ids } }, data: { isPinned: toBool(req.body.isPinned), pinnedAt: toBool(req.body.isPinned) ? new Date() : null } });
   } else if (action === 'feature') {
@@ -252,7 +280,11 @@ export const batchPhotos = async (req, res) => {
   } else if (action === 'tags') {
     for (const id of ids) await setPhotoTags(id, parseTagNames(req.body.tags));
   }
-  await refreshCounters();
+  await refreshPhotoRelatedCounters({
+    albumIds: affectedAlbumIds,
+    categoryIds: affectedCategoryIds,
+    tagIds: action === 'delete' ? affectedTagIds : []
+  });
   success(res, null, '批量操作已完成');
 };
 
@@ -310,7 +342,7 @@ export const deleteAlbum = async (req, res) => {
   const id = Number(req.params.id);
   await prisma.photo.updateMany({ where: { albumId: id }, data: { albumId: null } });
   await prisma.album.delete({ where: { id } });
-  await refreshCounters();
+  await refreshPhotoRelatedCounters({ albumIds: [id] });
   success(res, null, '相册已删除');
 };
 
@@ -348,7 +380,7 @@ export const deleteCategory = async (req, res) => {
   const id = Number(req.params.id);
   await prisma.photo.updateMany({ where: { categoryId: id }, data: { categoryId: null } });
   await prisma.category.delete({ where: { id } });
-  await refreshCounters();
+  await refreshPhotoRelatedCounters({ categoryIds: [id] });
   success(res, null, '分类已删除');
 };
 
@@ -373,7 +405,7 @@ export const updateTag = async (req, res) => {
 export const deleteTag = async (req, res) => {
   const id = Number(req.params.id);
   await prisma.tag.delete({ where: { id } });
-  await refreshCounters();
+  await refreshPhotoRelatedCounters({ tagIds: [id] });
   success(res, null, '标签已删除');
 };
 
@@ -390,7 +422,7 @@ export const mergeTags = async (req, res) => {
     });
   }
   await prisma.tag.delete({ where: { id: sourceId } });
-  await refreshCounters();
+  await refreshPhotoRelatedCounters({ tagIds: [targetId] });
   success(res, null, '标签已合并');
 };
 
