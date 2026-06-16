@@ -45,6 +45,8 @@ const defaults = {
   pageSize: 24,
   waterfallColumns: 'auto',
   waterfallFullBleed: false,
+  waterfallCardRadius: 4,
+  waterfallRevealAnimation: 'slide-up',
   waterfallLoadAnimation: 'blur',
   waterfallLoadDurationMs: 720,
   waterfallLoadStaggerMs: 24,

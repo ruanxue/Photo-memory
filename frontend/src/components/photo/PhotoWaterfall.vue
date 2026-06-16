@@ -121,17 +121,38 @@ const photoKeysFrom = (keys) => keys.filter((key) => key.startsWith('photo-'));
 const isFullBleed = computed(() => props.variant === 'wall' && settings.settings.waterfallFullBleed === true);
 const animationDuration = computed(() => Math.max(200, Math.min(1600, Number(settings.settings.waterfallLoadDurationMs) || 720)));
 const animationStagger = computed(() => Math.max(0, Math.min(120, Number(settings.settings.waterfallLoadStaggerMs) || 24)));
-const scrollRevealEnabled = computed(() => props.scrollReveal !== false);
+const cardRadius = computed(() => {
+  const value = Number(settings.settings.waterfallCardRadius);
+  return Math.max(0, Math.min(24, Number.isFinite(value) ? Math.round(value) : 4));
+});
+const revealAnimation = computed(() => {
+  const value = settings.settings.waterfallRevealAnimation;
+  return ['slide-up', 'fade', 'none'].includes(value) ? value : 'slide-up';
+});
+const scrollRevealEnabled = computed(() => props.scrollReveal !== false && revealAnimation.value !== 'none');
 const shouldAnimateInitial = computed(() => scrollRevealEnabled.value && (props.animateInitial || props.variant === 'wall'));
 const cardEnterDistance = computed(() => {
   const width = window.innerWidth || 1280;
   return Math.max(18, Math.min(34, width * 0.024));
 });
+const revealDurationSeconds = () => {
+  if (revealAnimation.value === 'fade') {
+    return Math.max(0.82, Math.min(1.15, animationDuration.value / 1000 * 1.18));
+  }
+  return Math.max(0.42, Math.min(0.68, animationDuration.value / 1000 * 0.62));
+};
+const revealEntryDelay = (index) => {
+  if (revealAnimation.value === 'fade') return Math.min(index * 8, 40);
+  return Math.min(index * 18, 90);
+};
 const waterfallStyle = computed(() => ({
   '--waterfall-columns': resolvedColumns.value,
   '--waterfall-load-duration': `${animationDuration.value}ms`,
   '--waterfall-load-stagger': `${animationStagger.value}ms`,
-  '--waterfall-card-enter-y': `${cardEnterDistance.value}px`
+  '--waterfall-card-radius': `${cardRadius.value}px`,
+  '--waterfall-card-enter-y': `${cardEnterDistance.value}px`,
+  '--waterfall-reveal-y': revealAnimation.value === 'fade' ? '0px' : `${cardEnterDistance.value}px`,
+  '--waterfall-reveal-opacity': revealAnimation.value === 'fade' ? '0' : '0.96'
 }));
 const withLoadIndex = (items) => items.map((item, index) => ({ ...item, loadIndex: index }));
 
@@ -293,27 +314,27 @@ const revealPendingCard = (card) => {
   enterObserver?.unobserve(card);
   const target = cardVisualTarget(card);
 
-  if (reducedMotion()) {
+  if (reducedMotion() || revealAnimation.value === 'none') {
     settleRevealCard(card);
     return;
   }
 
   gsap.killTweensOf(target);
   gsap.set(target, {
-    y: cardEnterDistance.value,
-    opacity: 0.96,
+    y: revealAnimation.value === 'fade' ? 0 : cardEnterDistance.value,
+    opacity: revealAnimation.value === 'fade' ? 0 : 0.96,
     force3D: true
   });
   removePendingKey(key);
   card.classList.remove('waterfall-item-enter-pending');
-  const duration = Math.max(0.42, Math.min(0.68, animationDuration.value / 1000 * 0.62));
+  const duration = revealDurationSeconds();
   gsap.to(
     target,
     {
       y: 0,
       opacity: 1,
       duration,
-      ease: 'power3.out',
+      ease: revealAnimation.value === 'fade' ? 'power1.out' : 'power3.out',
       overwrite: 'auto',
       clearProps: 'transform,opacity'
     }
@@ -380,7 +401,7 @@ const observePendingEnterCards = async (keys) => {
         .filter((entry) => entry.isIntersecting)
         .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
         .forEach((entry, index) => {
-          window.setTimeout(() => revealPendingCard(entry.target), Math.min(index * 18, 90));
+          window.setTimeout(() => revealPendingCard(entry.target), revealEntryDelay(index));
         });
     },
     {
@@ -606,8 +627,8 @@ onBeforeUnmount(() => {
 }
 
 .waterfall-item-enter-pending > :is(.photo-card, .wall-album-card) {
-  opacity: 0.96;
-  transform: translate3d(0, var(--waterfall-card-enter-y), 0);
+  opacity: var(--waterfall-reveal-opacity, 0.96);
+  transform: translate3d(0, var(--waterfall-reveal-y, var(--waterfall-card-enter-y)), 0);
   will-change: transform, opacity;
 }
 

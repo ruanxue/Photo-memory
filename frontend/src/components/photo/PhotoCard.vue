@@ -1,5 +1,5 @@
 <template>
-  <article class="photo-card" :class="{ 'photo-card-wall': variant === 'wall' }" :data-photo-id="photo.id">
+  <article class="photo-card" :class="{ 'photo-card-wall': variant === 'wall' }" :data-photo-id="photo.id" :style="cardStyle">
     <div class="image-frame" :class="imageFrameClass" :style="imageFrameStyle">
       <button class="image-button" type="button" @click="$emit('preview', photo)" @dragstart.prevent>
         <img
@@ -107,6 +107,18 @@ const imageFrameStyle = computed(() => ({
   ...photoAspectStyle.value,
   '--image-load-delay': `${loadDelay.value}ms`
 }));
+const cardRadius = computed(() => {
+  const value = Number(settings.settings.waterfallCardRadius);
+  return Math.max(0, Math.min(24, Number.isFinite(value) ? Math.round(value) : 4));
+});
+const cardStyle = computed(() => {
+  const radius = `${cardRadius.value}px`;
+  return {
+    '--photo-card-radius': radius,
+    '--wall-card-radius': radius,
+    '--wall-image-radius': `${radius} ${radius} 0 0`
+  };
+});
 const imageFrameClass = computed(() => [
   `load-${loadAnimation.value}`,
   imageLoaded.value ? 'is-loaded' : 'is-loading'
@@ -153,7 +165,7 @@ onMounted(checkCachedImage);
   overflow: hidden;
   break-inside: avoid;
   border: 1px solid var(--theme-line);
-  border-radius: var(--radius);
+  border-radius: var(--photo-card-radius, var(--radius));
   background: var(--theme-surface-glass, var(--theme-surface));
   transform-origin: center;
   transition: box-shadow 0.24s ease, border-color 0.24s ease;
@@ -593,9 +605,11 @@ onMounted(checkCachedImage);
 }
 
 .photo-card-wall {
+  --wall-card-radius: var(--waterfall-card-radius, 4px);
+  --wall-image-radius: var(--wall-card-radius) var(--wall-card-radius) 0 0;
   margin-bottom: clamp(5px, 0.45vw, 9px);
   border: 1px solid var(--theme-line-faint);
-  border-radius: 4px;
+  border-radius: var(--wall-card-radius);
   background: var(--theme-wall-card-bg);
 }
 
@@ -603,12 +617,15 @@ onMounted(checkCachedImage);
   box-shadow: var(--theme-shadow);
 }
 
+.photo-card-wall .image-frame,
+.photo-card-wall .image-button,
 .photo-card-wall .image-button img {
-  border-radius: 4px 4px 0 0;
+  border-radius: var(--wall-image-radius);
 }
 
+.photo-card-wall .image-frame::before,
 .photo-card-wall .image-button::after {
-  border-radius: 4px 4px 0 0;
+  border-radius: var(--wall-image-radius);
 }
 
 .photo-card-wall .card-body {

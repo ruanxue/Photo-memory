@@ -236,6 +236,8 @@ async function seedSettings() {
     ['pageSize', '20', '每页照片数量'],
     ['waterfallColumns', 'auto', '瀑布流列数'],
     ['waterfallFullBleed', 'false', '瀑布流铺满左右空隙'],
+    ['waterfallCardRadius', '4', '瀑布流卡片圆角'],
+    ['waterfallRevealAnimation', 'slide-up', '瀑布流滚动入场动画'],
     ['waterfallLoadAnimation', 'blur', '瀑布流图片加载动画'],
     ['waterfallLoadDurationMs', '720', '瀑布流图片加载动画时长'],
     ['waterfallLoadStaggerMs', '24', '瀑布流图片加载错峰延迟'],

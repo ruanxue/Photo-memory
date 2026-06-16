@@ -126,9 +126,6 @@ const restoreOrigin = () => {
 
 const concealOrigin = (origin) => {
   restoreOrigin();
-  if (!origin) return;
-  hiddenOrigin = origin;
-  gsap.set(origin, { visibility: 'hidden' });
 };
 
 const clearPhotoTransition = () => {
@@ -269,6 +266,7 @@ const syncDetail = (fresh) => {
 };
 
 const closeToCorner = () => {
+  restoreOrigin();
   const controls = uiElements();
   const targetRect = photoRef.value?.getBoundingClientRect();
   const x = targetRect ? 28 - targetRect.left : -window.innerWidth * 0.28;

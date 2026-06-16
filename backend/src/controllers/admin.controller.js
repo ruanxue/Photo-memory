@@ -575,6 +575,8 @@ const defaultAdminSettings = [
   { key: 'savedThemes', value: '[]', description: '已保存主题方案' },
   { key: 'themeMode', value: 'light', description: '站点主题模式' },
   { key: 'waterfallFullBleed', value: 'false', description: '瀑布流铺满左右空隙' },
+  { key: 'waterfallCardRadius', value: '4', description: '瀑布流卡片圆角' },
+  { key: 'waterfallRevealAnimation', value: 'slide-up', description: '瀑布流滚动入场动画' },
   { key: 'waterfallLoadAnimation', value: 'blur', description: '瀑布流图片加载动画' },
   { key: 'waterfallLoadDurationMs', value: '720', description: '瀑布流图片加载动画时长' },
   { key: 'waterfallLoadStaggerMs', value: '24', description: '瀑布流图片加载错峰延迟' },
@@ -593,6 +595,13 @@ const normalizeAdminSettingValue = (key, value) => {
   if (key === 'themeCustomColors') return JSON.stringify(sanitizeThemeColors(value));
   if (key === 'savedThemes') return JSON.stringify(sanitizeSavedThemes(value));
   if (key === 'waterfallFullBleed') return value === true || value === 'true' ? 'true' : 'false';
+  if (key === 'waterfallCardRadius') {
+    const radius = Number(value);
+    return String(Math.max(0, Math.min(24, Number.isFinite(radius) ? Math.round(radius) : 4)));
+  }
+  if (key === 'waterfallRevealAnimation') {
+    return ['slide-up', 'fade', 'none'].includes(value) ? value : 'slide-up';
+  }
   if (key === 'waterfallLoadAnimation') {
     return ['none', 'blur', 'custom'].includes(value) ? value : 'blur';
   }

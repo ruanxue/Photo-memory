@@ -303,6 +303,18 @@
             <el-switch v-model="form.waterfallFullBleed" />
             <p class="field-help">开启后瀑布流会贴近屏幕两侧，只保留极小安全边距。</p>
           </el-form-item>
+          <el-form-item label="卡片圆角 px">
+            <el-input-number v-model="form.waterfallCardRadius" :min="0" :max="24" :step="1" />
+            <p class="field-help">同时影响照片卡片、相册卡片以及卡片内图片的圆角。</p>
+          </el-form-item>
+          <el-form-item label="滚动入场动画">
+            <el-select v-model="form.waterfallRevealAnimation">
+              <el-option label="上移归位" value="slide-up" />
+              <el-option label="从无到有" value="fade" />
+              <el-option label="关闭" value="none" />
+            </el-select>
+            <p class="field-help">控制滚动时底部新卡片进入视口的方式。</p>
+          </el-form-item>
           <el-form-item label="图片加载动画">
             <el-select v-model="form.waterfallLoadAnimation">
               <el-option label="无动画" value="none" />
@@ -433,6 +445,8 @@ const form = reactive({
   pageSize: 20,
   waterfallColumns: 'auto',
   waterfallFullBleed: false,
+  waterfallCardRadius: 4,
+  waterfallRevealAnimation: 'slide-up',
   waterfallLoadAnimation: 'blur',
   waterfallLoadDurationMs: 720,
   waterfallLoadStaggerMs: 24,
@@ -483,6 +497,7 @@ const numberOrNull = (value) => {
 };
 
 const normalizeLoadAnimation = (value) => ['none', 'blur', 'custom'].includes(value) ? value : 'blur';
+const normalizeRevealAnimation = (value) => ['slide-up', 'fade', 'none'].includes(value) ? value : 'slide-up';
 const normalizeMapProvider = (value) => ['amap', 'osm', 'custom'].includes(value) ? value : 'amap';
 const normalizeThemeMode = (value) => ['light', 'dark', 'auto'].includes(value) ? value : 'light';
 const normalizeThemeEditorMode = (value) => ['simple', 'advanced'].includes(value) ? value : 'simple';
@@ -880,7 +895,7 @@ onMounted(async () => {
   const res = await adminApi.settings();
   res.data.forEach((item) => {
     if (boolKeys.includes(item.key)) form[item.key] = item.value === 'true';
-    else if (['uploadMaxSizeMb', 'pageSize', 'trustProxyHops', 'waterfallLoadDurationMs', 'waterfallLoadStaggerMs'].includes(item.key)) form[item.key] = Number(item.value);
+    else if (['uploadMaxSizeMb', 'pageSize', 'trustProxyHops', 'waterfallCardRadius', 'waterfallLoadDurationMs', 'waterfallLoadStaggerMs'].includes(item.key)) form[item.key] = Number(item.value);
     else if (item.key === 'heroPhotoIds') form.heroPhotoIds = normalizeIds(item.value);
     else if (item.key === 'heroFixedPhotoId') form.heroFixedPhotoId = numberOrNull(item.value);
     else if (item.key === 'heroMode') form.heroMode = item.value === 'fixed' ? 'fixed' : 'random';
@@ -889,6 +904,7 @@ onMounted(async () => {
     else if (item.key === 'themeCustomName') form.themeCustomName = normalizeThemeName(item.value);
     else if (item.key === 'themeCustomColors') form.themeCustomColors = normalizeThemeColors(parseJsonObject(item.value, defaultCustomThemeColors));
     else if (item.key === 'savedThemes') form.savedThemes = normalizeSavedThemes(item.value);
+    else if (item.key === 'waterfallRevealAnimation') form.waterfallRevealAnimation = normalizeRevealAnimation(item.value);
     else if (item.key === 'waterfallLoadAnimation') form.waterfallLoadAnimation = normalizeLoadAnimation(item.value);
     else if (item.key === 'mapTileProvider') form.mapTileProvider = normalizeMapProvider(item.value);
     else if (Object.prototype.hasOwnProperty.call(form, item.key)) form[item.key] = item.value;
@@ -912,6 +928,11 @@ const save = async () => {
     if (key === 'themeCustomColors') return { key, value: JSON.stringify(normalizeThemeColors(value)) };
     if (key === 'savedThemes') return { key, value: JSON.stringify(normalizeSavedThemes(value)) };
     if (key === 'trustProxyHops') return { key, value: String(Math.max(0, Math.min(10, Number(value) || 0))) };
+    if (key === 'waterfallCardRadius') {
+      const radius = Number(value);
+      return { key, value: String(Math.max(0, Math.min(24, Number.isFinite(radius) ? Math.round(radius) : 4))) };
+    }
+    if (key === 'waterfallRevealAnimation') return { key, value: normalizeRevealAnimation(value) };
     if (key === 'waterfallLoadAnimation') return { key, value: normalizeLoadAnimation(value) };
     if (key === 'waterfallLoadDurationMs') return { key, value: String(Math.max(200, Math.min(1600, Number(value) || 720))) };
     if (key === 'waterfallLoadStaggerMs') return { key, value: String(Math.max(0, Math.min(120, Number(value) || 24))) };

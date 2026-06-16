@@ -15,6 +15,7 @@ const booleanKeys = new Set([
 ]);
 const numberKeys = new Set(['uploadMaxSizeMb', 'pageSize']);
 const loadAnimations = new Set(['none', 'blur', 'custom']);
+const revealAnimations = new Set(['slide-up', 'fade', 'none']);
 const themeModes = new Set(['light', 'dark', 'auto']);
 const themeEditorModes = new Set(['simple', 'advanced']);
 const defaultSettings = {
@@ -25,6 +26,8 @@ const defaultSettings = {
   themeCustomColors: '{}',
   savedThemes: '[]',
   waterfallFullBleed: 'false',
+  waterfallCardRadius: '4',
+  waterfallRevealAnimation: 'slide-up',
   waterfallLoadAnimation: 'blur',
   waterfallLoadDurationMs: '720',
   waterfallLoadStaggerMs: '24',
@@ -169,6 +172,8 @@ const normalizeValue = (key, value) => {
   if (key === 'savedThemes') return sanitizeSavedThemes(value);
   if (booleanKeys.has(key)) return value === 'true';
   if (key === 'waterfallColumns') return value === 'auto' ? 'auto' : Number(value);
+  if (key === 'waterfallCardRadius') return clampNumber(value, 4, 0, 24);
+  if (key === 'waterfallRevealAnimation') return revealAnimations.has(value) ? value : 'slide-up';
   if (key === 'waterfallLoadAnimation') return loadAnimations.has(value) ? value : 'blur';
   if (key === 'waterfallLoadDurationMs') return clampNumber(value, 720, 200, 1600);
   if (key === 'waterfallLoadStaggerMs') return clampNumber(value, 24, 0, 120);

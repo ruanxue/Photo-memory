@@ -27,7 +27,6 @@
       </span>
     </button>
     <div class="album-body">
-      <span class="album-label">ALBUM</span>
       <button class="album-title" type="button" @click="$emit('detail', album)">{{ album.title }}</button>
       <p>{{ album.description || '查看相册中的影像记录' }}</p>
     </div>
@@ -98,11 +97,13 @@ onMounted(checkCachedImage);
 
 <style scoped>
 .wall-album-card {
+  --wall-card-radius: var(--waterfall-card-radius, 4px);
+  --wall-image-radius: var(--wall-card-radius) var(--wall-card-radius) 0 0;
   display: block;
   width: 100%;
   overflow: hidden;
   border: 1px solid var(--theme-line-faint);
-  border-radius: 4px;
+  border-radius: var(--wall-card-radius);
   background: var(--theme-wall-card-bg);
   transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
@@ -120,7 +121,7 @@ onMounted(checkCachedImage);
   padding: 0;
   overflow: hidden;
   border: 0;
-  border-radius: 4px 4px 0 0;
+  border-radius: var(--wall-image-radius);
   background: transparent;
   cursor: pointer;
 }
@@ -130,7 +131,7 @@ onMounted(checkCachedImage);
   position: absolute;
   inset: 0;
   z-index: 0;
-  border-radius: 4px 4px 0 0;
+  border-radius: var(--wall-image-radius);
   background:
     linear-gradient(110deg, transparent 0%, var(--theme-image-skeleton-sheen) 44%, transparent 74%),
     var(--theme-image-skeleton-base);
@@ -152,7 +153,7 @@ onMounted(checkCachedImage);
   position: absolute;
   inset: 0;
   z-index: 1;
-  border-radius: 4px 4px 0 0;
+  border-radius: var(--wall-image-radius);
   background: var(--theme-image-hover-scrim);
   opacity: 0;
   pointer-events: none;
@@ -168,7 +169,7 @@ onMounted(checkCachedImage);
   width: 100%;
   height: auto;
   object-fit: contain;
-  border-radius: 4px 4px 0 0;
+  border-radius: var(--wall-image-radius);
   user-select: none;
   -webkit-user-drag: none;
   opacity: var(--image-load-opacity, 1);
@@ -258,15 +259,9 @@ onMounted(checkCachedImage);
 .album-body {
   display: grid;
   gap: 7px;
-  min-height: 104px;
+  min-height: 82px;
   padding: 10px 10px 12px;
   background: var(--theme-wall-card-body-bg);
-}
-
-.album-label {
-  color: var(--theme-primary);
-  font-size: 10px;
-  font-weight: 900;
 }
 
 .album-title {
