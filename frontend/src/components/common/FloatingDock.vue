@@ -16,7 +16,7 @@
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import { Clock, Collection, HomeFilled, Location, Picture, PriceTag, Setting, User } from '@element-plus/icons-vue';
+import { Clock, Collection, HomeFilled, Location, Picture, Setting, User } from '@element-plus/icons-vue';
 import { useAuthStore } from '../../stores/auth.store.js';
 import { useSettingsStore } from '../../stores/settings.store.js';
 
@@ -36,8 +36,7 @@ const links = computed(() => {
     { key: 'photos', to: '/photos', label: '照片墙', icon: Picture },
     { key: 'albums', to: '/albums', label: '相册', icon: Collection },
     { key: 'timeline', to: '/timeline', label: '时间轴', icon: Clock },
-    { key: 'map', to: '/map', label: '地图', icon: Location },
-    { key: 'tags', to: '/tags', label: '标签', icon: PriceTag }
+    { key: 'map', to: '/map', label: '地图', icon: Location }
   ];
 
   if (auth.isLoggedIn) items.push({ key: 'user', to: '/user', label: '个人中心', icon: User });
@@ -48,7 +47,6 @@ const links = computed(() => {
 
 const isActive = (item) => {
   if (item.key === 'home') return route.path === '/';
-  if (item.key === 'tags') return route.path.startsWith('/tags');
   if (item.key === 'user') return route.path.startsWith('/user');
   if (item.key === 'admin') return route.path.startsWith('/admin');
   return route.path === item.to || route.path.startsWith(`${item.to}/`);

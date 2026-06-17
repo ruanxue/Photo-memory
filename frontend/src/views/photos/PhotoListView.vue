@@ -1,11 +1,11 @@
 <template>
-  <section class="page-hero container photo-hero">
+  <section class="page-hero container photo-hero" :class="{ 'photo-wall-wide': settings.settings.waterfallFullBleed === true }">
     <h1>照片墙</h1>
     <p>更贴近屏幕边缘的沉浸瀑布流，按时间、热度、标签和城市筛选。</p>
   </section>
   <section class="section photo-wall-section">
     <div class="full-bleed">
-      <div class="toolbar surface filter-bar">
+      <div class="toolbar surface filter-bar" :class="{ 'photo-wall-wide': settings.settings.waterfallFullBleed === true }">
         <el-input v-model="filters.q" placeholder="搜索标题、地点、设备" clearable @keyup.enter="reload" />
         <el-select v-model="filters.sort" placeholder="排序" @change="reload">
           <el-option label="最新上传" value="latest" />
@@ -138,6 +138,12 @@ watch(() => settings.loaded, () => {
 
 watch(() => route.query, () => {
   filters.q = route.query.q || '';
+  filters.sort = route.query.sort || filters.sort || settings.settings.defaultSort || 'latest';
+  filters.tagId = route.query.tagId ? Number(route.query.tagId) : null;
+  filters.city = route.query.city || '';
+  filters.year = route.query.year || '';
+  filters.pinned = route.query.pinned === 'true';
+  filters.featured = route.query.featured === 'true';
   reload();
 });
 
@@ -158,7 +164,15 @@ onBeforeUnmount(() => observer?.disconnect());
 
 <style scoped>
 .photo-hero {
+  --photo-wall-side-space: clamp(300px, 24vw, 560px);
+  --photo-wall-safe-space: clamp(12px, 1.4vw, 28px);
+  --photo-wall-content-width: min(100%, calc(100vw - var(--photo-wall-side-space)));
+  width: var(--photo-wall-content-width);
   padding-bottom: 10px;
+}
+
+.photo-hero.photo-wall-wide {
+  --photo-wall-content-width: min(100%, calc(100vw - var(--photo-wall-safe-space)));
 }
 
 .photo-wall-section {
@@ -166,8 +180,16 @@ onBeforeUnmount(() => observer?.disconnect());
 }
 
 .filter-bar {
+  --photo-wall-side-space: clamp(300px, 24vw, 560px);
+  --photo-wall-safe-space: clamp(12px, 1.4vw, 28px);
+  --photo-wall-content-width: min(100%, calc(100vw - var(--photo-wall-side-space)));
+  width: var(--photo-wall-content-width);
   padding: 12px;
-  margin: 0 0 12px;
+  margin: 0 auto 12px;
+}
+
+.filter-bar.photo-wall-wide {
+  --photo-wall-content-width: min(100%, calc(100vw - var(--photo-wall-safe-space)));
 }
 
 .filter-bar .el-input,
@@ -184,6 +206,11 @@ onBeforeUnmount(() => observer?.disconnect());
 }
 
 @media (max-width: 760px) {
+  .photo-hero,
+  .filter-bar {
+    width: min(100%, calc(100vw - 16px));
+  }
+
   .filter-bar .el-input,
   .filter-bar .el-select {
     width: 100%;

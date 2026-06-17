@@ -1,6 +1,6 @@
 <template>
   <div class="tag-cloud">
-    <router-link v-for="tag in tags" :key="tag.id" :to="`/tags/${tag.id}`" :style="{ '--tag-color': tag.color || 'var(--theme-tag-fallback)' }">
+    <router-link v-for="tag in tags" :key="tag.id" :to="{ path: '/photos', query: { tagId: tag.id } }" :style="{ '--tag-color': tag.color || 'var(--theme-tag-fallback)' }">
       #{{ tag.name }}
       <span>{{ tag.photoCount }}</span>
     </router-link>

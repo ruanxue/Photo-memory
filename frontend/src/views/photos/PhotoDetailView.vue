@@ -62,7 +62,7 @@
 
           <div class="story-links">
             <router-link v-if="photo.album" :to="`/albums/${photo.album.id}`">{{ photo.album.title }}</router-link>
-            <router-link v-for="item in photo.tags" :key="item.tag.id" :to="`/tags/${item.tag.id}`">#{{ item.tag.name }}</router-link>
+            <router-link v-for="item in photo.tags" :key="item.tag.id" :to="{ path: '/photos', query: { tagId: item.tag.id } }">#{{ item.tag.name }}</router-link>
           </div>
 
           <h2>评论</h2>

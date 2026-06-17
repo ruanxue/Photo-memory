@@ -18,7 +18,17 @@
         <el-input v-model="form.description" type="textarea" :rows="3" />
       </el-form-item>
       <el-form-item label="标签">
-        <el-input v-model="form.tags" placeholder="用逗号分隔，例如：旅行, 夜景, 街头" />
+        <el-select
+          v-model="form.tags"
+          multiple
+          filterable
+          clearable
+          collapse-tags
+          collapse-tags-tooltip
+          placeholder="选择已有标签"
+        >
+          <el-option v-for="tag in tags" :key="tag.id" :label="tag.name" :value="tag.name" />
+        </el-select>
       </el-form-item>
       <el-form-item label="地点">
         <div class="upload-grid">
@@ -56,6 +66,7 @@ import { onMounted, reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { albumApi } from '../../api/album.api.js';
 import { photoApi } from '../../api/photo.api.js';
+import { tagApi } from '../../api/tag.api.js';
 import { useSettingsStore } from '../../stores/settings.store.js';
 import EmptyState from '../common/EmptyState.vue';
 
@@ -64,6 +75,7 @@ const settings = useSettingsStore();
 const uploadRef = ref(null);
 const fileList = ref([]);
 const albums = ref([]);
+const tags = ref([]);
 const progress = ref(0);
 const submitting = ref(false);
 const visibilityOptions = [
@@ -74,7 +86,7 @@ const form = reactive({
   title: '',
   description: '',
   albumId: null,
-  tags: '',
+  tags: [],
   country: '',
   city: '',
   locationName: '',
@@ -82,8 +94,9 @@ const form = reactive({
 });
 
 const loadOptions = async () => {
-  const albumRes = await albumApi.list({ pageSize: 100 });
+  const [albumRes, tagRes] = await Promise.all([albumApi.list({ pageSize: 100 }), tagApi.list()]);
   albums.value = albumRes.data;
+  tags.value = tagRes.data;
 };
 
 const onChange = (file, files) => {
@@ -102,6 +115,10 @@ const clear = () => {
 
 const appendForm = (fd) => {
   Object.entries(form).forEach(([key, value]) => {
+    if (Array.isArray(value)) {
+      if (value.length) fd.append(key, value.join(','));
+      return;
+    }
     if (value !== null && value !== undefined && value !== '') fd.append(key, value);
   });
 };
@@ -146,6 +163,10 @@ onMounted(loadOptions);
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
+  width: 100%;
+}
+
+.upload-panel :deep(.el-select) {
   width: 100%;
 }
 

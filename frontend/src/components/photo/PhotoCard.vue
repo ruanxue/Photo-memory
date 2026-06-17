@@ -26,7 +26,7 @@
           </span>
         </div>
         <div v-if="photo.tags?.length" class="overlay-tags" :class="{ 'with-status': photo.isFeatured || photo.isPinned }">
-          <router-link v-for="item in photo.tags.slice(0, 3)" :key="item.tag.id" :to="`/tags/${item.tag.id}`" @click.stop>
+          <router-link v-for="item in photo.tags.slice(0, 3)" :key="item.tag.id" :to="{ path: '/photos', query: { tagId: item.tag.id } }" @click.stop>
             #{{ item.tag.name }}
           </router-link>
         </div>
@@ -115,6 +115,7 @@ const cardStyle = computed(() => {
   const radius = `${cardRadius.value}px`;
   return {
     '--photo-card-radius': radius,
+    '--photo-image-radius': `${radius} ${radius} 0 0`,
     '--wall-card-radius': radius,
     '--wall-image-radius': `${radius} ${radius} 0 0`
   };
@@ -159,6 +160,7 @@ onMounted(checkCachedImage);
 
 <style scoped>
 .photo-card {
+  --photo-image-radius: var(--photo-card-radius, var(--radius)) var(--photo-card-radius, var(--radius)) 0 0;
   display: inline-block;
   width: 100%;
   margin: 0 0 14px;
@@ -185,6 +187,7 @@ onMounted(checkCachedImage);
   overflow: hidden;
   isolation: isolate;
   container-type: inline-size;
+  border-radius: var(--photo-image-radius);
   --overlay-edge: clamp(6px, 4cqw, 12px);
   --overlay-edge-hover: clamp(9px, 5.6cqw, 17px);
   --overlay-current-edge: var(--overlay-edge);
@@ -204,6 +207,7 @@ onMounted(checkCachedImage);
   position: absolute;
   inset: 0;
   z-index: 0;
+  border-radius: var(--photo-image-radius);
   background:
     linear-gradient(110deg, transparent 0%, var(--theme-image-skeleton-sheen) 44%, transparent 74%),
     var(--theme-image-skeleton-base);
@@ -229,6 +233,7 @@ onMounted(checkCachedImage);
   border: 0;
   background: transparent;
   cursor: pointer;
+  border-radius: var(--photo-image-radius);
   opacity: var(--image-load-opacity, 1);
   filter: var(--image-load-filter, none);
   transform: var(--image-load-transform, none);
@@ -282,6 +287,7 @@ onMounted(checkCachedImage);
   inset: 0;
   z-index: 1;
   pointer-events: none;
+  border-radius: var(--photo-image-radius);
   opacity: 0;
   box-shadow:
     inset 0 0 0 1px var(--theme-image-hover-ring),
@@ -295,6 +301,7 @@ onMounted(checkCachedImage);
   width: 100%;
   height: auto;
   object-fit: contain;
+  border-radius: var(--photo-image-radius);
   user-select: none;
   -webkit-user-drag: none;
   transform: scale(1);
@@ -607,6 +614,7 @@ onMounted(checkCachedImage);
 .photo-card-wall {
   --wall-card-radius: var(--waterfall-card-radius, 4px);
   --wall-image-radius: var(--wall-card-radius) var(--wall-card-radius) 0 0;
+  --photo-image-radius: var(--wall-image-radius);
   margin-bottom: clamp(5px, 0.45vw, 9px);
   border: 1px solid var(--theme-line-faint);
   border-radius: var(--wall-card-radius);

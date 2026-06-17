@@ -58,7 +58,7 @@
               </div>
               <div class="tag-list">
                 <router-link v-if="photo.album" :to="`/albums/${photo.album.id}`" @click="close">{{ photo.album.title }}</router-link>
-                <router-link v-for="item in photo.tags" :key="item.tag.id" :to="`/tags/${item.tag.id}`" @click="close">
+                <router-link v-for="item in photo.tags" :key="item.tag.id" :to="{ path: '/photos', query: { tagId: item.tag.id } }" @click="close">
                   #{{ item.tag.name }}
                 </router-link>
               </div>

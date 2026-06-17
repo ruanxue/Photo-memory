@@ -9,7 +9,7 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import L from 'leaflet';
 import { imageUrl } from '../../utils/image.js';
 import { formatDate } from '../../utils/format.js';
@@ -22,6 +22,7 @@ const props = defineProps({
   height: { type: String, default: '520px' }
 });
 
+const emit = defineEmits(['detail']);
 const mapEl = ref(null);
 const settings = useSettingsStore();
 const tileErrorVisible = ref(false);
@@ -29,6 +30,8 @@ let map;
 let tileLayer;
 let attributionControl;
 let markers = [];
+const markerByPhotoId = new Map();
+let focusedPhotoId = null;
 
 const markerIcon = L.divIcon({
   className: 'photo-marker',
@@ -37,30 +40,67 @@ const markerIcon = L.divIcon({
   iconAnchor: [11, 11]
 });
 
+const escapeHtml = (value = '') => String(value)
+  .replaceAll('&', '&amp;')
+  .replaceAll('<', '&lt;')
+  .replaceAll('>', '&gt;')
+  .replaceAll('"', '&quot;')
+  .replaceAll("'", '&#039;');
+
+const setFocusedMarker = (photoId) => {
+  focusedPhotoId = photoId ? Number(photoId) : null;
+  markerByPhotoId.forEach((marker, id) => {
+    const element = marker.getElement();
+    element?.classList.toggle('photo-marker-active', id === focusedPhotoId);
+  });
+};
+
 const renderMarkers = () => {
   if (!map) return;
   markers.forEach((marker) => marker.remove());
   markers = [];
+  markerByPhotoId.clear();
   const bounds = [];
   props.photos
     .filter((photo) => photo.latitude && photo.longitude)
     .forEach((photo) => {
       const marker = L.marker([photo.latitude, photo.longitude], { icon: markerIcon }).addTo(map);
       marker.bindPopup(`
-        <a href="/photos/${photo.id}" class="map-popup">
-          <img src="${imageUrl(photo.thumbnailUrl)}" alt="${photo.title}" />
-          <strong>${photo.title}</strong>
-          <span>${photo.city || photo.locationName || ''} ${formatDate(photo.takenAt || photo.uploadedAt)}</span>
+        <a href="/photos/${photo.id}" class="map-popup" aria-label="查看照片 ${escapeHtml(photo.title)}">
+          <img src="${escapeHtml(imageUrl(photo.thumbnailUrl))}" alt="${escapeHtml(photo.title)}" />
+          <strong>${escapeHtml(photo.title)}</strong>
+          <span>${escapeHtml(photo.city || photo.locationName || '')} ${formatDate(photo.takenAt || photo.uploadedAt)}</span>
         </a>
       `, { closeButton: false, autoPan: false });
-      bindHoverPopup(marker);
+      bindHoverPopup(marker, photo);
       markers.push(marker);
+      markerByPhotoId.set(Number(photo.id), marker);
       bounds.push([photo.latitude, photo.longitude]);
     });
   if (bounds.length) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 12 });
+  setFocusedMarker(focusedPhotoId);
 };
 
-const bindHoverPopup = (marker) => {
+const focusPhoto = async (photoOrId) => {
+  const photoId = Number(typeof photoOrId === 'object' ? photoOrId?.id : photoOrId);
+  if (!map || !Number.isFinite(photoId)) return false;
+  await nextTick();
+  const marker = markerByPhotoId.get(photoId);
+  const photo = props.photos.find((item) => Number(item.id) === photoId);
+  if (!marker || !photo?.latitude || !photo?.longitude) return false;
+
+  setFocusedMarker(photoId);
+  map.flyTo([Number(photo.latitude), Number(photo.longitude)], Math.max(map.getZoom(), 14), {
+    animate: true,
+    duration: 0.85
+  });
+  window.setTimeout(() => {
+    marker.openPopup();
+  }, 360);
+  return true;
+};
+
+const bindHoverPopup = (marker, photo) => {
   let closeTimer = null;
   let popupEl = null;
 
@@ -78,16 +118,26 @@ const bindHoverPopup = (marker) => {
     }, 180);
   };
 
+  const openDetail = (event) => {
+    if (!event.target?.closest?.('.map-popup')) return;
+    event.preventDefault();
+    event.stopPropagation();
+    cancelClose();
+    emit('detail', photo);
+  };
+
   const attachPopupHover = () => {
     const nextPopupEl = marker.getPopup()?.getElement();
     if (!nextPopupEl || nextPopupEl === popupEl) return;
     if (popupEl) {
       popupEl.removeEventListener('mouseenter', cancelClose);
       popupEl.removeEventListener('mouseleave', scheduleClose);
+      popupEl.removeEventListener('click', openDetail);
     }
     popupEl = nextPopupEl;
     popupEl.addEventListener('mouseenter', cancelClose);
     popupEl.addEventListener('mouseleave', scheduleClose);
+    popupEl.addEventListener('click', openDetail);
   };
 
   const cleanup = () => {
@@ -95,6 +145,7 @@ const bindHoverPopup = (marker) => {
     if (!popupEl) return;
     popupEl.removeEventListener('mouseenter', cancelClose);
     popupEl.removeEventListener('mouseleave', scheduleClose);
+    popupEl.removeEventListener('click', openDetail);
     popupEl = null;
   };
 
@@ -170,6 +221,8 @@ watch(providerConfig, applyTileLayer);
 onBeforeUnmount(() => {
   if (map) map.remove();
 });
+
+defineExpose({ focusPhoto });
 </script>
 
 <style>
@@ -181,6 +234,13 @@ onBeforeUnmount(() => {
   background: var(--theme-map-marker-fill);
   border: 3px solid var(--theme-map-marker-ring);
   box-shadow: var(--theme-map-marker-shadow);
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.photo-marker.photo-marker-active span {
+  transform: scale(1.34);
+  background: var(--theme-primary);
+  border-color: var(--theme-map-marker-ring);
 }
 
 .map-shell .leaflet-tile {
@@ -228,6 +288,7 @@ onBeforeUnmount(() => {
   gap: 6px;
   color: var(--theme-map-popup-text) !important;
   min-width: 160px;
+  cursor: pointer;
 }
 
 .map-shell .map-popup img {
