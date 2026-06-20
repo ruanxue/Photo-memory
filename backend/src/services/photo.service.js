@@ -45,26 +45,56 @@ export const visibilityFilter = (user) => {
   if (user) {
     return {
       status: 'normal',
-      OR: [{ visibility: 'public' }, { userId: user.id }]
+      AND: [
+        { OR: [{ visibility: 'public' }, { userId: user.id }] },
+        {
+          OR: [
+            { albumId: null },
+            { userId: user.id },
+            { album: { visibility: 'public' } },
+            { album: { userId: user.id } }
+          ]
+        }
+      ]
     };
   }
-  return { status: 'normal', visibility: 'public' };
+  return {
+    status: 'normal',
+    visibility: 'public',
+    OR: [
+      { albumId: null },
+      { album: { visibility: 'public' } }
+    ]
+  };
 };
 
 export const requirePhotoAccess = async (photoId, user, allowPrivate = false) => {
-  const photo = await prisma.photo.findUnique({ where: { id: Number(photoId) }, include: photoInclude });
+  const photo = await prisma.photo.findUnique({
+    where: { id: Number(photoId) },
+    include: {
+      ...photoInclude,
+      album: { select: { id: true, title: true, visibility: true, userId: true } }
+    }
+  });
   if (!photo || photo.status === 'deleted') {
     const err = new Error('照片不存在');
     err.status = 404;
     throw err;
   }
   const canManage = user && (user.role === 'admin' || user.id === photo.userId);
-  if (!canManage && photo.visibility !== 'public' && !allowPrivate) {
+  const canManageAlbum = user && photo.album && (user.role === 'admin' || user.id === photo.album.userId);
+  const hiddenByPhoto = photo.visibility !== 'public';
+  const hiddenByAlbum = photo.album?.visibility === 'private' && !canManageAlbum;
+  if (!canManage && !allowPrivate && (hiddenByPhoto || hiddenByAlbum)) {
     const err = new Error('没有权限查看该照片');
     err.status = 403;
     throw err;
   }
-  return { photo, canManage };
+  const safePhoto = {
+    ...photo,
+    album: photo.album ? { id: photo.album.id, title: photo.album.title } : null
+  };
+  return { photo: safePhoto, canManage };
 };
 
 export const parseTagNames = (value) => {
@@ -90,7 +120,7 @@ export const upsertTags = async (tagNames) => {
     const tag = await prisma.tag.upsert({
       where: { name },
       update: {},
-      create: { name, slug, color: '#eef2ff' }
+      create: { name, slug, color: null }
     });
     tags.push(tag);
   }

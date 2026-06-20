@@ -6,12 +6,14 @@ import { upload } from '../middlewares/upload.middleware.js';
 import {
   addComment,
   batchUploadPhotos,
+  createPhotoFromUrl,
   deletePhoto,
   favoritePhoto,
   getComments,
   getPhoto,
   listPhotos,
   listWallPhotos,
+  photoFilterOptions,
   unfavoritePhoto,
   updatePhoto,
   uploadPhoto
@@ -21,9 +23,11 @@ const router = Router();
 
 router.get('/', optionalAuth, asyncHandler(listPhotos));
 router.get('/wall', optionalAuth, asyncHandler(listWallPhotos));
-router.get('/:id', optionalAuth, asyncHandler(getPhoto));
+router.get('/filter-options', optionalAuth, asyncHandler(photoFilterOptions));
 router.post('/upload', requireAuth, uploadLimiter, upload.single('photo'), asyncHandler(uploadPhoto));
 router.post('/batch-upload', requireAuth, uploadLimiter, upload.array('photos', 30), asyncHandler(batchUploadPhotos));
+router.post('/url', requireAuth, uploadLimiter, asyncHandler(createPhotoFromUrl));
+router.get('/:id', optionalAuth, asyncHandler(getPhoto));
 router.put('/:id', requireAuth, asyncHandler(updatePhoto));
 router.delete('/:id', requireAuth, asyncHandler(deletePhoto));
 router.post('/:id/favorite', requireAuth, asyncHandler(favoritePhoto));

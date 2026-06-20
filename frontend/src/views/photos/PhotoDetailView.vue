@@ -6,25 +6,30 @@
         <el-icon><ArrowLeft /></el-icon>
         <span>返回</span>
       </button>
-      <div class="container detail-layout">
+      <div class="container detail-layout" :class="{ 'detail-layout-simple': !hasTechnicalSide }">
         <div class="detail-photo">
           <img :src="imageUrl(photo.mediumUrl || photo.originalUrl)" :alt="photo.title" />
         </div>
 
         <aside class="detail-side">
-          <div class="side-panel parameters">
+          <div v-if="hasExif" class="side-panel parameters">
             <h2>照片参数</h2>
             <ExifInfo :photo="photo" />
           </div>
 
-          <div class="side-panel location-panel">
+          <div v-if="hasGps" class="side-panel location-panel">
             <h2>地理位置</h2>
-            <template v-if="photo.latitude && photo.longitude">
-              <MapViewer :photos="[photo]" :center="[photo.latitude, photo.longitude]" :zoom="11" height="160px" />
-              <router-link :to="{ path: '/map', query: { city: photo.city } }">{{ photo.locationName || photo.city || '查看地图页面' }}</router-link>
-              <small>{{ photo.city || '未知城市' }} · {{ photo.country || '未知地区' }}</small>
-            </template>
-            <p v-else class="no-location">暂无地理位置信息</p>
+            <MapViewer
+              :photos="[photo]"
+              :center="[photo.latitude, photo.longitude]"
+              :zoom="detailMapZoom"
+              :fit-max-zoom="detailMapZoom"
+              :focus-zoom="detailMapZoom"
+              height="160px"
+              :show-popup="false"
+            />
+            <router-link :to="{ path: '/map', query: { city: photo.city } }">{{ photo.locationName || photo.city || '查看地图页面' }}</router-link>
+            <small>{{ photo.city || '未知城市' }} · {{ photo.country || '未知地区' }}</small>
           </div>
 
           <div class="surface side-panel">
@@ -92,7 +97,12 @@
       <el-form :model="editForm" label-position="top">
         <el-form-item label="标题"><el-input v-model="editForm.title" /></el-form-item>
         <el-form-item label="描述"><el-input v-model="editForm.description" type="textarea" :rows="3" /></el-form-item>
-        <el-form-item label="标签"><el-input v-model="editForm.tags" /></el-form-item>
+        <el-form-item label="标签"><TagSelect v-model="editForm.tags" placeholder="选择标签" /></el-form-item>
+        <div v-if="isExternalPhoto(editForm)" class="external-url-fields">
+          <el-form-item label="图片 URL"><el-input v-model="editForm.originalUrl" /></el-form-item>
+          <el-form-item label="中图 URL"><el-input v-model="editForm.mediumUrl" /></el-form-item>
+          <el-form-item label="缩略图 URL"><el-input v-model="editForm.thumbnailUrl" /></el-form-item>
+        </div>
         <div class="edit-grid">
           <el-form-item label="国家"><el-input v-model="editForm.country" /></el-form-item>
           <el-form-item label="城市"><el-input v-model="editForm.city" /></el-form-item>
@@ -105,6 +115,17 @@
               <el-option label="私密" value="private" />
             </el-select>
           </el-form-item>
+        </div>
+        <div class="edit-grid exif-edit-grid">
+          <el-form-item label="相机品牌"><el-input v-model="editForm.cameraMake" /></el-form-item>
+          <el-form-item label="相机型号"><el-input v-model="editForm.cameraModel" /></el-form-item>
+          <el-form-item label="镜头"><el-input v-model="editForm.lensModel" /></el-form-item>
+          <el-form-item label="焦距 mm"><el-input v-model="editForm.focalLength" /></el-form-item>
+          <el-form-item label="光圈"><el-input v-model="editForm.aperture" /></el-form-item>
+          <el-form-item label="快门"><el-input v-model="editForm.shutterSpeed" /></el-form-item>
+          <el-form-item label="ISO"><el-input-number v-model="editForm.iso" :min="0" /></el-form-item>
+          <el-form-item label="曝光补偿"><el-input v-model="editForm.exposureCompensation" /></el-form-item>
+          <el-form-item label="白平衡"><el-input v-model="editForm.whiteBalance" /></el-form-item>
         </div>
       </el-form>
       <template #footer>
@@ -121,7 +142,9 @@ import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { ArrowLeft } from '@element-plus/icons-vue';
 import { photoApi } from '../../api/photo.api.js';
-import { imageUrl } from '../../utils/image.js';
+import { imageUrl, isExternalPhoto } from '../../utils/image.js';
+import { hasExifInfo, hasGpsInfo } from '../../utils/exif.js';
+import { mapSceneForPhoto, mapZoomForScene } from '../../utils/map.js';
 import { readGuestProfile, saveGuestProfile } from '../../utils/guest.js';
 import { formatDate, formatDateTime, numberText } from '../../utils/format.js';
 import { useAuthStore } from '../../stores/auth.store.js';
@@ -129,6 +152,7 @@ import { useSettingsStore } from '../../stores/settings.store.js';
 import LoadingState from '../../components/common/LoadingState.vue';
 import ExifInfo from '../../components/photo/ExifInfo.vue';
 import MapViewer from '../../components/map/MapViewer.vue';
+import TagSelect from '../../components/common/TagSelect.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -145,6 +169,10 @@ const editVisible = ref(false);
 const editForm = reactive({});
 const canManage = computed(() => auth.user && photo.value && (auth.isAdmin || auth.user.id === photo.value.userId));
 const commentsEnabled = computed(() => settings.settings.commentsEnabled !== false);
+const hasExif = computed(() => hasExifInfo(photo.value));
+const hasGps = computed(() => hasGpsInfo(photo.value));
+const hasTechnicalSide = computed(() => hasExif.value || hasGps.value);
+const detailMapZoom = computed(() => mapZoomForScene(settings.settings, mapSceneForPhoto(photo.value), 'detail'));
 
 const goBack = () => {
   if (window.history.length > 1) router.back();
@@ -155,13 +183,27 @@ const hydrateEdit = () => {
   Object.assign(editForm, {
     title: photo.value.title,
     description: photo.value.description,
+    originalUrl: photo.value.originalUrl || '',
+    mediumUrl: photo.value.mediumUrl || '',
+    thumbnailUrl: photo.value.thumbnailUrl || '',
+    mimeType: photo.value.mimeType || '',
+    fileSize: photo.value.fileSize ?? null,
     country: photo.value.country,
     city: photo.value.city,
     locationName: photo.value.locationName,
     latitude: photo.value.latitude,
     longitude: photo.value.longitude,
+    cameraMake: photo.value.cameraMake || '',
+    cameraModel: photo.value.cameraModel || '',
+    lensModel: photo.value.lensModel || '',
+    focalLength: photo.value.focalLength ?? '',
+    aperture: photo.value.aperture ?? '',
+    shutterSpeed: photo.value.shutterSpeed || '',
+    iso: photo.value.iso ?? null,
+    exposureCompensation: photo.value.exposureCompensation || '',
+    whiteBalance: photo.value.whiteBalance || '',
     visibility: photo.value.visibility,
-    tags: photo.value.tags?.map((item) => item.tag.name).join(', ') || ''
+    tags: photo.value.tags?.map((item) => item.tag.name) || []
   });
 };
 
@@ -216,7 +258,16 @@ const share = async () => {
 };
 
 const saveEdit = async () => {
-  const res = await photoApi.update(photo.value.id, editForm);
+  const payload = { ...editForm };
+  if (!isExternalPhoto(editForm)) {
+    delete payload.originalUrl;
+    delete payload.mediumUrl;
+    delete payload.thumbnailUrl;
+  } else {
+    payload.mediumUrl = payload.mediumUrl || payload.originalUrl;
+    payload.thumbnailUrl = payload.thumbnailUrl || payload.mediumUrl || payload.originalUrl;
+  }
+  const res = await photoApi.update(photo.value.id, payload);
   photo.value = res.data;
   editVisible.value = false;
   ElMessage.success('照片已更新');
@@ -237,7 +288,7 @@ watch(() => route.params.id, load);
 .detail-back {
   position: fixed;
   top: clamp(16px, 2vw, 28px);
-  left: clamp(16px, 2vw, 28px);
+  left: clamp(8px, 1vw, 14px);
   z-index: 4;
   display: inline-flex;
   align-items: center;
@@ -273,6 +324,31 @@ watch(() => route.params.id, load);
   grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
   align-items: start;
   gap: clamp(22px, 3vw, 34px);
+}
+
+.detail-layout-simple {
+  max-width: min(980px, calc(100vw - 28px));
+  grid-template-areas:
+    "photo"
+    "main"
+    "side";
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.detail-layout-simple .detail-photo img {
+  max-height: min(76dvh, 900px);
+}
+
+.detail-layout-simple .detail-main {
+  max-width: 760px;
+  width: 100%;
+  justify-self: center;
+}
+
+.detail-layout-simple .detail-side {
+  width: min(520px, 100%);
+  justify-self: center;
+  position: static;
 }
 
 .detail-photo {
@@ -431,6 +507,21 @@ h2 {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
+}
+
+.external-url-fields {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+  border: 1px solid var(--theme-line);
+  border-radius: var(--theme-radius);
+  background: var(--theme-surface-soft);
+}
+
+.exif-edit-grid {
+  margin-top: 10px;
 }
 
 @media (max-width: 900px) {

@@ -46,6 +46,7 @@ import { Close } from '@element-plus/icons-vue';
 import { albumApi } from '../../api/album.api.js';
 import { imageUrl } from '../../utils/image.js';
 import { formatDate } from '../../utils/format.js';
+import { setPageScrollLocked, unlockPageScroll } from '../../utils/scrollLock.js';
 import LoadingState from '../common/LoadingState.vue';
 import EmptyState from '../common/EmptyState.vue';
 
@@ -59,6 +60,7 @@ const emit = defineEmits(['close']);
 const album = ref(null);
 const loading = ref(false);
 let requestVersion = 0;
+const scrollLockKey = Symbol('album-detail-sheet');
 
 const close = () => emit('close');
 
@@ -80,8 +82,14 @@ const onKey = (event) => {
 };
 
 watch(() => [props.visible, props.albumId], load, { immediate: true });
+watch(() => props.visible, (visible) => {
+  setPageScrollLocked(scrollLockKey, visible);
+}, { immediate: true });
 window.addEventListener('keydown', onKey);
-onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKey);
+  unlockPageScroll(scrollLockKey);
+});
 </script>
 
 <style scoped>

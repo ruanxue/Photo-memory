@@ -6,15 +6,27 @@
   <section class="section">
     <div class="container">
       <div class="toolbar surface">
-        <el-input v-model="filters.city" clearable placeholder="城市" @keyup.enter="load" />
-        <el-select v-model="filters.country" clearable placeholder="国家 / 地区" @change="load">
+        <el-input v-model="filters.q" clearable placeholder="搜索图片标题" @keyup.enter="load" />
+        <el-select v-model="filters.country" filterable clearable placeholder="国家 / 地区" @change="handleCountryChange">
           <el-option v-for="country in countries" :key="country.country" :label="`${country.country} (${country.count})`" :value="country.country" />
         </el-select>
-        <el-input v-model="filters.year" clearable placeholder="年份" @keyup.enter="load" />
+        <el-select v-model="filters.city" filterable clearable placeholder="城市" @change="load">
+          <el-option v-for="city in filteredCities" :key="`${city.country || 'unknown'}-${city.city}`" :label="`${city.city} (${city.count})`" :value="city.city" />
+        </el-select>
+        <el-select v-model="filters.year" clearable placeholder="年份" @change="load">
+          <el-option v-for="item in years" :key="item.year" :label="`${item.year} (${item.count})`" :value="item.year" />
+        </el-select>
         <el-button type="primary" @click="load">筛选</el-button>
       </div>
       <div ref="mapStageRef" class="map-stage">
-        <MapViewer ref="mapViewerRef" :photos="photos" height="640px" @detail="openPhotoDetail" />
+        <MapViewer
+          ref="mapViewerRef"
+          :photos="photos"
+          height="640px"
+          :fit-max-zoom="mapPageZoom"
+          :focus-zoom="mapPageZoom"
+          @detail="openPhotoDetail"
+        />
       </div>
       <div class="map-list">
         <button
@@ -42,22 +54,38 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import request from '../../api/request.js';
 import MapViewer from '../../components/map/MapViewer.vue';
 import PhotoDetailSheet from '../../components/photo/PhotoDetailSheet.vue';
 import { imageUrl } from '../../utils/image.js';
+import { mapSceneForPhoto, mapSceneForPhotos, mapZoomForScene } from '../../utils/map.js';
+import { useSettingsStore } from '../../stores/settings.store.js';
 
 const route = useRoute();
+const settings = useSettingsStore();
 const photos = ref([]);
+const cities = ref([]);
 const countries = ref([]);
+const years = ref([]);
 const selectedPhotoId = ref(null);
 const mapViewerRef = ref(null);
 const mapStageRef = ref(null);
 const detailVisible = ref(false);
 const detailPhoto = ref(null);
-const filters = reactive({ city: route.query.city || '', country: '', year: '' });
+const filters = reactive({
+  q: route.query.q || '',
+  city: route.query.city || '',
+  country: route.query.country || '',
+  year: route.query.year ? Number(route.query.year) : ''
+});
+const filteredCities = computed(() => {
+  if (!filters.country) return cities.value;
+  return cities.value.filter((city) => city.country === filters.country);
+});
+const mapScene = computed(() => mapSceneForPhotos(photos.value, filters.country));
+const mapPageZoom = computed(() => mapZoomForScene(settings.settings, mapScene.value, 'page'));
 
 const load = async () => {
   const res = await request.get('/map/photos', { params: filters });
@@ -65,9 +93,17 @@ const load = async () => {
   selectedPhotoId.value = null;
 };
 
+const handleCountryChange = () => {
+  if (filters.city && !filteredCities.value.some((city) => city.city === filters.city)) {
+    filters.city = '';
+  }
+  load();
+};
+
 const focusPhoto = (photo) => {
   selectedPhotoId.value = photo.id;
-  mapViewerRef.value?.focusPhoto(photo);
+  const photoZoom = mapZoomForScene(settings.settings, mapSceneForPhoto(photo), 'page');
+  mapViewerRef.value?.focusPhoto(photo, photoZoom);
   mapStageRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
 
@@ -84,8 +120,15 @@ const syncPhoto = (fresh) => {
 };
 
 onMounted(async () => {
-  const [countryRes] = await Promise.all([request.get('/map/countries'), load()]);
+  const [cityRes, countryRes, yearRes] = await Promise.all([
+    request.get('/map/cities'),
+    request.get('/map/countries'),
+    request.get('/map/years'),
+    load()
+  ]);
+  cities.value = cityRes.data;
   countries.value = countryRes.data;
+  years.value = yearRes.data;
 });
 </script>
 
@@ -96,7 +139,7 @@ onMounted(async () => {
 
 .toolbar .el-input,
 .toolbar .el-select {
-  width: 190px;
+  width: 210px;
 }
 
 .map-stage {

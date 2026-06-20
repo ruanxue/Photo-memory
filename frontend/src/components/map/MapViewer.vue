@@ -19,7 +19,10 @@ const props = defineProps({
   photos: { type: Array, default: () => [] },
   center: { type: Array, default: () => [30.67, 104.06] },
   zoom: { type: Number, default: 4 },
-  height: { type: String, default: '520px' }
+  fitMaxZoom: { type: Number, default: 12 },
+  focusZoom: { type: Number, default: 14 },
+  height: { type: String, default: '520px' },
+  showPopup: { type: Boolean, default: true }
 });
 
 const emit = defineEmits(['detail']);
@@ -55,33 +58,50 @@ const setFocusedMarker = (photoId) => {
   });
 };
 
+const closePopupMode = () => {
+  if (!map || props.showPopup) return;
+  map.closePopup();
+  mapEl.value?.querySelectorAll('.leaflet-popup').forEach((popup) => popup.remove());
+};
+
 const renderMarkers = () => {
   if (!map) return;
-  markers.forEach((marker) => marker.remove());
+  closePopupMode();
+  markers.forEach((marker) => {
+    marker.off();
+    marker.unbindPopup();
+    marker.remove();
+  });
   markers = [];
   markerByPhotoId.clear();
   const bounds = [];
   props.photos
     .filter((photo) => photo.latitude && photo.longitude)
     .forEach((photo) => {
-      const marker = L.marker([photo.latitude, photo.longitude], { icon: markerIcon }).addTo(map);
-      marker.bindPopup(`
-        <a href="/photos/${photo.id}" class="map-popup" aria-label="查看照片 ${escapeHtml(photo.title)}">
-          <img src="${escapeHtml(imageUrl(photo.thumbnailUrl))}" alt="${escapeHtml(photo.title)}" />
-          <strong>${escapeHtml(photo.title)}</strong>
-          <span>${escapeHtml(photo.city || photo.locationName || '')} ${formatDate(photo.takenAt || photo.uploadedAt)}</span>
-        </a>
-      `, { closeButton: false, autoPan: false });
-      bindHoverPopup(marker, photo);
+      const marker = L.marker([photo.latitude, photo.longitude], {
+        icon: markerIcon,
+        interactive: props.showPopup
+      }).addTo(map);
+      if (props.showPopup) {
+        marker.bindPopup(`
+          <a href="/photos/${photo.id}" class="map-popup" aria-label="查看照片 ${escapeHtml(photo.title)}">
+            <img src="${escapeHtml(imageUrl(photo.thumbnailUrl))}" alt="${escapeHtml(photo.title)}" />
+            <strong>${escapeHtml(photo.title)}</strong>
+            <span>${escapeHtml(photo.city || photo.locationName || '')} ${formatDate(photo.takenAt || photo.uploadedAt)}</span>
+          </a>
+        `, { closeButton: false, autoPan: false });
+        bindHoverPopup(marker, photo);
+      }
       markers.push(marker);
       markerByPhotoId.set(Number(photo.id), marker);
       bounds.push([photo.latitude, photo.longitude]);
     });
-  if (bounds.length) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 12 });
+  if (bounds.length) map.fitBounds(bounds, { padding: [30, 30], maxZoom: props.fitMaxZoom });
   setFocusedMarker(focusedPhotoId);
+  closePopupMode();
 };
 
-const focusPhoto = async (photoOrId) => {
+const focusPhoto = async (photoOrId, zoomOverride = props.focusZoom) => {
   const photoId = Number(typeof photoOrId === 'object' ? photoOrId?.id : photoOrId);
   if (!map || !Number.isFinite(photoId)) return false;
   await nextTick();
@@ -90,17 +110,22 @@ const focusPhoto = async (photoOrId) => {
   if (!marker || !photo?.latitude || !photo?.longitude) return false;
 
   setFocusedMarker(photoId);
-  map.flyTo([Number(photo.latitude), Number(photo.longitude)], Math.max(map.getZoom(), 14), {
+  const targetZoom = Number.isFinite(Number(zoomOverride)) ? Number(zoomOverride) : props.focusZoom;
+  map.flyTo([Number(photo.latitude), Number(photo.longitude)], targetZoom, {
     animate: true,
     duration: 0.85
   });
-  window.setTimeout(() => {
-    marker.openPopup();
-  }, 360);
+  if (props.showPopup) {
+    window.setTimeout(() => {
+      marker.openPopup();
+    }, 360);
+  }
   return true;
 };
 
 const bindHoverPopup = (marker, photo) => {
+  if (!props.showPopup) return;
+
   let closeTimer = null;
   let popupEl = null;
 
@@ -127,6 +152,7 @@ const bindHoverPopup = (marker, photo) => {
   };
 
   const attachPopupHover = () => {
+    if (!props.showPopup) return;
     const nextPopupEl = marker.getPopup()?.getElement();
     if (!nextPopupEl || nextPopupEl === popupEl) return;
     if (popupEl) {
@@ -150,11 +176,18 @@ const bindHoverPopup = (marker, photo) => {
   };
 
   marker.on('mouseover', () => {
+    if (!props.showPopup) return;
     cancelClose();
     marker.openPopup();
   });
-  marker.on('mouseout', scheduleClose);
-  marker.on('click', () => marker.openPopup());
+  marker.on('mouseout', () => {
+    if (!props.showPopup) return;
+    scheduleClose();
+  });
+  marker.on('click', () => {
+    if (!props.showPopup) return;
+    marker.openPopup();
+  });
   marker.on('popupopen', attachPopupHover);
   marker.on('remove', cleanup);
 };
@@ -213,9 +246,15 @@ onMounted(() => {
   attributionControl = L.control.attribution({ prefix: false }).addTo(map);
   applyTileLayer();
   renderMarkers();
+  closePopupMode();
 });
 
 watch(() => props.photos, renderMarkers, { deep: true });
+watch(() => props.fitMaxZoom, renderMarkers);
+watch(() => props.showPopup, () => {
+  closePopupMode();
+  renderMarkers();
+});
 watch(providerConfig, applyTileLayer);
 
 onBeforeUnmount(() => {

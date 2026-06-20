@@ -13,3 +13,10 @@ export const albumCover = (album) => {
     || album.coverUrl;
   return imageUrl(cover);
 };
+
+export const isExternalPhoto = (photo) => {
+  if (!photo) return false;
+  return photo.mimeType === 'image/external-url'
+    || Number(photo.fileSize) === 0
+    || /^https?:\/\//i.test(String(photo.originalUrl || photo.mediumUrl || photo.thumbnailUrl || ''));
+};

@@ -68,6 +68,7 @@ model Photo {
   isPinned             Boolean     @default(false)
   pinnedAt             DateTime?
   isFeatured           Boolean     @default(false)
+  showInWaterfall      Boolean     @default(false)
   sortOrder            Int         @default(0)
   viewCount            Int         @default(0)
   favoriteCount        Int         @default(0)
@@ -93,6 +94,7 @@ model Photo {
   @@index([status, visibility, takenAt])
   @@index([status, visibility, isPinned, sortOrder])
   @@index([status, visibility, isFeatured, uploadedAt])
+  @@index([albumId, showInWaterfall, status])
   @@index([albumId, status])
   @@index([city, status])
   @@index([country, status])

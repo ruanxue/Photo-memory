@@ -43,6 +43,17 @@ const safeUser = (user) => {
   const { passwordHash, ...rest } = user;
   return rest;
 };
+const normalizeImageUrl = (value) => {
+  const url = String(value || '').trim();
+  if (!url || !/^https?:\/\/[^<>"'\s]+$/i.test(url)) return '';
+  try {
+    const parsed = new URL(url);
+    if (!['http:', 'https:'].includes(parsed.protocol)) return '';
+    return parsed.toString();
+  } catch {
+    return '';
+  }
+};
 
 const adminPhotoData = (body) => {
   const data = {};
@@ -77,12 +88,23 @@ const adminPhotoData = (body) => {
   ['focalLength', 'aperture', 'latitude', 'longitude'].forEach((field) => {
     if (Object.prototype.hasOwnProperty.call(body, field)) data[field] = toFloatOrNull(body[field]);
   });
+  ['originalUrl', 'mediumUrl', 'thumbnailUrl'].forEach((field) => {
+    if (!Object.prototype.hasOwnProperty.call(body, field)) return;
+    const value = normalizeImageUrl(body[field]);
+    if (!value) {
+      const err = new Error('请填写有效的图片 URL');
+      err.status = 422;
+      throw err;
+    }
+    data[field] = value;
+  });
   if (Object.prototype.hasOwnProperty.call(body, 'takenAt')) data.takenAt = parseDate(body.takenAt) || null;
   if (Object.prototype.hasOwnProperty.call(body, 'isPinned')) {
     data.isPinned = toBool(body.isPinned);
     data.pinnedAt = data.isPinned ? new Date() : null;
   }
   if (Object.prototype.hasOwnProperty.call(body, 'isFeatured')) data.isFeatured = toBool(body.isFeatured);
+  if (Object.prototype.hasOwnProperty.call(body, 'showInWaterfall')) data.showInWaterfall = toBool(body.showInWaterfall);
   return data;
 };
 
@@ -277,6 +299,8 @@ export const batchPhotos = async (req, res) => {
     await prisma.photo.updateMany({ where: { id: { in: ids } }, data: { isPinned: toBool(req.body.isPinned), pinnedAt: toBool(req.body.isPinned) ? new Date() : null } });
   } else if (action === 'feature') {
     await prisma.photo.updateMany({ where: { id: { in: ids } }, data: { isFeatured: toBool(req.body.isFeatured) } });
+  } else if (action === 'waterfall') {
+    await prisma.photo.updateMany({ where: { id: { in: ids } }, data: { showInWaterfall: toBool(req.body.showInWaterfall) } });
   } else if (action === 'tags') {
     for (const id of ids) await setPhotoTags(id, parseTagNames(req.body.tags));
   }
@@ -388,7 +412,7 @@ export const listTags = async (req, res) => success(res, await prisma.tag.findMa
 
 export const createTag = async (req, res) => {
   const tag = await prisma.tag.create({
-    data: { name: req.body.name, slug: req.body.slug || makeSlug(req.body.name), color: req.body.color || '#eef2ff' }
+    data: { name: req.body.name, slug: req.body.slug || makeSlug(req.body.name), color: null }
   });
   created(res, tag, '标签已创建');
 };
@@ -397,7 +421,7 @@ export const updateTag = async (req, res) => {
   const id = Number(req.params.id);
   const tag = await prisma.tag.update({
     where: { id },
-    data: { name: req.body.name, slug: req.body.slug || makeSlug(req.body.name), color: req.body.color || '#eef2ff' }
+    data: { name: req.body.name, slug: req.body.slug || makeSlug(req.body.name), color: null }
   });
   success(res, tag, '标签已更新');
 };
@@ -586,6 +610,13 @@ const defaultAdminSettings = [
   { key: 'mapTileAttribution', value: '© 高德地图', description: '地图底图版权署名' }
 ];
 
+defaultAdminSettings.push(
+  { key: 'mapPageZoomChina', value: '12', description: '地图页中国视角 Zoom' },
+  { key: 'mapPageZoomOverseas', value: '7', description: '地图页境外视角 Zoom' },
+  { key: 'mapDetailZoomChina', value: '11', description: '详情页中国视角 Zoom' },
+  { key: 'mapDetailZoomOverseas', value: '7', description: '详情页境外视角 Zoom' }
+);
+
 const normalizeAdminSettingValue = (key, value) => {
   if (key === 'trustProxyHops') return normalizeTrustProxyHops(value);
   if (key === 'themeMode') return ['light', 'dark', 'auto'].includes(value) ? value : 'light';
@@ -615,6 +646,11 @@ const normalizeAdminSettingValue = (key, value) => {
   }
   if (key === 'waterfallCustomLoadCss') return sanitizeWaterfallLoadCss(value);
   if (key === 'mapTileProvider') return ['amap', 'osm', 'custom'].includes(value) ? value : 'amap';
+  if (['mapPageZoomChina', 'mapPageZoomOverseas', 'mapDetailZoomChina', 'mapDetailZoomOverseas'].includes(key)) {
+    const fallback = key === 'mapPageZoomChina' ? 12 : key === 'mapDetailZoomChina' ? 11 : 7;
+    const zoom = Number(value);
+    return String(Math.max(3, Math.min(14, Number.isFinite(zoom) ? Math.round(zoom) : fallback)));
+  }
   if (key === 'mapTileUrl') {
     const url = String(value || '').trim();
     if (!url) return '';

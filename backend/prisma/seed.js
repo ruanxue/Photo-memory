@@ -188,6 +188,7 @@ async function createPhotos({ admin, demo, categoryMap, tagMap, albumMap }) {
           isPinned,
           pinnedAt: isPinned ? new Date() : null,
           isFeatured,
+          showInWaterfall: isPinned || index % 4 === 0,
           sortOrder: groups.length * variants.length - index,
           viewCount: 90 + index * 19,
           favoriteCount: 3 + Math.floor(index / 2),
@@ -215,9 +216,9 @@ async function createPhotos({ admin, demo, categoryMap, tagMap, albumMap }) {
 
 async function seedSettings() {
   const settings = [
-    ['siteName', 'Photo Memory', '网站名称'],
-    ['siteSubtitle', '私人影像馆', '网站副标题'],
-    ['homeIntro', '记录旅行、生活与摄影作品。', '首页介绍文字'],
+    ['siteName', '风经过的地方', '网站名称'],
+    ['siteSubtitle', '', '网站副标题，可留空'],
+    ['homeIntro', '把走过的路、爱过的人，和那些不肯散场的光，慢慢收起来。', '首页介绍文字'],
     ['faviconUrl', '', 'Favicon 图片地址'],
     ['themeMode', 'light', '站点主题模式'],
     ['themeCustomEnabled', 'false', '自定义主题开关'],
@@ -230,8 +231,8 @@ async function seedSettings() {
     ['heroFixedPhotoId', '', '首页固定主图照片 ID'],
       ['allowRegister', 'true', '是否允许注册'],
       ['allowUserUpload', 'true', '是否允许普通用户上传'],
-      ['commentsEnabled', 'true', '是否开放评论区'],
-      ['commentReview', 'false', '是否开启评论审核'],
+    ['commentsEnabled', 'true', '是否开放评论区'],
+    ['commentReview', 'false', '是否开启评论审核'],
     ['uploadMaxSizeMb', '15', '上传文件大小限制 MB'],
     ['pageSize', '20', '每页照片数量'],
     ['waterfallColumns', 'auto', '瀑布流列数'],
@@ -255,6 +256,13 @@ async function seedSettings() {
     ['watermarkEnabled', 'false', '照片水印开关'],
     ['hideLoginEntry', 'false', '前台隐藏登录入口']
   ];
+
+  settings.push(
+    ['mapPageZoomChina', '12', '地图页中国视角 Zoom'],
+    ['mapPageZoomOverseas', '7', '地图页境外视角 Zoom'],
+    ['mapDetailZoomChina', '11', '详情页中国视角 Zoom'],
+    ['mapDetailZoomOverseas', '7', '详情页境外视角 Zoom']
+  );
 
   for (const [key, value, description] of settings) {
     await prisma.systemSetting.upsert({

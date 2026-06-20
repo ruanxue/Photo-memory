@@ -1,11 +1,13 @@
 <template>
-  <section class="home-hero" :style="{ backgroundImage: `url(${heroImage})` }">
+  <section class="home-hero" :class="{ 'home-hero-loading': !heroReady }" :style="heroStyle">
     <div class="hero-shade">
       <div class="hero-frame">
         <div class="hero-copy">
-          <p class="kicker">{{ settings.siteSubtitle }}</p>
-          <h1>{{ settings.siteName }}</h1>
-          <p class="intro">{{ settings.homeIntro }}</p>
+          <p v-if="settings.siteSubtitle" class="kicker">{{ settings.siteSubtitle }}</p>
+          <h1 class="hero-title" :class="{ 'is-stacked': heroTitleLines.length > 1 }">
+            <span v-for="line in heroTitleLines" :key="line">{{ line }}</span>
+          </h1>
+          <p v-if="settings.homeIntro" class="intro">{{ settings.homeIntro }}</p>
         </div>
 
         <aside class="hero-side">
@@ -66,6 +68,7 @@ const featured = ref([]);
 const wallAlbums = ref([]);
 const heroCandidates = ref([]);
 const heroPhoto = ref(null);
+const heroReady = ref(false);
 const wallSectionRef = ref(null);
 const loadMoreRef = ref(null);
 const dockVisible = ref(false);
@@ -80,7 +83,18 @@ const totalPhotos = ref(0);
 const wallMode = ref('latest');
 let wallObserver = null;
 const fallbackHero = 'https://picsum.photos/seed/photo-memory-hero/2200/1400';
-const heroImage = computed(() => imageUrl(heroPhoto.value?.mediumUrl || heroPhoto.value?.originalUrl || fallbackHero));
+const heroImage = computed(() => {
+  if (!heroReady.value) return '';
+  return imageUrl(heroPhoto.value?.mediumUrl || heroPhoto.value?.originalUrl || fallbackHero);
+});
+const heroStyle = computed(() => (heroImage.value ? { backgroundImage: `url(${heroImage.value})` } : {}));
+const heroTitleLines = computed(() => {
+  const title = String(settings.siteName || '').trim();
+  if (!title) return [];
+  if (title.length <= 4 || /[\s·|,，。]/.test(title)) return [title];
+  const splitAt = Math.ceil(title.length / 2);
+  return [title.slice(0, splitAt), title.slice(splitAt)];
+});
 const heroMode = computed(() => settings.settings.heroMode === 'fixed' ? 'fixed' : 'random');
 const configuredHeroIds = computed(() => Array.isArray(settings.settings.heroPhotoIds) ? settings.settings.heroPhotoIds : []);
 const fixedHero = computed(() => {
@@ -161,6 +175,7 @@ const loadMore = async () => {
 
 const load = async () => {
   loading.value = true;
+  heroReady.value = false;
   try {
     page.value = 1;
     pageSize.value = WALL_PAGE_SIZE;
@@ -190,6 +205,7 @@ const load = async () => {
     heroCandidates.value = heroRes.data || [];
     applyHeroSelection();
   } finally {
+    heroReady.value = true;
     loading.value = false;
     await observeHomeLoadMore();
   }
@@ -224,6 +240,10 @@ onBeforeUnmount(() => {
   background-position: center;
 }
 
+.home-hero-loading {
+  background: var(--theme-page-bg);
+}
+
 .hero-shade {
   min-height: 100vh;
   color: var(--theme-hero-text);
@@ -235,7 +255,7 @@ onBeforeUnmount(() => {
   width: 100%;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(150px, 270px);
-  grid-template-rows: 1fr auto;
+  grid-template-rows: minmax(84px, 1fr) auto;
   grid-template-areas:
     ". side"
     "copy side";
@@ -245,29 +265,80 @@ onBeforeUnmount(() => {
 
 .hero-copy {
   grid-area: copy;
-  max-width: min(980px, 72vw);
+  width: min(760px, 62vw);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "kicker"
+    "title"
+    "intro";
+  align-items: start;
+  row-gap: clamp(10px, 1.2vw, 16px);
   align-self: end;
+  margin-bottom: clamp(24px, 5vw, 74px);
 }
 
 .kicker {
-  margin: 0 0 12px;
+  grid-area: kicker;
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0;
   color: var(--theme-hero-kicker);
+  font-size: clamp(13px, 1.15vw, 16px);
   font-weight: 800;
+  line-height: 1.2;
+  text-shadow: 0 1px 18px color-mix(in srgb, var(--theme-page-bg) 46%, transparent);
 }
 
-h1 {
-  max-width: 980px;
+.kicker::before {
+  content: "";
+  width: clamp(30px, 4vw, 58px);
+  height: 1px;
+  background: currentColor;
+  opacity: 0.66;
+}
+
+.hero-title {
+  grid-area: title;
+  max-width: min(720px, 100%);
   margin: 0;
-  font-size: clamp(46px, 9.8vw, 154px);
-  line-height: 0.88;
+  color: var(--theme-hero-text);
+  font-size: clamp(44px, 6.7vw, 112px);
+  font-weight: 900;
+  line-height: 0.92;
+  letter-spacing: 0;
+  text-wrap: balance;
+  text-shadow:
+    0 2px 30px color-mix(in srgb, var(--theme-page-bg) 28%, transparent),
+    0 18px 74px color-mix(in srgb, var(--theme-page-bg) 18%, transparent);
+}
+
+.hero-title span {
+  display: block;
+}
+
+.hero-title.is-stacked {
+  font-size: clamp(48px, 7vw, 118px);
+}
+
+.hero-title.is-stacked span + span {
+  margin-top: clamp(2px, 0.6vw, 10px);
 }
 
 .intro {
+  grid-area: intro;
   max-width: 620px;
-  margin: 20px 0 0;
+  margin: 0;
+  padding: 10px 0 4px clamp(14px, 1.5vw, 20px);
+  border-left: 1px solid color-mix(in srgb, var(--theme-hero-muted) 54%, transparent);
   color: var(--theme-hero-muted);
-  font-size: clamp(14px, 1.25vw, 17px);
-  line-height: 1.85;
+  font-size: clamp(13px, 1.05vw, 16px);
+  font-weight: 600;
+  line-height: 1.8;
+  text-wrap: pretty;
+  text-shadow: 0 1px 18px color-mix(in srgb, var(--theme-page-bg) 38%, transparent);
 }
 
 .hero-side {
@@ -361,17 +432,42 @@ h1 {
 
 @media (max-width: 760px) {
   .hero-frame {
-    grid-template-columns: minmax(0, 1fr) minmax(92px, 28vw);
+    grid-template-columns: minmax(0, 1fr) minmax(82px, 26vw);
+    grid-template-rows: minmax(76px, 1fr) auto minmax(58px, 0.16fr);
     gap: 14px;
     padding: 22px 16px 32px;
   }
 
   .hero-copy {
+    width: min(100%, 72vw);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "kicker"
+      "title"
+      "intro";
+    row-gap: 12px;
+  }
+
+  .kicker {
+    font-size: 12px;
+  }
+
+  .kicker::before {
+    width: 28px;
+  }
+
+  .hero-title,
+  .hero-title.is-stacked {
     max-width: none;
+    font-size: clamp(48px, 16vw, 88px);
   }
 
   .intro {
-    max-width: 70vw;
+    max-width: none;
+    margin: 0;
+    padding: 12px 0 0;
+    border-left: 0;
+    border-top: 1px solid color-mix(in srgb, var(--theme-hero-muted) 42%, transparent);
     font-size: 12px;
     line-height: 1.7;
   }
@@ -391,7 +487,19 @@ h1 {
 }
 
 @media (max-width: 440px) {
-  .intro {
+  .hero-frame {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "."
+      "copy"
+      ".";
+  }
+
+  .hero-copy {
+    width: 100%;
+  }
+
+  .hero-side {
     display: none;
   }
 }

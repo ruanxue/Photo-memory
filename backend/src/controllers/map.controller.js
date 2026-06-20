@@ -4,9 +4,13 @@ import { photoInclude, visibilityFilter } from '../services/photo.service.js';
 
 const mapWhere = (req) => {
   const clauses = [visibilityFilter(req.user), { latitude: { not: null } }, { longitude: { not: null } }];
+  if (req.query.q) clauses.push({ title: { contains: String(req.query.q).trim() } });
   if (req.query.city) clauses.push({ city: { contains: String(req.query.city) } });
   if (req.query.country) clauses.push({ country: { contains: String(req.query.country) } });
-  if (req.query.year) clauses.push({ takenAt: { gte: new Date(Number(req.query.year), 0, 1), lt: new Date(Number(req.query.year) + 1, 0, 1) } });
+  if (req.query.year) {
+    const year = Number(req.query.year);
+    if (Number.isFinite(year)) clauses.push({ takenAt: { gte: new Date(year, 0, 1), lt: new Date(year + 1, 0, 1) } });
+  }
   return { AND: clauses };
 };
 
@@ -37,7 +41,7 @@ export const mapCities = async (req, res) => {
 
 export const mapCountries = async (req, res) => {
   const photos = await prisma.photo.findMany({
-    where: { AND: [visibilityFilter(req.user), { country: { not: null } }] },
+    where: { AND: [visibilityFilter(req.user), { country: { not: null } }, { latitude: { not: null } }, { longitude: { not: null } }] },
     select: { country: true }
   });
   const counts = photos.reduce((acc, photo) => {
@@ -45,4 +49,22 @@ export const mapCountries = async (req, res) => {
     return acc;
   }, {});
   success(res, Object.entries(counts).map(([country, count]) => ({ country, count })));
+};
+
+export const mapYears = async (req, res) => {
+  const photos = await prisma.photo.findMany({
+    where: { AND: [visibilityFilter(req.user), { latitude: { not: null } }, { longitude: { not: null } }] },
+    select: { takenAt: true, uploadedAt: true }
+  });
+  const counts = photos.reduce((acc, photo) => {
+    const date = photo.takenAt || photo.uploadedAt;
+    if (!date) return acc;
+    const year = date.getFullYear();
+    acc[year] = (acc[year] || 0) + 1;
+    return acc;
+  }, {});
+  const years = Object.entries(counts)
+    .map(([year, count]) => ({ year: Number(year), count }))
+    .sort((a, b) => b.year - a.year);
+  success(res, years);
 };

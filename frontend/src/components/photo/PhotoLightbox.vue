@@ -48,6 +48,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ArrowLeft, ArrowRight } from '@element-plus/icons-vue';
 import { gsap } from 'gsap';
 import { imageUrl } from '../../utils/image.js';
+import { setPageScrollLocked, unlockPageScroll } from '../../utils/scrollLock.js';
 import PhotoDetailSheet from './PhotoDetailSheet.vue';
 
 const props = defineProps({
@@ -78,6 +79,7 @@ let hiddenOrigin = null;
 let activeId = null;
 let imagePreloader = null;
 let animationRun = 0;
+const scrollLockKey = Symbol('photo-lightbox');
 
 const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 const uiElements = () => [...(lightboxRef.value?.querySelectorAll('.arrow, figcaption') || [])];
@@ -370,9 +372,14 @@ watch(currentId, async (id) => {
   preloadNearbyImages(props.index);
 }, { flush: 'post' });
 
+watch(() => props.visible || closing.value, (locked) => {
+  setPageScrollLocked(scrollLockKey, locked);
+}, { immediate: true });
+
 onMounted(() => window.addEventListener('keydown', onKey));
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKey);
+  unlockPageScroll(scrollLockKey);
   animationRun += 1;
   transition?.kill();
   restoreOrigin();
@@ -389,6 +396,7 @@ onBeforeUnmount(() => {
   display: grid;
   place-items: center;
   cursor: zoom-out;
+  overscroll-behavior: contain;
 }
 
 .lightbox-backdrop {

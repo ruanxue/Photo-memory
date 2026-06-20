@@ -16,8 +16,15 @@
         <el-select v-model="filters.tagId" clearable placeholder="标签" @change="reload">
           <el-option v-for="tag in tags" :key="tag.id" :label="tag.name" :value="tag.id" />
         </el-select>
-        <el-input v-model="filters.city" clearable placeholder="城市" @keyup.enter="reload" />
-        <el-input v-model="filters.year" clearable placeholder="年份" @keyup.enter="reload" />
+        <el-select v-model="filters.country" filterable clearable placeholder="国家 / 地区" @change="handleCountryChange">
+          <el-option v-for="country in countries" :key="country.country" :label="`${country.country} (${country.count})`" :value="country.country" />
+        </el-select>
+        <el-select v-model="filters.city" filterable clearable placeholder="城市" @change="reload">
+          <el-option v-for="city in filteredCities" :key="`${city.country || 'unknown'}-${city.city}`" :label="`${city.city} (${city.count})`" :value="city.city" />
+        </el-select>
+        <el-select v-model="filters.year" clearable placeholder="年份" @change="reload">
+          <el-option v-for="item in years" :key="item.year" :label="`${item.year} (${item.count})`" :value="item.year" />
+        </el-select>
         <el-checkbox v-model="filters.pinned" @change="reload">置顶</el-checkbox>
         <el-checkbox v-model="filters.featured" @change="reload">精选</el-checkbox>
         <el-button type="primary" @click="reload">筛选</el-button>
@@ -56,6 +63,9 @@ const settings = useSettingsStore();
 const photos = ref([]);
 const albums = ref([]);
 const tags = ref([]);
+const cities = ref([]);
+const countries = ref([]);
+const years = ref([]);
 const initialLoading = ref(false);
 const loadingMore = ref(false);
 const loadMoreRef = ref(null);
@@ -69,8 +79,9 @@ const filters = reactive({
   q: route.query.q || '',
   sort: route.query.sort || settings.settings.defaultSort || 'latest',
   tagId: route.query.tagId ? Number(route.query.tagId) : null,
+  country: route.query.country || '',
   city: route.query.city || '',
-  year: route.query.year || '',
+  year: route.query.year ? Number(route.query.year) : '',
   pinned: route.query.pinned === 'true',
   featured: route.query.featured === 'true'
 });
@@ -78,6 +89,10 @@ let observer = null;
 
 const allPhotos = computed(() => photos.value);
 const hasMore = computed(() => allPhotos.value.length < total.value);
+const filteredCities = computed(() => {
+  if (!filters.country) return cities.value;
+  return cities.value.filter((city) => city.country === filters.country);
+});
 
 const params = () => ({
   page: page.value,
@@ -113,6 +128,13 @@ const reload = () => {
   load({ append: false });
 };
 
+const handleCountryChange = () => {
+  if (filters.city && !filteredCities.value.some((city) => city.city === filters.city)) {
+    filters.city = '';
+  }
+  reload();
+};
+
 const loadMore = async () => {
   if (initialLoading.value || loadingMore.value || !hasMore.value) return;
   page.value += 1;
@@ -125,9 +147,16 @@ const openLightbox = (photo) => {
 };
 
 onMounted(async () => {
-  const [tagRes, albumRes] = await Promise.all([tagApi.list(), albumApi.list({ pageSize: WALL_PAGE_SIZE })]);
+  const [tagRes, albumRes, optionRes] = await Promise.all([
+    tagApi.list(),
+    albumApi.list({ pageSize: WALL_PAGE_SIZE }),
+    photoApi.filterOptions()
+  ]);
   tags.value = tagRes.data;
   albums.value = albumRes.data;
+  countries.value = optionRes.data?.countries || [];
+  cities.value = optionRes.data?.cities || [];
+  years.value = optionRes.data?.years || [];
   await load({ append: false });
 });
 
@@ -140,8 +169,9 @@ watch(() => route.query, () => {
   filters.q = route.query.q || '';
   filters.sort = route.query.sort || filters.sort || settings.settings.defaultSort || 'latest';
   filters.tagId = route.query.tagId ? Number(route.query.tagId) : null;
+  filters.country = route.query.country || '';
   filters.city = route.query.city || '';
-  filters.year = route.query.year || '';
+  filters.year = route.query.year ? Number(route.query.year) : '';
   filters.pinned = route.query.pinned === 'true';
   filters.featured = route.query.featured === 'true';
   reload();

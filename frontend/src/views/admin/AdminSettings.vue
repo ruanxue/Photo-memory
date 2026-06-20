@@ -13,7 +13,7 @@
         <el-input v-model="form.siteName" />
       </el-form-item>
       <el-form-item label="网站副标题">
-        <el-input v-model="form.siteSubtitle" />
+        <el-input v-model="form.siteSubtitle" clearable placeholder="可留空，例如：在风里，替时间收信。" />
       </el-form-item>
       <el-form-item label="首页介绍文字">
         <el-input v-model="form.homeIntro" type="textarea" :rows="3" />
@@ -368,6 +368,45 @@
           />
           <p class="field-help">不要填写需要前端暴露密钥的服务；如必须使用密钥，建议在反向代理或后端做转发。</p>
         </el-form-item>
+        <div class="map-zoom-panel">
+          <div class="settings-section-head compact">
+            <h3>地图视角高度</h3>
+            <p>数值越小，视角越高、显示范围越大。高德地图境外信息较少时，建议把境外视角设为 6-8。</p>
+          </div>
+          <div class="settings-grid">
+            <el-form-item label="地图页 · 中国">
+              <el-input-number v-model="form.mapPageZoomChina" :min="3" :max="14" />
+            </el-form-item>
+            <el-form-item label="地图页 · 境外">
+              <el-input-number v-model="form.mapPageZoomOverseas" :min="3" :max="14" />
+            </el-form-item>
+            <el-form-item label="详情页 · 中国">
+              <el-input-number v-model="form.mapDetailZoomChina" :min="3" :max="14" />
+            </el-form-item>
+            <el-form-item label="详情页 · 境外">
+              <el-input-number v-model="form.mapDetailZoomOverseas" :min="3" :max="14" />
+            </el-form-item>
+          </div>
+          <div class="map-zoom-preview">
+            <article v-for="item in mapZoomPreviewItems" :key="item.key">
+              <div class="map-zoom-card-head">
+                <span>{{ item.label }}</span>
+                <strong>Zoom {{ item.value }}</strong>
+              </div>
+              <div class="map-zoom-visual">
+                <i :style="{ width: mapZoomPreviewSize(item.value), height: mapZoomPreviewSize(item.value) }" />
+              </div>
+              <el-input-number
+                v-model="form[item.key]"
+                class="map-zoom-stepper"
+                :min="3"
+                :max="14"
+                :step="1"
+              />
+              <small>{{ mapZoomPreviewText(item.value) }}</small>
+            </article>
+          </div>
+        </div>
       </section>
 
       <section class="settings-section deploy-section">
@@ -382,6 +421,7 @@
           </el-form-item>
         </div>
         <el-alert
+          class="theme-inline-alert"
           title="保存后会立即影响新的请求，并会保存到数据库；backend/.env 中的 TRUST_PROXY_HOPS 作为首次部署或数据库不可用时的兜底。"
           type="warning"
           :closable="false"
@@ -422,9 +462,9 @@ const fallbackFavicon =
   'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22%2308090a%22/%3E%3Ccircle cx=%2232%22 cy=%2232%22 r=%2218%22 fill=%22none%22 stroke=%22%238fb8c4%22 stroke-width=%226%22/%3E%3Ccircle cx=%2232%22 cy=%2232%22 r=%227%22 fill=%22%23d89575%22/%3E%3C/svg%3E';
 
 const form = reactive({
-  siteName: 'Photo Memory',
-  siteSubtitle: '私人影像馆',
-  homeIntro: '',
+  siteName: '风经过的地方',
+  siteSubtitle: '',
+  homeIntro: '把走过的路、爱过的人，和那些不肯散场的光，慢慢收起来。',
   faviconUrl: '',
   themeMode: 'light',
   themeCustomEnabled: false,
@@ -457,6 +497,10 @@ const form = reactive({
   mapTileProvider: 'amap',
   mapTileUrl: '',
   mapTileAttribution: '© 高德地图',
+  mapPageZoomChina: 12,
+  mapPageZoomOverseas: 7,
+  mapDetailZoomChina: 11,
+  mapDetailZoomOverseas: 7,
   defaultSort: 'latest',
   icp: '',
   footerCopyright: '© Photo Memory',
@@ -501,6 +545,17 @@ const normalizeRevealAnimation = (value) => ['slide-up', 'fade', 'none'].include
 const normalizeMapProvider = (value) => ['amap', 'osm', 'custom'].includes(value) ? value : 'amap';
 const normalizeThemeMode = (value) => ['light', 'dark', 'auto'].includes(value) ? value : 'light';
 const normalizeThemeEditorMode = (value) => ['simple', 'advanced'].includes(value) ? value : 'simple';
+const mapZoomKeys = ['mapPageZoomChina', 'mapPageZoomOverseas', 'mapDetailZoomChina', 'mapDetailZoomOverseas'];
+const mapZoomFallbacks = {
+  mapPageZoomChina: 12,
+  mapPageZoomOverseas: 7,
+  mapDetailZoomChina: 11,
+  mapDetailZoomOverseas: 7
+};
+const normalizeMapZoom = (key, value) => {
+  const zoom = Number(value);
+  return Math.max(3, Math.min(14, Number.isFinite(zoom) ? Math.round(zoom) : mapZoomFallbacks[key]));
+};
 const normalizeHexColor = (value, fallback = '#000000') => {
   const color = String(value || '').trim();
   if (/^#[0-9a-f]{3}$/i.test(color)) {
@@ -512,6 +567,18 @@ const normalizeMapTileUrl = (value) => {
   const url = String(value || '').trim();
   if (!url) return '';
   return /^https:\/\/[^<>"'\s]+$/i.test(url) ? url.slice(0, 500) : '';
+};
+const mapZoomPreviewItems = computed(() => [
+  { key: 'mapPageZoomChina', label: '地图页 · 中国', value: normalizeMapZoom('mapPageZoomChina', form.mapPageZoomChina) },
+  { key: 'mapPageZoomOverseas', label: '地图页 · 境外', value: normalizeMapZoom('mapPageZoomOverseas', form.mapPageZoomOverseas) },
+  { key: 'mapDetailZoomChina', label: '详情页 · 中国', value: normalizeMapZoom('mapDetailZoomChina', form.mapDetailZoomChina) },
+  { key: 'mapDetailZoomOverseas', label: '详情页 · 境外', value: normalizeMapZoom('mapDetailZoomOverseas', form.mapDetailZoomOverseas) }
+]);
+const mapZoomPreviewSize = (zoom) => `${Math.max(24, Math.min(86, 22 + (14 - Number(zoom)) * 6))}%`;
+const mapZoomPreviewText = (zoom) => {
+  if (Number(zoom) <= 7) return '高视角，适合境外区域';
+  if (Number(zoom) <= 10) return '中等视角，适合城市群';
+  return '近景视角，适合国内城市';
 };
 
 const colorFields = [
@@ -895,7 +962,7 @@ onMounted(async () => {
   const res = await adminApi.settings();
   res.data.forEach((item) => {
     if (boolKeys.includes(item.key)) form[item.key] = item.value === 'true';
-    else if (['uploadMaxSizeMb', 'pageSize', 'trustProxyHops', 'waterfallCardRadius', 'waterfallLoadDurationMs', 'waterfallLoadStaggerMs'].includes(item.key)) form[item.key] = Number(item.value);
+    else if (['uploadMaxSizeMb', 'pageSize', 'trustProxyHops', 'waterfallCardRadius', 'waterfallLoadDurationMs', 'waterfallLoadStaggerMs', ...mapZoomKeys].includes(item.key)) form[item.key] = Number(item.value);
     else if (item.key === 'heroPhotoIds') form.heroPhotoIds = normalizeIds(item.value);
     else if (item.key === 'heroFixedPhotoId') form.heroFixedPhotoId = numberOrNull(item.value);
     else if (item.key === 'heroMode') form.heroMode = item.value === 'fixed' ? 'fixed' : 'random';
@@ -936,6 +1003,7 @@ const save = async () => {
     if (key === 'waterfallLoadAnimation') return { key, value: normalizeLoadAnimation(value) };
     if (key === 'waterfallLoadDurationMs') return { key, value: String(Math.max(200, Math.min(1600, Number(value) || 720))) };
     if (key === 'waterfallLoadStaggerMs') return { key, value: String(Math.max(0, Math.min(120, Number(value) || 24))) };
+    if (mapZoomKeys.includes(key)) return { key, value: String(normalizeMapZoom(key, value)) };
     if (key === 'mapTileProvider') return { key, value: normalizeMapProvider(value) };
     if (key === 'mapTileUrl') return { key, value: normalizeMapTileUrl(value) };
     if (key === 'mapTileAttribution') return { key, value: String(value || '').replace(/[<>]/g, '').slice(0, 120) };
@@ -995,12 +1063,128 @@ watch(() => form.themeCustomEditorMode, (mode) => {
   line-height: 1.7;
 }
 
+.settings-section-head.compact h3 {
+  margin: 0 0 6px;
+  color: var(--theme-text);
+  font-size: 15px;
+}
+
 .field-help {
   width: 100%;
   margin: 8px 0 0;
   color: var(--theme-muted-strong);
   font-size: 12px;
   line-height: 1.6;
+}
+
+.theme-inline-alert {
+  border: 1px solid color-mix(in srgb, var(--theme-primary) 36%, var(--theme-line));
+  background: color-mix(in srgb, var(--theme-primary-soft) 62%, var(--theme-surface));
+  color: var(--theme-text);
+}
+
+.theme-inline-alert :deep(.el-alert__title),
+.theme-inline-alert :deep(.el-alert__description) {
+  color: var(--theme-text);
+}
+
+.theme-inline-alert :deep(.el-alert__icon) {
+  color: var(--theme-primary);
+}
+
+.map-zoom-panel {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--theme-line-faint);
+  border-radius: 8px;
+  background: var(--theme-surface-soft);
+}
+
+.map-zoom-panel > .settings-grid {
+  display: none;
+}
+
+.map-zoom-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.map-zoom-preview article {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--theme-line);
+  border-radius: 8px;
+  background: var(--theme-surface);
+}
+
+.map-zoom-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.map-zoom-preview span {
+  color: var(--theme-muted-strong);
+  font-size: 12px;
+}
+
+.map-zoom-preview strong {
+  color: var(--theme-text);
+  font-size: 13px;
+}
+
+.map-zoom-preview small {
+  color: var(--theme-muted);
+  font-size: 12px;
+}
+
+.map-zoom-stepper {
+  width: 100%;
+}
+
+.map-zoom-stepper :deep(.el-input-number__decrease),
+.map-zoom-stepper :deep(.el-input-number__increase) {
+  border-color: var(--theme-button-border);
+  background: var(--theme-button-bg);
+  color: var(--theme-button-text);
+}
+
+.map-zoom-stepper :deep(.el-input__wrapper) {
+  border-color: var(--theme-input-border);
+  background: var(--theme-input-bg);
+  box-shadow: 0 0 0 1px var(--theme-input-border) inset;
+}
+
+.map-zoom-stepper :deep(.el-input__inner) {
+  color: var(--theme-input-text);
+}
+
+.map-zoom-visual {
+  height: 80px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--theme-map-control-border);
+  border-radius: 8px;
+  background:
+    linear-gradient(45deg, transparent 46%, var(--theme-line-faint) 47%, var(--theme-line-faint) 53%, transparent 54%),
+    linear-gradient(-45deg, transparent 46%, var(--theme-line-faint) 47%, var(--theme-line-faint) 53%, transparent 54%),
+    var(--theme-map-popup-bg);
+}
+
+.map-zoom-visual i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: block;
+  border: 2px solid var(--theme-primary);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--theme-primary) 18%, transparent);
+  transform: translate(-50%, -50%);
+  transition: width 0.24s ease, height 0.24s ease;
 }
 
 .hero-photo-select {

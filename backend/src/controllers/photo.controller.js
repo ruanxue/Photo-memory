@@ -58,6 +58,47 @@ const getVisitorAudit = (req) => ({
 });
 const validEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
+const imageExtMimeMap = new Map([
+  ['jpg', 'image/jpeg'],
+  ['jpeg', 'image/jpeg'],
+  ['png', 'image/png'],
+  ['webp', 'image/webp'],
+  ['gif', 'image/gif'],
+  ['avif', 'image/avif']
+]);
+
+const normalizeImageUrl = (value) => {
+  const url = String(value || '').trim();
+  if (!url || !/^https?:\/\/[^<>"'\s]+$/i.test(url)) return '';
+  try {
+    const parsed = new URL(url);
+    if (!['http:', 'https:'].includes(parsed.protocol)) return '';
+    return parsed.toString();
+  } catch {
+    return '';
+  }
+};
+
+const filenameFromUrl = (url) => {
+  try {
+    const parsed = new URL(url);
+    const name = decodeURIComponent(parsed.pathname.split('/').filter(Boolean).pop() || '');
+    return sanitizeText(name || `external-${Date.now()}`, 180);
+  } catch {
+    return `external-${Date.now()}`;
+  }
+};
+
+const mimeFromUrl = (url) => {
+  try {
+    const parsed = new URL(url);
+    const ext = parsed.pathname.split('.').pop()?.toLowerCase();
+    return imageExtMimeMap.get(ext) || 'image/external-url';
+  } catch {
+    return 'image/external-url';
+  }
+};
+
 const validateUploadSizeBySetting = async (files) => {
   const setting = await prisma.systemSetting.findUnique({ where: { key: 'uploadMaxSizeMb' } });
   const maxMb = Number(setting?.value || 15);
@@ -113,6 +154,18 @@ const buildPhotoWhere = (req) => {
   return clauses.length === 1 ? clauses[0] : { AND: clauses };
 };
 
+const buildWallPhotoWhere = (req) => ({
+  AND: [
+    buildPhotoWhere(req),
+    {
+      OR: [
+        { albumId: null },
+        { showInWaterfall: true }
+      ]
+    }
+  ]
+});
+
 const normalizePhotoBody = (body, file, imageInfo, exifInfo) => {
   const titleFromFile = file?.originalname?.replace(/\.[^.]+$/, '') || '未命名照片';
   const takenAt = parseDate(body.takenAt) || parseDate(exifInfo.takenAt);
@@ -149,9 +202,59 @@ const normalizePhotoBody = (body, file, imageInfo, exifInfo) => {
     isPinned: toBool(body.isPinned),
     pinnedAt: toBool(body.isPinned) ? new Date() : null,
     isFeatured: toBool(body.isFeatured),
+    showInWaterfall: toBool(body.showInWaterfall),
     sortOrder: toInt(body.sortOrder) || 0
   };
   return data;
+};
+
+const normalizeExternalPhotoBody = (body) => {
+  const originalUrl = normalizeImageUrl(body.originalUrl || body.imageUrl || body.url);
+  const mediumUrl = normalizeImageUrl(body.mediumUrl) || originalUrl;
+  const thumbnailUrl = normalizeImageUrl(body.thumbnailUrl) || mediumUrl;
+  if (!originalUrl) {
+    const err = new Error('请填写有效的图片 URL');
+    err.status = 422;
+    throw err;
+  }
+
+  const title = sanitizeText(body.title, 120) || filenameFromUrl(originalUrl).replace(/\.[^.]+$/, '') || '外链照片';
+  return {
+    albumId: toInt(body.albumId) || null,
+    categoryId: toInt(body.categoryId) || null,
+    title,
+    description: sanitizeText(body.description, 2000) || null,
+    originalUrl,
+    mediumUrl,
+    thumbnailUrl,
+    filename: filenameFromUrl(originalUrl),
+    mimeType: mimeFromUrl(originalUrl),
+    fileSize: 0,
+    width: toInt(body.width) || null,
+    height: toInt(body.height) || null,
+    takenAt: parseDate(body.takenAt),
+    cameraMake: sanitizeText(body.cameraMake) || null,
+    cameraModel: sanitizeText(body.cameraModel) || null,
+    lensModel: sanitizeText(body.lensModel) || null,
+    focalLength: toFloatOrNull(body.focalLength),
+    aperture: toFloatOrNull(body.aperture),
+    shutterSpeed: sanitizeText(body.shutterSpeed) || null,
+    iso: toInt(body.iso) || null,
+    exposureCompensation: sanitizeText(body.exposureCompensation) || null,
+    whiteBalance: sanitizeText(body.whiteBalance) || null,
+    latitude: toFloatOrNull(body.latitude),
+    longitude: toFloatOrNull(body.longitude),
+    country: sanitizeText(body.country) || null,
+    province: sanitizeText(body.province) || null,
+    city: sanitizeText(body.city) || null,
+    locationName: sanitizeText(body.locationName) || null,
+    visibility: body.visibility === 'private' ? 'private' : 'public',
+    isPinned: toBool(body.isPinned),
+    pinnedAt: toBool(body.isPinned) ? new Date() : null,
+    isFeatured: toBool(body.isFeatured),
+    showInWaterfall: toBool(body.showInWaterfall),
+    sortOrder: toInt(body.sortOrder) || 0
+  };
 };
 
 const updatePhotoData = (body) => {
@@ -180,12 +283,23 @@ const updatePhotoData = (body) => {
   ['focalLength', 'aperture', 'latitude', 'longitude'].forEach((field) => {
     if (Object.prototype.hasOwnProperty.call(body, field)) data[field] = toFloatOrNull(body[field]);
   });
+  ['originalUrl', 'mediumUrl', 'thumbnailUrl'].forEach((field) => {
+    if (!Object.prototype.hasOwnProperty.call(body, field)) return;
+    const value = normalizeImageUrl(body[field]);
+    if (!value) {
+      const err = new Error('请填写有效的图片 URL');
+      err.status = 422;
+      throw err;
+    }
+    data[field] = value;
+  });
   if (Object.prototype.hasOwnProperty.call(body, 'takenAt')) data.takenAt = parseDate(body.takenAt) || null;
   if (Object.prototype.hasOwnProperty.call(body, 'isPinned')) {
     data.isPinned = toBool(body.isPinned);
     data.pinnedAt = data.isPinned ? new Date() : null;
   }
   if (Object.prototype.hasOwnProperty.call(body, 'isFeatured')) data.isFeatured = toBool(body.isFeatured);
+  if (Object.prototype.hasOwnProperty.call(body, 'showInWaterfall')) data.showInWaterfall = toBool(body.showInWaterfall);
   if (data.visibility && !['public', 'private'].includes(data.visibility)) data.visibility = 'public';
   return data;
 };
@@ -203,12 +317,67 @@ export const listPhotos = async (req, res) => {
 
 export const listWallPhotos = async (req, res) => {
   const { page, pageSize, skip, take } = getPagination(req.query);
-  const where = buildPhotoWhere(req);
+  const where = buildWallPhotoWhere(req);
   const [rows, total] = await Promise.all([
     prisma.photo.findMany({ where, select: photoWallSelect, orderBy: buildPhotoOrder(req.query.sort), skip, take }),
     prisma.photo.count({ where })
   ]);
   success(res, attachWallCardFields(rows), 'ok', buildPageMeta(total, page, pageSize));
+};
+
+export const photoFilterOptions = async (req, res) => {
+  const visibleWhere = visibilityFilter(req.user);
+  const [countryPhotos, cityPhotos, datePhotos] = await Promise.all([
+    prisma.photo.findMany({
+      where: { AND: [visibleWhere, { country: { not: null } }] },
+      select: { country: true }
+    }),
+    prisma.photo.findMany({
+      where: { AND: [visibleWhere, { city: { not: null } }] },
+      select: { city: true, country: true }
+    }),
+    prisma.photo.findMany({
+      where: visibleWhere,
+      select: { takenAt: true, uploadedAt: true }
+    })
+  ]);
+
+  const countryCounts = countryPhotos.reduce((acc, photo) => {
+    const country = String(photo.country || '').trim();
+    if (!country) return acc;
+    acc[country] = (acc[country] || 0) + 1;
+    return acc;
+  }, {});
+
+  const cityGroups = new Map();
+  cityPhotos.forEach((photo) => {
+    const city = String(photo.city || '').trim();
+    if (!city) return;
+    const country = String(photo.country || '').trim();
+    const key = `${country}::${city}`;
+    const current = cityGroups.get(key) || { city, country, count: 0 };
+    current.count += 1;
+    cityGroups.set(key, current);
+  });
+
+  const yearCounts = datePhotos.reduce((acc, photo) => {
+    const date = photo.takenAt || photo.uploadedAt;
+    if (!date) return acc;
+    const year = date.getFullYear();
+    acc[year] = (acc[year] || 0) + 1;
+    return acc;
+  }, {});
+
+  success(res, {
+    countries: Object.entries(countryCounts)
+      .map(([country, count]) => ({ country, count }))
+      .sort((a, b) => b.count - a.count || a.country.localeCompare(b.country, 'zh-Hans-CN')),
+    cities: [...cityGroups.values()]
+      .sort((a, b) => b.count - a.count || a.city.localeCompare(b.city, 'zh-Hans-CN')),
+    years: Object.entries(yearCounts)
+      .map(([year, count]) => ({ year: Number(year), count }))
+      .sort((a, b) => b.year - a.year)
+  });
 };
 
 export const getPhoto = async (req, res) => {
@@ -253,6 +422,35 @@ export const uploadPhoto = async (req, res) => {
   const fresh = await prisma.photo.findUnique({ where: { id: photo.id }, include: photoInclude });
   await refreshPhotoRelatedCounters({ albumIds: [fresh.albumId], categoryIds: [fresh.categoryId] });
   created(res, fresh, '照片上传成功');
+};
+
+export const createPhotoFromUrl = async (req, res) => {
+  const uploadAllowed = await prisma.systemSetting.findUnique({ where: { key: 'allowUserUpload' } });
+  if (req.user.role !== 'admin' && uploadAllowed && uploadAllowed.value === 'false') {
+    return fail(res, 403, '当前站点已关闭普通用户上传');
+  }
+
+  const data = normalizeExternalPhotoBody(req.body);
+  const photo = await prisma.photo.create({
+    data: {
+      userId: req.user.id,
+      ...data
+    },
+    include: photoInclude
+  });
+  await setPhotoTags(photo.id, parseTagNames(req.body.tags));
+  await prisma.uploadLog.create({
+    data: {
+      userId: req.user.id,
+      filename: data.filename,
+      fileSize: 0,
+      status: 'success',
+      message: 'external-url'
+    }
+  });
+  const fresh = await prisma.photo.findUnique({ where: { id: photo.id }, include: photoInclude });
+  await refreshPhotoRelatedCounters({ albumIds: [fresh.albumId], categoryIds: [fresh.categoryId] });
+  created(res, fresh, '外链照片已添加');
 };
 
 export const batchUploadPhotos = async (req, res) => {

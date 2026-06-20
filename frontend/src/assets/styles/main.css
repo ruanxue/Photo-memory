@@ -18,6 +18,47 @@ body {
   letter-spacing: 0;
 }
 
+html {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--theme-muted) 24%, transparent) transparent;
+}
+
+html::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+html::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+html::-webkit-scrollbar-thumb {
+  min-height: 80px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--theme-muted) 24%, transparent);
+  background-clip: content-box;
+}
+
+html:hover::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--theme-muted) 36%, transparent);
+  background-clip: content-box;
+}
+
+html.app-scroll-locked,
+html.app-scroll-locked body {
+  overflow: hidden;
+}
+
+html.app-scroll-locked {
+  scrollbar-width: none;
+}
+
+html.app-scroll-locked::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
 :root {
   --el-bg-color: var(--theme-surface);
   --el-bg-color-page: var(--theme-page-bg);

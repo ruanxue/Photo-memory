@@ -13,7 +13,13 @@
     <el-table :data="albums" class="surface admin-list">
       <el-table-column prop="title" label="标题" />
       <el-table-column label="可见性" width="100">
-        <template #default="{ row }">{{ formatVisibility(row.visibility) }}</template>
+        <template #default="{ row }">
+          <VisibilityToggleButton
+            :value="row.visibility"
+            :loading="visibilityBusyId === row.id"
+            @toggle="toggleVisibility(row, $event)"
+          />
+        </template>
       </el-table-column>
       <el-table-column prop="photoCount" label="照片数" width="100" />
       <el-table-column label="操作" width="220">
@@ -35,8 +41,8 @@
             <el-option label="私密" value="private" />
           </el-select>
         </el-form-item>
-        <el-form-item label="卡片头图照片 ID">
-          <el-input v-model="form.coverPhotoId" placeholder="输入相册内照片 ID，留空自动选取" />
+        <el-form-item label="卡片头图">
+          <AlbumCoverSelector v-loading="coverLoading" v-model="form.coverPhotoId" :photos="coverPhotos" />
         </el-form-item>
         <el-form-item label="排序权重"><el-input-number v-model="form.sortOrder" /></el-form-item>
       </el-form>
@@ -54,12 +60,16 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import request from '../../api/request.js';
 import { albumApi } from '../../api/album.api.js';
 import AlbumCard from '../../components/album/AlbumCard.vue';
-import { formatVisibility } from '../../utils/format.js';
+import AlbumCoverSelector from '../../components/album/AlbumCoverSelector.vue';
+import VisibilityToggleButton from '../../components/common/VisibilityToggleButton.vue';
 
 const albums = ref([]);
 const dialogVisible = ref(false);
 const currentId = ref(null);
 const form = reactive({ title: '', description: '', visibility: 'public', coverPhotoId: null, sortOrder: 0 });
+const coverPhotos = ref([]);
+const coverLoading = ref(false);
+const visibilityBusyId = ref(null);
 
 const load = async () => {
   const res = await request.get('/my/albums');
@@ -69,13 +79,23 @@ const load = async () => {
 const openCreate = () => {
   currentId.value = null;
   Object.assign(form, { title: '', description: '', visibility: 'public', coverPhotoId: null, sortOrder: 0 });
+  coverPhotos.value = [];
   dialogVisible.value = true;
 };
 
-const openEdit = (row) => {
+const openEdit = async (row) => {
   currentId.value = row.id;
   Object.assign(form, row);
+  coverPhotos.value = [];
   dialogVisible.value = true;
+  coverLoading.value = true;
+  try {
+    const res = await albumApi.detail(row.id);
+    coverPhotos.value = res.data?.photos || [];
+    form.coverPhotoId = row.coverPhotoId || res.data?.coverPhotoId || null;
+  } finally {
+    coverLoading.value = false;
+  }
 };
 
 const save = async () => {
@@ -91,6 +111,17 @@ const remove = async (row) => {
   await albumApi.remove(row.id);
   ElMessage.success('已删除');
   load();
+};
+
+const toggleVisibility = async (row, visibility) => {
+  visibilityBusyId.value = row.id;
+  try {
+    await albumApi.update(row.id, { ...row, visibility, coverPhotoId: row.coverPhotoId || null });
+    row.visibility = visibility;
+    ElMessage.success('可见性已更新');
+  } finally {
+    visibilityBusyId.value = null;
+  }
 };
 
 onMounted(load);

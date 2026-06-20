@@ -1,44 +1,49 @@
 <template>
   <teleport to="body">
     <transition name="sheet-mask">
-      <div v-if="visible" class="detail-mask" @click.self="close" />
+      <div v-if="visible" class="detail-mask" @pointerdown.self="close" @click.self="close" />
     </transition>
     <transition name="detail-sheet">
       <section v-if="visible" class="detail-sheet" role="dialog" aria-modal="true" :aria-label="photo?.title || '照片详情'">
-        <header class="sheet-header">
-          <div class="grab" />
+        <header class="sheet-header" @click.self="close">
+          <div class="grab" @click="close" />
           <div>
             <p class="eyebrow">PHOTO DETAIL</p>
             <h2>{{ photo?.title || initialPhoto?.title || '照片详情' }}</h2>
           </div>
-          <button class="close-button" type="button" aria-label="关闭详情" @click="close">
+          <button class="close-button" type="button" aria-label="关闭详情" @pointerdown.stop @click.stop="close">
             <el-icon><Close /></el-icon>
           </button>
         </header>
 
         <LoadingState v-if="loading" class="sheet-loading" />
         <div v-else-if="photo" class="sheet-scroll">
-          <div class="detail-presentation">
+          <div class="detail-presentation" :class="{ 'detail-presentation-simple': !hasTechnicalSide }">
             <div class="photo-media">
               <img :src="imageUrl(photo.mediumUrl || photo.thumbnailUrl)" :alt="photo.title" />
             </div>
 
-            <aside class="technical-side">
-              <section class="technical-panel">
+            <aside v-if="hasTechnicalSide" class="technical-side">
+              <section v-if="hasExif" class="technical-panel">
                 <h3>照片参数</h3>
                 <ExifInfo :photo="photo" />
               </section>
 
-              <section class="technical-panel location-panel">
+              <section v-if="hasGps" class="technical-panel location-panel">
                 <h3>地理位置</h3>
-                <template v-if="photo.latitude && photo.longitude">
-                  <MapViewer :photos="[photo]" :center="[photo.latitude, photo.longitude]" :zoom="11" height="150px" />
-                  <router-link :to="{ path: '/map', query: { city: photo.city } }" @click="close">
-                    {{ photo.locationName || photo.city || '查看地图' }}
-                  </router-link>
-                  <small>{{ photo.city || '未知城市' }} · {{ photo.country || '未知地区' }}</small>
-                </template>
-                <p v-else class="muted">暂无地理位置信息</p>
+                <MapViewer
+                  :photos="[photo]"
+                  :center="[photo.latitude, photo.longitude]"
+                  :zoom="detailMapZoom"
+                  :fit-max-zoom="detailMapZoom"
+                  :focus-zoom="detailMapZoom"
+                  height="150px"
+                  :show-popup="false"
+                />
+                <router-link :to="{ path: '/map', query: { city: photo.city } }" @click="close">
+                  {{ photo.locationName || photo.city || '查看地图' }}
+                </router-link>
+                <small>{{ photo.city || '未知城市' }} · {{ photo.country || '未知地区' }}</small>
               </section>
             </aside>
 
@@ -102,6 +107,9 @@ import { photoApi } from '../../api/photo.api.js';
 import { useAuthStore } from '../../stores/auth.store.js';
 import { useSettingsStore } from '../../stores/settings.store.js';
 import { imageUrl } from '../../utils/image.js';
+import { hasExifInfo, hasGpsInfo } from '../../utils/exif.js';
+import { mapSceneForPhoto, mapZoomForScene } from '../../utils/map.js';
+import { setPageScrollLocked, unlockPageScroll } from '../../utils/scrollLock.js';
 import { readGuestProfile, saveGuestProfile } from '../../utils/guest.js';
 import { formatDate, formatDateTime, numberText } from '../../utils/format.js';
 import LoadingState from '../common/LoadingState.vue';
@@ -114,7 +122,7 @@ const props = defineProps({
   initialPhoto: { type: Object, default: null }
 });
 
-const emit = defineEmits(['close', 'updated']);
+const emit = defineEmits(['close', 'updated', 'update:visible']);
 const auth = useAuthStore();
 const settings = useSettingsStore();
 const route = useRoute();
@@ -127,9 +135,17 @@ const guestName = ref(savedGuest.guestName);
 const guestEmail = ref(savedGuest.guestEmail);
 const loading = ref(false);
 let requestVersion = 0;
+const scrollLockKey = Symbol('photo-detail-sheet');
 const commentsEnabled = computed(() => settings.settings.commentsEnabled !== false);
+const hasExif = computed(() => hasExifInfo(photo.value));
+const hasGps = computed(() => hasGpsInfo(photo.value));
+const hasTechnicalSide = computed(() => hasExif.value || hasGps.value);
+const detailMapZoom = computed(() => mapZoomForScene(settings.settings, mapSceneForPhoto(photo.value), 'detail'));
 
-const close = () => emit('close');
+const close = () => {
+  emit('update:visible', false);
+  emit('close');
+};
 
 const load = async () => {
   if (!props.visible || !props.photoId) return;
@@ -196,8 +212,14 @@ const onKey = (event) => {
 };
 
 watch(() => [props.visible, props.photoId], load, { immediate: true });
+watch(() => props.visible, (visible) => {
+  setPageScrollLocked(scrollLockKey, visible);
+}, { immediate: true });
 window.addEventListener('keydown', onKey);
-onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKey);
+  unlockPageScroll(scrollLockKey);
+});
 </script>
 
 <style scoped>
@@ -297,6 +319,25 @@ h2 {
   align-items: start;
   gap: clamp(20px, 3vw, 32px);
   margin: 0 auto;
+}
+
+.detail-presentation-simple {
+  max-width: 980px;
+  grid-template-areas:
+    "photo"
+    "copy"
+    "comments";
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.detail-presentation-simple .photo-media img {
+  max-height: min(64dvh, 780px);
+}
+
+.detail-presentation-simple .lead-copy,
+.detail-presentation-simple .comments {
+  width: min(760px, 100%);
+  justify-self: center;
 }
 
 .photo-media {

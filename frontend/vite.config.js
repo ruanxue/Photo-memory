@@ -1,6 +1,14 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 
+const allowedHosts = [
+  'demo.173015.xyz',
+  ...(process.env.VITE_ALLOWED_HOSTS || '')
+    .split(',')
+    .map((host) => host.trim())
+    .filter(Boolean)
+];
+
 export default defineConfig({
   plugins: [vue()],
   build: {
@@ -20,6 +28,7 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    allowedHosts,
     proxy: {
       '/api': {
         target: 'http://localhost:13033',

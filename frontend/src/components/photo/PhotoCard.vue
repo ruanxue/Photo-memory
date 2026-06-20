@@ -43,7 +43,7 @@
         >
           Exif
         </button>
-        <div class="capture-overlay" :class="{ detailed: exifHovered && showExifControl }">
+        <div v-if="hasPhotoExif" class="capture-overlay" :class="{ detailed: exifHovered && showExifControl }">
           <template v-if="exifHovered && showExifControl">
             <span v-for="line in exifLines" :key="line">{{ line }}</span>
           </template>
@@ -66,6 +66,7 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { Star, Top } from '@element-plus/icons-vue';
 import { useSettingsStore } from '../../stores/settings.store.js';
+import { hasExifInfo } from '../../utils/exif.js';
 import { imageUrl } from '../../utils/image.js';
 import { formatDate, numberText } from '../../utils/format.js';
 
@@ -124,7 +125,8 @@ const imageFrameClass = computed(() => [
   `load-${loadAnimation.value}`,
   imageLoaded.value ? 'is-loaded' : 'is-loading'
 ]);
-const showExifControl = computed(() => settings.settings.showExifOnHover !== false);
+const hasPhotoExif = computed(() => hasExifInfo(props.photo));
+const showExifControl = computed(() => settings.settings.showExifOnHover !== false && hasPhotoExif.value);
 const equipmentLabel = computed(() => {
   const camera = [props.photo.cameraMake, props.photo.cameraModel].filter(Boolean).join(' ');
   return camera || props.photo.lensModel || '暂无设备信息';

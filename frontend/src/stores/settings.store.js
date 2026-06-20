@@ -28,9 +28,9 @@ export const defaultCustomThemeColors = {
 };
 
 const defaults = {
-  siteName: 'Photo Memory',
-  siteSubtitle: '私人影像馆',
-  homeIntro: '记录旅行、生活与摄影作品。',
+  siteName: '风经过的地方',
+  siteSubtitle: '',
+  homeIntro: '把走过的路、爱过的人，和那些不肯散场的光，慢慢收起来。',
   themeMode: 'light',
   heroMode: 'random',
   heroPhotoIds: [],
@@ -57,6 +57,10 @@ const defaults = {
   mapTileProvider: 'amap',
   mapTileUrl: '',
   mapTileAttribution: '© 高德地图',
+  mapPageZoomChina: 12,
+  mapPageZoomOverseas: 7,
+  mapDetailZoomChina: 11,
+  mapDetailZoomOverseas: 7,
   defaultSort: 'latest',
   faviconUrl: '',
   themeCustomEnabled: false,
@@ -411,12 +415,12 @@ export const useSettingsStore = defineStore('settings', {
   }),
   getters: {
     siteName: (state) => state.settings.siteName || defaults.siteName,
-    siteSubtitle: (state) => state.settings.siteSubtitle || defaults.siteSubtitle,
+    siteSubtitle: (state) => state.settings.siteSubtitle ?? defaults.siteSubtitle,
     homeIntro: (state) => state.settings.homeIntro || defaults.homeIntro
   },
   actions: {
     applyDocumentMeta() {
-      document.title = `${this.siteName} · ${this.siteSubtitle}`;
+      document.title = this.siteSubtitle ? `${this.siteName} · ${this.siteSubtitle}` : this.siteName;
       ensureThemeMediaListener();
       applyThemeMode(this.settings.themeMode);
       applyCustomThemeColors(this.settings);

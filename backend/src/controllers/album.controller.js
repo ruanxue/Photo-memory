@@ -11,6 +11,20 @@ const albumWhere = (user) => {
   return { visibility: 'public' };
 };
 
+const visibleAlbumPhotoWhere = (albumId, user) => ({
+  AND: [
+    visibilityFilter(user),
+    { albumId }
+  ]
+});
+
+const attachVisiblePhotoCounts = async (albums, user) => {
+  const counts = await Promise.all(albums.map((album) =>
+    prisma.photo.count({ where: visibleAlbumPhotoWhere(album.id, user) })
+  ));
+  return albums.map((album, index) => ({ ...album, photoCount: counts[index] }));
+};
+
 const attachCoverPhotos = async (albums, user) => {
   const coverIds = albums.map((album) => album.coverPhotoId).filter(Boolean);
   if (!coverIds.length) return albums.map((album) => ({ ...album, coverPhoto: album.photos?.[0] || null }));
@@ -38,7 +52,8 @@ export const listAlbums = async (req, res) => {
     }),
     prisma.album.count({ where })
   ]);
-  success(res, await attachCoverPhotos(items, req.user), 'ok', buildPageMeta(total, page, pageSize));
+  const withCovers = await attachCoverPhotos(items, req.user);
+  success(res, await attachVisiblePhotoCounts(withCovers, req.user), 'ok', buildPageMeta(total, page, pageSize));
 };
 
 export const getAlbum = async (req, res) => {
@@ -52,7 +67,7 @@ export const getAlbum = async (req, res) => {
   });
   if (!album) return fail(res, 404, '相册不存在');
   if (!canManageAlbum(album, req.user) && album.visibility !== 'public') return fail(res, 403, '没有权限查看该相册');
-  success(res, { ...album, photos: attachViewerState(album.photos, req.user) });
+  success(res, { ...album, photoCount: album.photos.length, photos: attachViewerState(album.photos, req.user) });
 };
 
 export const createAlbum = async (req, res) => {

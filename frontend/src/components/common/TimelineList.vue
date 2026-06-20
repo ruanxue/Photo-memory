@@ -9,10 +9,10 @@
           <div>
             <h4>{{ day.title }}</h4>
             <p>{{ day.description || day.city || '这一天留下了一组照片。' }}</p>
-            <router-link :to="{ path: '/photos', query: { city: day.city } }">{{ day.count }} 张照片</router-link>
+            <router-link :to="dayPhotosTo(day)">{{ day.count }} 张照片</router-link>
           </div>
           <div class="day-photos">
-            <router-link v-for="photo in day.photos.slice(0, 4)" :key="photo.id" :to="`/photos/${photo.id}`">
+            <router-link v-for="photo in day.photos.slice(0, 4)" :key="photo.id" :to="dayPhotosTo(day)" class="timeline-photo-link">
               <img :src="photo.thumbnailUrl" :alt="photo.title" />
             </router-link>
           </div>
@@ -25,6 +25,11 @@
 <script setup>
 defineProps({
   timeline: { type: Array, default: () => [] }
+});
+
+const dayPhotosTo = (day) => ({
+  path: '/photos',
+  query: day.city ? { city: day.city } : {}
 });
 </script>
 

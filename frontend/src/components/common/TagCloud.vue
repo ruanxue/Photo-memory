@@ -1,6 +1,6 @@
 <template>
   <div class="tag-cloud">
-    <router-link v-for="tag in tags" :key="tag.id" :to="{ path: '/photos', query: { tagId: tag.id } }" :style="{ '--tag-color': tag.color || 'var(--theme-tag-fallback)' }">
+    <router-link v-for="tag in tags" :key="tag.id" :to="{ path: '/photos', query: { tagId: tag.id } }">
       #{{ tag.name }}
       <span>{{ tag.photoCount }}</span>
     </router-link>
@@ -23,10 +23,9 @@ defineProps({
 a {
   padding: 8px 12px;
   border-radius: 999px;
-  color: var(--theme-text);
-  border: 1px solid color-mix(in srgb, var(--tag-color) 52%, var(--theme-line));
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--tag-color) 20%, transparent), var(--theme-button-bg));
+  color: var(--theme-tag-text);
+  border: 1px solid var(--theme-tag-border);
+  background: var(--theme-tag-bg);
   box-shadow: inset 0 0 0 1px var(--theme-line-faint);
 }
 

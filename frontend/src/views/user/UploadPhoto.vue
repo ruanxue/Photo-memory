@@ -3,7 +3,7 @@
     <div class="section-head">
       <div>
         <h1 class="section-title">上传照片</h1>
-        <p class="section-subtitle">上传后自动生成缩略图和中图，并尝试读取 EXIF 与 GPS。</p>
+        <p class="section-subtitle">可以上传本地文件，也可以填写图床图片 URL；外链照片会直接从图床加载，不占用服务器流量。</p>
       </div>
     </div>
     <UploadPanel @uploaded="$router.push('/user/photos')" />

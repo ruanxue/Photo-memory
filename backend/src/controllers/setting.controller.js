@@ -14,6 +14,7 @@ const booleanKeys = new Set([
   'themeCustomEnabled'
 ]);
 const numberKeys = new Set(['uploadMaxSizeMb', 'pageSize']);
+const mapZoomKeys = new Set(['mapPageZoomChina', 'mapPageZoomOverseas', 'mapDetailZoomChina', 'mapDetailZoomOverseas']);
 const loadAnimations = new Set(['none', 'blur', 'custom']);
 const revealAnimations = new Set(['slide-up', 'fade', 'none']);
 const themeModes = new Set(['light', 'dark', 'auto']);
@@ -34,6 +35,10 @@ const defaultSettings = {
   waterfallCustomLoadCss: '',
   mapTileProvider: 'amap',
   mapTileUrl: '',
+  mapPageZoomChina: '12',
+  mapPageZoomOverseas: '7',
+  mapDetailZoomChina: '11',
+  mapDetailZoomOverseas: '7',
   mapTileAttribution: '© 高德地图'
 };
 
@@ -179,6 +184,10 @@ const normalizeValue = (key, value) => {
   if (key === 'waterfallLoadStaggerMs') return clampNumber(value, 24, 0, 120);
   if (key === 'waterfallCustomLoadCss') return sanitizeWaterfallLoadCss(value);
   if (key === 'mapTileProvider') return ['amap', 'osm', 'custom'].includes(value) ? value : 'amap';
+  if (mapZoomKeys.has(key)) {
+    const fallback = key === 'mapPageZoomChina' ? 12 : key === 'mapDetailZoomChina' ? 11 : 7;
+    return clampNumber(value, fallback, 3, 14);
+  }
   if (key === 'mapTileUrl') {
     const url = String(value || '').trim();
     if (!url || !/^https:\/\/[^<>"'\s]+$/i.test(url)) return '';
