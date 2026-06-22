@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
   [switch]$Install,
   [switch]$Migrate,
@@ -43,7 +43,45 @@ function Get-RequiredCommand {
     }
   }
 
-  throw "Missing required command: $($Names -join ' or ')"
+  throw "缺少必要命令：$($Names -join ' 或 ')。请先安装 Node.js 18+，并确认 npm/npx 可以在命令行中使用。"
+}
+
+function Get-NodeMajorVersion {
+  try {
+    $VersionText = & node -p "process.versions.node.split('.')[0]"
+    if ($LASTEXITCODE -ne 0) {
+      return $null
+    }
+    return [int]$VersionText
+  }
+  catch {
+    return $null
+  }
+}
+
+function Get-ConfiguredSqlitePath {
+  if (-not (Test-Path $BackendEnv)) {
+    return Join-Path (Join-Path $BackendDir "prisma") "dev.db"
+  }
+
+  $Line = Get-Content -LiteralPath $BackendEnv -ErrorAction SilentlyContinue |
+    Where-Object { $_ -match '^\s*DATABASE_URL\s*=' } |
+    Select-Object -First 1
+  if (-not $Line) {
+    return Join-Path (Join-Path $BackendDir "prisma") "dev.db"
+  }
+
+  $Value = ($Line -replace '^\s*DATABASE_URL\s*=\s*', '').Trim().Trim('"').Trim("'")
+  if (-not $Value.StartsWith("file:")) {
+    return $null
+  }
+
+  $PathValue = $Value.Substring(5)
+  if ([System.IO.Path]::IsPathRooted($PathValue)) {
+    return $PathValue
+  }
+
+  return Join-Path (Join-Path $BackendDir "prisma") $PathValue
 }
 
 function Invoke-Npm {
@@ -145,19 +183,39 @@ if (`$LASTEXITCODE -ne 0) {
 
 Write-Step "Checking project"
 if (-not (Test-Path $BackendDir)) {
-  throw "Backend directory not found: $BackendDir"
+  throw "找不到 backend 目录：$BackendDir。请确认项目已经完整解压，并从 photo-memory 根目录启动。"
 }
 if (-not (Test-Path $FrontendDir)) {
-  throw "Frontend directory not found: $FrontendDir"
+  throw "找不到 frontend 目录：$FrontendDir。请确认项目已经完整解压，并从 photo-memory 根目录启动。"
+}
+if (-not (Test-Path (Join-Path $BackendDir "package.json"))) {
+  throw "找不到 backend/package.json。项目文件不完整，请重新解压或重新拉取仓库。"
+}
+if (-not (Test-Path (Join-Path $FrontendDir "package.json"))) {
+  throw "找不到 frontend/package.json。项目文件不完整，请重新解压或重新拉取仓库。"
 }
 
 $script:NpmCommand = Get-RequiredCommand @("npm.cmd", "npm")
 $script:NpxCommand = Get-RequiredCommand @("npx.cmd", "npx")
 Get-RequiredCommand @("node.exe", "node") | Out-Null
 
+$NodeMajor = Get-NodeMajorVersion
+if (-not $NodeMajor) {
+  throw "无法读取 Node.js 版本。请在命令行执行 node -v 检查 Node.js 是否可用。"
+}
+if ($NodeMajor -lt 18) {
+  throw "Node.js 版本过低。当前主版本：$NodeMajor；本项目需要 Node.js 18 或更高版本。"
+}
+
 if (-not (Test-Path $BackendEnv) -and (Test-Path $BackendEnvExample)) {
   Write-Step "Creating backend .env from .env.example"
   Copy-Item -LiteralPath $BackendEnvExample -Destination $BackendEnv
+}
+
+$DatabasePath = Get-ConfiguredSqlitePath
+if ($DatabasePath -and -not (Test-Path $DatabasePath) -and -not $Migrate -and -not $Init) {
+  Write-Warn "未检测到 SQLite 数据库：$DatabasePath"
+  Write-Warn "如果这是第一次启动，请关闭本窗口后运行：start-dev.bat -Init"
 }
 
 Write-Step "Ensuring upload directories"
