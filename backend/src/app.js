@@ -152,8 +152,10 @@ const baiduMapCspHosts = [
   'https://api.map.baidu.com',
   'https://*.baidu.com',
   'https://*.bdimg.com',
+  'https://*.bdstatic.com',
   'https://*.bcebos.com'
 ];
+const baiduMapResourceSources = ['https:', ...baiduMapCspHosts];
 
 app.use(
   helmet({
@@ -161,10 +163,15 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-        'script-src': ["'self'", ...baiduMapCspHosts],
-        'script-src-elem': ["'self'", ...baiduMapCspHosts],
-        'connect-src': ["'self'", ...baiduMapCspHosts],
+        'script-src': ["'self'", ...baiduMapResourceSources],
+        'script-src-elem': ["'self'", ...baiduMapResourceSources],
+        'connect-src': ["'self'", ...baiduMapResourceSources],
         'img-src': ["'self'", 'data:', 'blob:', 'https:'],
+        'style-src': ["'self'", "'unsafe-inline'", ...baiduMapResourceSources],
+        'font-src': ["'self'", 'data:', ...baiduMapResourceSources],
+        'worker-src': ["'self'", 'blob:'],
+        'child-src': ["'self'", 'blob:'],
+        'media-src': ["'self'", 'data:', 'blob:', 'https:'],
         'upgrade-insecure-requests': null
       }
     }
