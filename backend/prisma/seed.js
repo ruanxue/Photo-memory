@@ -248,6 +248,8 @@ async function seedSettings() {
     ['showExifOnHover', 'true', '瀑布流卡片显示 EXIF 悬浮信息'],
     ['mapTileProvider', 'amap', '地图底图来源'],
     ['mapTileUrl', '', '自定义地图瓦片 URL'],
+    ['baiduMapWebAk', '', '百度地图 Web 端 AK'],
+    ['baiduMapServerAk', '', '百度地图服务端 AK'],
     ['mapTileAttribution', '© 高德地图', '地图底图版权署名'],
     ['defaultSort', 'latest', '默认排序方式'],
     ['icp', '', 'ICP备案号'],

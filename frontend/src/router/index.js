@@ -49,6 +49,7 @@ const routes = [
       { path: '', name: 'admin-dashboard', component: () => import('../views/admin/AdminDashboard.vue') },
       { path: 'users', name: 'admin-users', component: () => import('../views/admin/AdminUsers.vue') },
       { path: 'photos', name: 'admin-photos', component: () => import('../views/admin/AdminPhotos.vue') },
+      { path: 'waterfall', name: 'admin-waterfall-order', component: () => import('../views/admin/AdminWaterfallOrder.vue') },
       { path: 'albums', name: 'admin-albums', component: () => import('../views/admin/AdminAlbums.vue') },
       { path: 'categories', redirect: '/admin/tags' },
       { path: 'tags', name: 'admin-tags', component: () => import('../views/admin/AdminTags.vue') },

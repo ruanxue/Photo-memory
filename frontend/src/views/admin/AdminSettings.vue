@@ -351,13 +351,24 @@
           <el-form-item label="底图来源">
             <el-select v-model="form.mapTileProvider">
               <el-option label="高德地图（国内推荐）" value="amap" />
+              <el-option label="百度地图 JSAPI GL" value="baidu" />
               <el-option label="OpenStreetMap" value="osm" />
               <el-option label="自定义瓦片 URL" value="custom" />
             </el-select>
-            <p class="field-help">自定义 URL 支持 {s}、{z}、{x}、{y} 占位符，必须使用 HTTPS。</p>
+            <p class="field-help">百度地图使用 JSAPI GL，需要填写 Web 端 AK；自定义 URL 支持 {s}、{z}、{x}、{y} 占位符，必须使用 HTTPS。</p>
           </el-form-item>
           <el-form-item label="版权署名">
             <el-input v-model="form.mapTileAttribution" placeholder="例如：© 高德地图" />
+          </el-form-item>
+        </div>
+        <div v-if="form.mapTileProvider === 'baidu'" class="settings-grid">
+          <el-form-item label="百度地图 Web 端 AK">
+            <el-input v-model="form.baiduMapWebAk" placeholder="用于浏览器加载 JSAPI GL" clearable />
+            <p class="field-help">Web 端 AK 会下发到浏览器，请在百度控制台配置正确的 Referer 白名单。</p>
+          </el-form-item>
+          <el-form-item label="百度地图服务端 AK">
+            <el-input v-model="form.baiduMapServerAk" type="password" show-password placeholder="预留给后续服务端检索/坐标转换" clearable />
+            <p class="field-help">服务端 AK 只在后台保存，不会出现在公开设置接口里。</p>
           </el-form-item>
         </div>
         <el-form-item v-if="form.mapTileProvider === 'custom'" label="自定义瓦片 URL">
@@ -497,6 +508,8 @@ const form = reactive({
   mapTileProvider: 'amap',
   mapTileUrl: '',
   mapTileAttribution: '© 高德地图',
+  baiduMapWebAk: '',
+  baiduMapServerAk: '',
   mapPageZoomChina: 12,
   mapPageZoomOverseas: 7,
   mapDetailZoomChina: 11,
@@ -542,7 +555,7 @@ const numberOrNull = (value) => {
 
 const normalizeLoadAnimation = (value) => ['none', 'blur', 'custom'].includes(value) ? value : 'blur';
 const normalizeRevealAnimation = (value) => ['slide-up', 'fade', 'none'].includes(value) ? value : 'slide-up';
-const normalizeMapProvider = (value) => ['amap', 'osm', 'custom'].includes(value) ? value : 'amap';
+const normalizeMapProvider = (value) => ['amap', 'osm', 'custom', 'baidu'].includes(value) ? value : 'amap';
 const normalizeThemeMode = (value) => ['light', 'dark', 'auto'].includes(value) ? value : 'light';
 const normalizeThemeEditorMode = (value) => ['simple', 'advanced'].includes(value) ? value : 'simple';
 const mapZoomKeys = ['mapPageZoomChina', 'mapPageZoomOverseas', 'mapDetailZoomChina', 'mapDetailZoomOverseas'];
@@ -568,6 +581,7 @@ const normalizeMapTileUrl = (value) => {
   if (!url) return '';
   return /^https:\/\/[^<>"'\s]+$/i.test(url) ? url.slice(0, 500) : '';
 };
+const normalizeBaiduAk = (value) => String(value || '').replace(/[^a-z0-9_-]/gi, '').slice(0, 120);
 const mapZoomPreviewItems = computed(() => [
   { key: 'mapPageZoomChina', label: '地图页 · 中国', value: normalizeMapZoom('mapPageZoomChina', form.mapPageZoomChina) },
   { key: 'mapPageZoomOverseas', label: '地图页 · 境外', value: normalizeMapZoom('mapPageZoomOverseas', form.mapPageZoomOverseas) },
@@ -1007,6 +1021,7 @@ const save = async () => {
     if (key === 'mapTileProvider') return { key, value: normalizeMapProvider(value) };
     if (key === 'mapTileUrl') return { key, value: normalizeMapTileUrl(value) };
     if (key === 'mapTileAttribution') return { key, value: String(value || '').replace(/[<>]/g, '').slice(0, 120) };
+    if (key === 'baiduMapWebAk' || key === 'baiduMapServerAk') return { key, value: normalizeBaiduAk(value) };
     return { key, value: String(value) };
   });
   await adminApi.updateSettings(payload);

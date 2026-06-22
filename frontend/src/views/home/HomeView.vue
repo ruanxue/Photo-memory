@@ -18,11 +18,9 @@
             <div><strong>{{ stats.cities }}</strong><span>城市</span></div>
             <div><strong>{{ stats.tags }}</strong><span>标签</span></div>
           </div>
-          <el-tooltip v-if="canRefreshHero" content="换一张主图" placement="left" popper-class="dock-tooltip">
-            <button class="hero-refresh" type="button" aria-label="换一张主图" @click="pickHero">
-              <el-icon><Refresh /></el-icon>
-            </button>
-          </el-tooltip>
+          <button v-if="canRefreshHero" class="hero-refresh" type="button" aria-label="换一张主图" @click="pickHero">
+            <el-icon><Refresh /></el-icon>
+          </button>
         </aside>
       </div>
     </div>
@@ -80,7 +78,6 @@ const page = ref(1);
 const WALL_PAGE_SIZE = 100;
 const pageSize = ref(WALL_PAGE_SIZE);
 const totalPhotos = ref(0);
-const wallMode = ref('latest');
 let wallObserver = null;
 const fallbackHero = 'https://picsum.photos/seed/photo-memory-hero/2200/1400';
 const heroImage = computed(() => {
@@ -131,8 +128,7 @@ const scrollToWall = () => {
 const wallPhotoParams = () => ({
   page: page.value,
   pageSize: pageSize.value,
-  sort: wallMode.value === 'featured' ? 'latest' : (settings.settings.defaultSort || 'latest'),
-  featured: wallMode.value === 'featured' ? true : undefined
+  sort: 'custom'
 });
 
 const observeHomeLoadMore = async () => {
@@ -183,20 +179,17 @@ const load = async () => {
     const heroRequest = heroIds.length
       ? photoApi.list({ ids: heroIds.join(','), pageSize: Math.min(heroIds.length, WALL_PAGE_SIZE) })
       : Promise.resolve({ data: [] });
-    const [featuredRes, latestRes, albumRes, tagRes, cityRes, heroRes] = await Promise.all([
-      photoApi.wall({ featured: true, page: 1, pageSize: WALL_PAGE_SIZE, sort: 'latest' }),
-      photoApi.wall({ page: 1, pageSize: WALL_PAGE_SIZE, sort: settings.settings.defaultSort || 'latest' }),
+    const [wallRes, latestRes, albumRes, tagRes, cityRes, heroRes] = await Promise.all([
+      photoApi.wall({ page: 1, pageSize: WALL_PAGE_SIZE, sort: 'custom' }),
+      photoApi.wall({ page: 1, pageSize: 1, includeAlbumPhotos: true, sort: 'latest' }),
       albumApi.list({ pageSize: WALL_PAGE_SIZE }),
       tagApi.list(),
       request.get('/map/cities'),
       heroRequest
     ]);
-    const featuredTotal = featuredRes.meta?.total || featuredRes.data.length;
-    wallMode.value = featuredTotal >= 40 ? 'featured' : 'latest';
-    const wallRes = wallMode.value === 'featured' ? featuredRes : latestRes;
     featured.value = wallRes.data || [];
     totalPhotos.value = wallRes.meta?.total || featured.value.length;
-    stats.photos = latestRes.meta?.total || featuredRes.meta?.total || featured.value.length;
+    stats.photos = latestRes.meta?.total || wallRes.meta?.total || featured.value.length;
     stats.albums = albumRes.meta?.total || albumRes.data?.length || 0;
     wallAlbums.value = albumRes.data || [];
     stats.views = featured.value.reduce((sum, item) => sum + (item.viewCount || 0), 0);

@@ -1,13 +1,11 @@
 <template>
   <Transition name="dock-fade">
     <nav v-show="visible" class="floating-dock" :class="{ 'floating-dock-home': home }" aria-label="快捷导航">
-      <el-tooltip v-for="item in links" :key="item.key" :content="item.label" placement="left" popper-class="dock-tooltip">
-        <router-link :to="item.to" custom v-slot="{ href, navigate }">
-          <a :href="href" :aria-label="item.label" :class="{ active: isActive(item) }" @click="handleNavigate($event, item, navigate)">
-            <el-icon><component :is="item.icon" /></el-icon>
-          </a>
-        </router-link>
-      </el-tooltip>
+      <router-link v-for="item in links" :key="item.key" :to="item.to" custom v-slot="{ href, navigate }">
+        <a :href="href" :aria-label="item.label" :class="{ active: isActive(item) }" @click="handleNavigate($event, item, navigate)">
+          <el-icon><component :is="item.icon" /></el-icon>
+        </a>
+      </router-link>
     </nav>
   </Transition>
 </template>

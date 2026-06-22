@@ -57,6 +57,7 @@ const defaults = {
   mapTileProvider: 'amap',
   mapTileUrl: '',
   mapTileAttribution: '© 高德地图',
+  baiduMapWebAk: '',
   mapPageZoomChina: 12,
   mapPageZoomOverseas: 7,
   mapDetailZoomChina: 11,

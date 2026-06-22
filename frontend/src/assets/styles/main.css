@@ -276,8 +276,46 @@ img {
 .el-input-number__increase {
   background: var(--theme-input-bg) !important;
   border: 1px solid var(--theme-input-border);
+  border-radius: var(--theme-control-radius, var(--radius));
   box-shadow: none !important;
   color: var(--theme-text);
+}
+
+.el-input-number {
+  display: inline-flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.el-input-number .el-input__wrapper {
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+
+.el-input-number__decrease,
+.el-input-number__increase {
+  width: 34px;
+  border-top: 0 !important;
+  border-bottom: 0 !important;
+  color: var(--theme-button-text) !important;
+  background: var(--theme-button-bg) !important;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.el-input-number__decrease {
+  border-left: 0 !important;
+  border-right-color: var(--theme-input-border) !important;
+}
+
+.el-input-number__increase {
+  border-right: 0 !important;
+  border-left-color: var(--theme-input-border) !important;
+}
+
+.el-input-number__decrease:hover,
+.el-input-number__increase:hover {
+  color: var(--theme-text) !important;
+  background: var(--theme-button-hover-bg) !important;
 }
 
 .el-input__inner,
@@ -576,6 +614,32 @@ img {
 
 .el-checkbox__input.is-checked + .el-checkbox__label {
   color: var(--theme-primary-strong);
+}
+
+.el-collapse {
+  --el-collapse-border-color: var(--theme-line);
+  --el-collapse-header-bg-color: transparent;
+  --el-collapse-header-text-color: var(--theme-text);
+  --el-collapse-content-bg-color: transparent;
+  --el-collapse-content-text-color: var(--theme-text-soft);
+  border-radius: var(--theme-card-radius, var(--radius));
+  border-color: var(--theme-line) !important;
+  overflow: hidden;
+}
+
+.el-collapse-item__header {
+  background: var(--theme-surface-soft) !important;
+  border-color: var(--theme-line) !important;
+  color: var(--theme-text) !important;
+}
+
+.el-collapse-item__wrap {
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-line) !important;
+}
+
+.el-collapse-item__content {
+  color: var(--theme-text-soft) !important;
 }
 
 @media (max-width: 760px) {

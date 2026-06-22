@@ -17,6 +17,9 @@
 import { onMounted, ref } from 'vue';
 import { tagApi } from '../../api/tag.api.js';
 
+let cachedTags = null;
+let loadingPromise = null;
+
 defineProps({
   modelValue: { type: Array, default: () => [] },
   placeholder: { type: String, default: '选择标签' }
@@ -26,7 +29,16 @@ const emit = defineEmits(['update:modelValue']);
 const tags = ref([]);
 
 onMounted(async () => {
-  const res = await tagApi.list();
-  tags.value = res.data || [];
+  if (cachedTags) {
+    tags.value = cachedTags;
+    return;
+  }
+  if (!loadingPromise) {
+    loadingPromise = tagApi.list().then((res) => {
+      cachedTags = res.data || [];
+      return cachedTags;
+    });
+  }
+  tags.value = await loadingPromise;
 });
 </script>

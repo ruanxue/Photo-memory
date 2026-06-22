@@ -1,5 +1,17 @@
 <template>
-  <div class="map-shell" :style="{ height }">
+  <BaiduMapViewer
+    v-if="isBaiduProvider"
+    ref="baiduViewer"
+    :photos="photos"
+    :center="center"
+    :zoom="zoom"
+    :fit-max-zoom="fitMaxZoom"
+    :focus-zoom="focusZoom"
+    :height="height"
+    :show-popup="showPopup"
+    @detail="emit('detail', $event)"
+  />
+  <div v-else class="map-shell" :style="{ height }">
     <div ref="mapEl" class="map-canvas"></div>
     <div v-if="tileErrorVisible" class="map-hint">
       <strong>地图底图加载缓慢</strong>
@@ -14,6 +26,7 @@ import L from 'leaflet';
 import { imageUrl } from '../../utils/image.js';
 import { formatDate } from '../../utils/format.js';
 import { useSettingsStore } from '../../stores/settings.store.js';
+import BaiduMapViewer from './BaiduMapViewer.vue';
 
 const props = defineProps({
   photos: { type: Array, default: () => [] },
@@ -27,6 +40,7 @@ const props = defineProps({
 
 const emit = defineEmits(['detail']);
 const mapEl = ref(null);
+const baiduViewer = ref(null);
 const settings = useSettingsStore();
 const tileErrorVisible = ref(false);
 let map;
@@ -35,6 +49,37 @@ let attributionControl;
 let markers = [];
 const markerByPhotoId = new Map();
 let focusedPhotoId = null;
+const minMapZoom = 3;
+const isBaiduProvider = computed(() => settings.settings.mapTileProvider === 'baidu');
+const worldBounds = L.latLngBounds(
+  L.latLng(-85.05112878, -180),
+  L.latLng(85.05112878, 180)
+);
+
+const clampZoom = (zoom, fallback = props.zoom) => {
+  const value = Number(zoom);
+  const maxZoom = Number(providerConfig.value?.options?.maxZoom) || 18;
+  if (!Number.isFinite(value)) return Math.max(minMapZoom, Math.min(maxZoom, Number(fallback) || minMapZoom));
+  return Math.max(minMapZoom, Math.min(maxZoom, value));
+};
+
+const clampLatLng = (latitude, longitude) => {
+  const lat = Number(latitude);
+  const lng = Number(longitude);
+  return [
+    Math.max(-85.05112878, Math.min(85.05112878, Number.isFinite(lat) ? lat : props.center[0])),
+    Math.max(-180, Math.min(180, Number.isFinite(lng) ? lng : props.center[1]))
+  ];
+};
+
+const applyMapLimits = () => {
+  if (!map) return;
+  map.setMinZoom(minMapZoom);
+  map.setMaxZoom(Number(providerConfig.value.options.maxZoom) || 18);
+  map.setMaxBounds(worldBounds);
+  map.options.maxBoundsViscosity = 1;
+  map.panInsideBounds(worldBounds, { animate: false });
+};
 
 const markerIcon = L.divIcon({
   className: 'photo-marker',
@@ -65,7 +110,7 @@ const closePopupMode = () => {
 };
 
 const renderMarkers = () => {
-  if (!map) return;
+  if (!map || isBaiduProvider.value) return;
   closePopupMode();
   markers.forEach((marker) => {
     marker.off();
@@ -78,7 +123,8 @@ const renderMarkers = () => {
   props.photos
     .filter((photo) => photo.latitude && photo.longitude)
     .forEach((photo) => {
-      const marker = L.marker([photo.latitude, photo.longitude], {
+      const point = clampLatLng(photo.latitude, photo.longitude);
+      const marker = L.marker(point, {
         icon: markerIcon,
         interactive: props.showPopup
       }).addTo(map);
@@ -94,14 +140,20 @@ const renderMarkers = () => {
       }
       markers.push(marker);
       markerByPhotoId.set(Number(photo.id), marker);
-      bounds.push([photo.latitude, photo.longitude]);
+      bounds.push(point);
     });
-  if (bounds.length) map.fitBounds(bounds, { padding: [30, 30], maxZoom: props.fitMaxZoom });
+  if (bounds.length) {
+    map.fitBounds(bounds, { padding: [30, 30], maxZoom: clampZoom(props.fitMaxZoom) });
+    map.panInsideBounds(worldBounds, { animate: false });
+  }
   setFocusedMarker(focusedPhotoId);
   closePopupMode();
 };
 
 const focusPhoto = async (photoOrId, zoomOverride = props.focusZoom) => {
+  if (isBaiduProvider.value) {
+    return baiduViewer.value?.focusPhoto?.(photoOrId, zoomOverride) || false;
+  }
   const photoId = Number(typeof photoOrId === 'object' ? photoOrId?.id : photoOrId);
   if (!map || !Number.isFinite(photoId)) return false;
   await nextTick();
@@ -110,8 +162,8 @@ const focusPhoto = async (photoOrId, zoomOverride = props.focusZoom) => {
   if (!marker || !photo?.latitude || !photo?.longitude) return false;
 
   setFocusedMarker(photoId);
-  const targetZoom = Number.isFinite(Number(zoomOverride)) ? Number(zoomOverride) : props.focusZoom;
-  map.flyTo([Number(photo.latitude), Number(photo.longitude)], targetZoom, {
+  const targetZoom = clampZoom(zoomOverride, props.focusZoom);
+  map.flyTo(clampLatLng(photo.latitude, photo.longitude), targetZoom, {
     animate: true,
     duration: 0.85
   });
@@ -200,6 +252,9 @@ const providerConfig = computed(() => {
       options: {
         subdomains: ['a', 'b', 'c'],
         attribution: settings.settings.mapTileAttribution || '&copy; OpenStreetMap contributors',
+        minZoom: minMapZoom,
+        noWrap: true,
+        bounds: worldBounds,
         maxZoom: 19
       }
     };
@@ -211,6 +266,9 @@ const providerConfig = computed(() => {
       options: {
         subdomains: ['a', 'b', 'c', '1', '2', '3', '4'],
         attribution: settings.settings.mapTileAttribution || '',
+        minZoom: minMapZoom,
+        noWrap: true,
+        bounds: worldBounds,
         maxZoom: 20
       }
     };
@@ -221,16 +279,20 @@ const providerConfig = computed(() => {
     options: {
       subdomains: ['1', '2', '3', '4'],
       attribution: settings.settings.mapTileAttribution || '© 高德地图',
+      minZoom: minMapZoom,
+      noWrap: true,
+      bounds: worldBounds,
       maxZoom: 18
     }
   };
 });
 
 const applyTileLayer = () => {
-  if (!map) return;
+  if (!map || isBaiduProvider.value) return;
   tileErrorVisible.value = false;
   if (tileLayer) tileLayer.remove();
   const { url, options } = providerConfig.value;
+  applyMapLimits();
   tileLayer = L.tileLayer(url, options)
     .on('tileerror', () => {
       tileErrorVisible.value = true;
@@ -241,24 +303,58 @@ const applyTileLayer = () => {
     .addTo(map);
 };
 
-onMounted(() => {
-  map = L.map(mapEl.value, { scrollWheelZoom: true, attributionControl: false }).setView(props.center, props.zoom);
+const initLeafletMap = () => {
+  if (map || isBaiduProvider.value || !mapEl.value) return;
+  map = L.map(mapEl.value, {
+    scrollWheelZoom: true,
+    attributionControl: false,
+    minZoom: minMapZoom,
+    maxBounds: worldBounds,
+    maxBoundsViscosity: 1,
+    worldCopyJump: false
+  }).setView(clampLatLng(props.center?.[0], props.center?.[1]), clampZoom(props.zoom));
   attributionControl = L.control.attribution({ prefix: false }).addTo(map);
+  applyMapLimits();
   applyTileLayer();
   renderMarkers();
   closePopupMode();
-});
+};
+
+const destroyLeafletMap = () => {
+  if (!map) return;
+  map.remove();
+  map = null;
+  tileLayer = null;
+  attributionControl = null;
+  markers = [];
+  markerByPhotoId.clear();
+};
+
+onMounted(initLeafletMap);
 
 watch(() => props.photos, renderMarkers, { deep: true });
 watch(() => props.fitMaxZoom, renderMarkers);
+watch(() => props.height, async () => {
+  await nextTick();
+  map?.invalidateSize();
+  map?.panInsideBounds(worldBounds, { animate: false });
+});
 watch(() => props.showPopup, () => {
   closePopupMode();
   renderMarkers();
 });
 watch(providerConfig, applyTileLayer);
+watch(isBaiduProvider, async (enabled) => {
+  if (enabled) {
+    destroyLeafletMap();
+    return;
+  }
+  await nextTick();
+  initLeafletMap();
+});
 
 onBeforeUnmount(() => {
-  if (map) map.remove();
+  destroyLeafletMap();
 });
 
 defineExpose({ focusPhoto });

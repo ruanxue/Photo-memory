@@ -25,7 +25,6 @@ import {
   listTags,
   listUsers,
   mergeTags,
-  pinPhoto,
   resetUserPassword,
   statistics,
   updateAlbum,
@@ -58,7 +57,6 @@ router.get('/photos', asyncHandler(listPhotos));
 router.put('/photos/batch', asyncHandler(batchPhotos));
 router.put('/photos/:id', asyncHandler(updatePhoto));
 router.delete('/photos/:id', asyncHandler(deletePhoto));
-router.put('/photos/:id/pin', asyncHandler(pinPhoto));
 router.put('/photos/:id/feature', asyncHandler(featurePhoto));
 router.put('/photos/:id/visibility', asyncHandler(visibilityPhoto));
 

@@ -44,7 +44,7 @@ export const listAlbums = async (req, res) => {
       where,
       include: {
         user: { select: { id: true, username: true, nickname: true } },
-        photos: { where: visibilityFilter(req.user), take: 1, orderBy: [{ isPinned: 'desc' }, { sortOrder: 'desc' }] }
+        photos: { where: visibilityFilter(req.user), take: 1, orderBy: [{ sortOrder: 'desc' }] }
       },
       orderBy: [{ isPinned: 'desc' }, { sortOrder: 'desc' }, { createdAt: 'desc' }],
       skip,

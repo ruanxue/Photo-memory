@@ -7,6 +7,7 @@
         <el-menu-item index="/admin">数据看板</el-menu-item>
         <el-menu-item index="/admin/users">用户管理</el-menu-item>
         <el-menu-item index="/admin/photos">照片管理</el-menu-item>
+        <el-menu-item index="/admin/waterfall">瀑布流排序</el-menu-item>
         <el-menu-item index="/admin/albums">相册管理</el-menu-item>
         <el-menu-item index="/admin/tags">标签管理</el-menu-item>
         <el-menu-item index="/admin/comments">评论管理</el-menu-item>

@@ -17,7 +17,7 @@
       </button>
 
       <div class="photo-overlays" :class="{ 'exif-mode': exifHovered && showExifControl }">
-        <div v-if="photo.isFeatured || photo.isPinned" class="status-actions">
+        <div v-if="showStatusMarkers" class="status-actions">
           <span v-if="photo.isFeatured" class="status-icon featured-star" aria-label="精选" title="精选">
             <el-icon><Star /></el-icon>
           </span>
@@ -25,7 +25,7 @@
             <el-icon><Top /></el-icon>
           </span>
         </div>
-        <div v-if="photo.tags?.length" class="overlay-tags" :class="{ 'with-status': photo.isFeatured || photo.isPinned }">
+        <div v-if="photo.tags?.length" class="overlay-tags" :class="{ 'with-status': showStatusMarkers }">
           <router-link v-for="item in photo.tags.slice(0, 3)" :key="item.tag.id" :to="{ path: '/photos', query: { tagId: item.tag.id } }" @click.stop>
             #{{ item.tag.name }}
           </router-link>
@@ -125,6 +125,7 @@ const imageFrameClass = computed(() => [
   `load-${loadAnimation.value}`,
   imageLoaded.value ? 'is-loaded' : 'is-loading'
 ]);
+const showStatusMarkers = computed(() => props.variant === 'wall' && (props.photo.isFeatured || props.photo.isPinned));
 const hasPhotoExif = computed(() => hasExifInfo(props.photo));
 const showExifControl = computed(() => settings.settings.showExifOnHover !== false && hasPhotoExif.value);
 const equipmentLabel = computed(() => {

@@ -249,13 +249,6 @@ export const deletePhoto = async (req, res) => {
   success(res, null, '照片已删除');
 };
 
-export const pinPhoto = async (req, res) => {
-  const id = Number(req.params.id);
-  const isPinned = toBool(req.body.isPinned);
-  const photo = await prisma.photo.update({ where: { id }, data: { isPinned, pinnedAt: isPinned ? new Date() : null } });
-  success(res, photo, isPinned ? '已置顶' : '已取消置顶');
-};
-
 export const featurePhoto = async (req, res) => {
   const id = Number(req.params.id);
   const photo = await prisma.photo.update({ where: { id }, data: { isFeatured: toBool(req.body.isFeatured) } });
@@ -295,8 +288,6 @@ export const batchPhotos = async (req, res) => {
     const albumId = toInt(req.body.albumId) || null;
     affectedAlbumIds.push(albumId);
     await prisma.photo.updateMany({ where: { id: { in: ids } }, data: { albumId } });
-  } else if (action === 'pin') {
-    await prisma.photo.updateMany({ where: { id: { in: ids } }, data: { isPinned: toBool(req.body.isPinned), pinnedAt: toBool(req.body.isPinned) ? new Date() : null } });
   } else if (action === 'feature') {
     await prisma.photo.updateMany({ where: { id: { in: ids } }, data: { isFeatured: toBool(req.body.isFeatured) } });
   } else if (action === 'waterfall') {
@@ -314,7 +305,7 @@ export const batchPhotos = async (req, res) => {
 
 export const listAlbums = async (req, res) => {
   const albums = await prisma.album.findMany({
-    include: { user: { select: { id: true, username: true, nickname: true } }, photos: { take: 1, orderBy: { createdAt: 'desc' } } },
+    include: { user: { select: { id: true, username: true, nickname: true } }, photos: { take: 1, orderBy: [{ sortOrder: 'desc' }, { createdAt: 'desc' }] } },
     orderBy: [{ isPinned: 'desc' }, { sortOrder: 'desc' }, { createdAt: 'desc' }]
   });
   const coverIds = albums.map((album) => album.coverPhotoId).filter(Boolean);
@@ -607,6 +598,8 @@ const defaultAdminSettings = [
   { key: 'waterfallCustomLoadCss', value: '', description: '瀑布流图片自定义加载 CSS' },
   { key: 'mapTileProvider', value: 'amap', description: '地图底图来源' },
   { key: 'mapTileUrl', value: '', description: '自定义地图瓦片 URL' },
+  { key: 'baiduMapWebAk', value: '', description: '百度地图 Web 端 AK' },
+  { key: 'baiduMapServerAk', value: '', description: '百度地图服务端 AK' },
   { key: 'mapTileAttribution', value: '© 高德地图', description: '地图底图版权署名' }
 ];
 
@@ -645,7 +638,7 @@ const normalizeAdminSettingValue = (key, value) => {
     return String(Math.max(0, Math.min(120, Number.isFinite(stagger) ? Math.round(stagger) : 24)));
   }
   if (key === 'waterfallCustomLoadCss') return sanitizeWaterfallLoadCss(value);
-  if (key === 'mapTileProvider') return ['amap', 'osm', 'custom'].includes(value) ? value : 'amap';
+  if (key === 'mapTileProvider') return ['amap', 'osm', 'custom', 'baidu'].includes(value) ? value : 'amap';
   if (['mapPageZoomChina', 'mapPageZoomOverseas', 'mapDetailZoomChina', 'mapDetailZoomOverseas'].includes(key)) {
     const fallback = key === 'mapPageZoomChina' ? 12 : key === 'mapDetailZoomChina' ? 11 : 7;
     const zoom = Number(value);
@@ -658,6 +651,7 @@ const normalizeAdminSettingValue = (key, value) => {
     return url.slice(0, 500);
   }
   if (key === 'mapTileAttribution') return String(value || '').replace(/[<>]/g, '').slice(0, 120);
+  if (key === 'baiduMapWebAk' || key === 'baiduMapServerAk') return String(value || '').replace(/[^a-z0-9_-]/gi, '').slice(0, 120);
   return String(value ?? '');
 };
 

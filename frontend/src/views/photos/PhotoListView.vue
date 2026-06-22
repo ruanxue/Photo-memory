@@ -32,8 +32,6 @@
       <PhotoWaterfall
         variant="wall"
         :photos="photos"
-        :albums="albums"
-        :include-albums="settings.settings.includeAlbumsInWaterfall"
         :loading="initialLoading"
         :scroll-reveal="false"
         @preview="openLightbox"
@@ -52,7 +50,6 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { photoApi } from '../../api/photo.api.js';
-import { albumApi } from '../../api/album.api.js';
 import { tagApi } from '../../api/tag.api.js';
 import { useSettingsStore } from '../../stores/settings.store.js';
 import PhotoWaterfall from '../../components/photo/PhotoWaterfall.vue';
@@ -61,7 +58,6 @@ import PhotoLightbox from '../../components/photo/PhotoLightbox.vue';
 const route = useRoute();
 const settings = useSettingsStore();
 const photos = ref([]);
-const albums = ref([]);
 const tags = ref([]);
 const cities = ref([]);
 const countries = ref([]);
@@ -97,6 +93,7 @@ const filteredCities = computed(() => {
 const params = () => ({
   page: page.value,
   pageSize: pageSize.value,
+  includeAlbumPhotos: true,
   ...filters,
   pinned: filters.pinned ? 'true' : undefined,
   featured: filters.featured ? 'true' : undefined
@@ -147,13 +144,11 @@ const openLightbox = (photo) => {
 };
 
 onMounted(async () => {
-  const [tagRes, albumRes, optionRes] = await Promise.all([
+  const [tagRes, optionRes] = await Promise.all([
     tagApi.list(),
-    albumApi.list({ pageSize: WALL_PAGE_SIZE }),
     photoApi.filterOptions()
   ]);
   tags.value = tagRes.data;
-  albums.value = albumRes.data;
   countries.value = optionRes.data?.countries || [];
   cities.value = optionRes.data?.cities || [];
   years.value = optionRes.data?.years || [];

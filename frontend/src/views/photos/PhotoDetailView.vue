@@ -104,11 +104,9 @@
           <el-form-item label="缩略图 URL"><el-input v-model="editForm.thumbnailUrl" /></el-form-item>
         </div>
         <div class="edit-grid">
-          <el-form-item label="国家"><el-input v-model="editForm.country" /></el-form-item>
-          <el-form-item label="城市"><el-input v-model="editForm.city" /></el-form-item>
-          <el-form-item label="地点"><el-input v-model="editForm.locationName" /></el-form-item>
-          <el-form-item label="纬度"><el-input v-model="editForm.latitude" /></el-form-item>
-          <el-form-item label="经度"><el-input v-model="editForm.longitude" /></el-form-item>
+          <el-form-item class="location-editor-item" label="拍摄地点">
+            <PhotoLocationEditor v-model="locationModel" />
+          </el-form-item>
           <el-form-item label="可见性">
             <el-select v-model="editForm.visibility">
               <el-option label="公开" value="public" />
@@ -153,6 +151,7 @@ import LoadingState from '../../components/common/LoadingState.vue';
 import ExifInfo from '../../components/photo/ExifInfo.vue';
 import MapViewer from '../../components/map/MapViewer.vue';
 import TagSelect from '../../components/common/TagSelect.vue';
+import PhotoLocationEditor from '../../components/map/PhotoLocationEditor.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -173,6 +172,22 @@ const hasExif = computed(() => hasExifInfo(photo.value));
 const hasGps = computed(() => hasGpsInfo(photo.value));
 const hasTechnicalSide = computed(() => hasExif.value || hasGps.value);
 const detailMapZoom = computed(() => mapZoomForScene(settings.settings, mapSceneForPhoto(photo.value), 'detail'));
+const locationModel = computed({
+  get: () => ({
+    country: editForm.country || '',
+    city: editForm.city || '',
+    locationName: editForm.locationName || '',
+    latitude: editForm.latitude ?? '',
+    longitude: editForm.longitude ?? ''
+  }),
+  set: (value) => {
+    editForm.country = value.country || '';
+    editForm.city = value.city || '';
+    editForm.locationName = value.locationName || '';
+    editForm.latitude = value.latitude ?? '';
+    editForm.longitude = value.longitude ?? '';
+  }
+});
 
 const goBack = () => {
   if (window.history.length > 1) router.back();
@@ -507,6 +522,10 @@ h2 {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
+}
+
+.location-editor-item {
+  grid-column: 1 / -1;
 }
 
 .external-url-fields {

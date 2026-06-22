@@ -25,6 +25,8 @@ export const photoWallSelect = {
   viewCount: true,
   isPinned: true,
   isFeatured: true,
+  sortOrder: true,
+  createdAt: true,
   cameraMake: true,
   cameraModel: true,
   lensModel: true,
@@ -216,7 +218,7 @@ export const deletePhotoFiles = async (photo) => {
 };
 
 export const buildPhotoOrder = (sort = 'latest') => {
-  const base = [{ isPinned: 'desc' }, { sortOrder: 'desc' }, { isFeatured: 'desc' }];
+  const base = [{ isPinned: 'desc' }, { sortOrder: 'desc' }];
   const map = {
     latest: { uploadedAt: 'desc' },
     taken: { takenAt: 'desc' },

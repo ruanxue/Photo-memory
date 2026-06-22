@@ -22,7 +22,7 @@
         <MapViewer
           ref="mapViewerRef"
           :photos="photos"
-          height="640px"
+          height="clamp(380px, 58dvh, 640px)"
           :fit-max-zoom="mapPageZoom"
           :focus-zoom="mapPageZoom"
           @detail="openPhotoDetail"
@@ -102,9 +102,9 @@ const handleCountryChange = () => {
 
 const focusPhoto = (photo) => {
   selectedPhotoId.value = photo.id;
-  const photoZoom = mapZoomForScene(settings.settings, mapSceneForPhoto(photo), 'page');
-  mapViewerRef.value?.focusPhoto(photo, photoZoom);
   mapStageRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const photoZoom = mapZoomForScene(settings.settings, mapSceneForPhoto(photo), 'detail');
+  mapViewerRef.value?.focusPhoto(photo, photoZoom);
 };
 
 const openPhotoDetail = (photo) => {

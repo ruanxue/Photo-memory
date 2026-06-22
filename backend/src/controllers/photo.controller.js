@@ -154,17 +154,21 @@ const buildPhotoWhere = (req) => {
   return clauses.length === 1 ? clauses[0] : { AND: clauses };
 };
 
-const buildWallPhotoWhere = (req) => ({
-  AND: [
-    buildPhotoWhere(req),
-    {
-      OR: [
-        { albumId: null },
-        { showInWaterfall: true }
-      ]
-    }
-  ]
-});
+const buildWallPhotoWhere = (req) => {
+  const baseWhere = buildPhotoWhere(req);
+  if (toBool(req.query.includeAlbumPhotos)) return baseWhere;
+  return {
+    AND: [
+      baseWhere,
+      {
+        OR: [
+          { albumId: null },
+          { showInWaterfall: true }
+        ]
+      }
+    ]
+  };
+};
 
 const normalizePhotoBody = (body, file, imageInfo, exifInfo) => {
   const titleFromFile = file?.originalname?.replace(/\.[^.]+$/, '') || '未命名照片';
@@ -199,8 +203,8 @@ const normalizePhotoBody = (body, file, imageInfo, exifInfo) => {
     city: body.city || null,
     locationName: body.locationName || null,
     visibility: body.visibility === 'private' ? 'private' : 'public',
-    isPinned: toBool(body.isPinned),
-    pinnedAt: toBool(body.isPinned) ? new Date() : null,
+    isPinned: false,
+    pinnedAt: null,
     isFeatured: toBool(body.isFeatured),
     showInWaterfall: toBool(body.showInWaterfall),
     sortOrder: toInt(body.sortOrder) || 0
@@ -249,8 +253,8 @@ const normalizeExternalPhotoBody = (body) => {
     city: sanitizeText(body.city) || null,
     locationName: sanitizeText(body.locationName) || null,
     visibility: body.visibility === 'private' ? 'private' : 'public',
-    isPinned: toBool(body.isPinned),
-    pinnedAt: toBool(body.isPinned) ? new Date() : null,
+    isPinned: false,
+    pinnedAt: null,
     isFeatured: toBool(body.isFeatured),
     showInWaterfall: toBool(body.showInWaterfall),
     sortOrder: toInt(body.sortOrder) || 0

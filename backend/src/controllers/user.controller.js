@@ -20,8 +20,8 @@ export const myPhotos = async (req, res) => {
 export const myAlbums = async (req, res) => {
   const albums = await prisma.album.findMany({
     where: { userId: req.user.id },
-    include: { photos: { take: 1, orderBy: { createdAt: 'desc' } } },
-    orderBy: [{ isPinned: 'desc' }, { sortOrder: 'desc' }, { createdAt: 'desc' }]
+    include: { photos: { take: 1, orderBy: [{ sortOrder: 'desc' }, { createdAt: 'desc' }] } },
+    orderBy: [{ sortOrder: 'desc' }, { createdAt: 'desc' }]
   });
   const coverIds = albums.map((album) => album.coverPhotoId).filter(Boolean);
   const covers = coverIds.length

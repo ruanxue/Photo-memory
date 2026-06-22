@@ -156,20 +156,21 @@ const waterfallStyle = computed(() => ({
 }));
 const withLoadIndex = (items) => items.map((item, index) => ({ ...item, loadIndex: index }));
 
+const itemTime = (item) => new Date(item.data.createdAt || item.data.uploadedAt || item.data.takenAt || 0).getTime() || 0;
+
+const compareWallOrder = (first, second) => {
+  const pinDiff = Number(Boolean(second.data.isPinned)) - Number(Boolean(first.data.isPinned));
+  if (pinDiff) return pinDiff;
+  const orderDiff = Number(second.data.sortOrder || 0) - Number(first.data.sortOrder || 0);
+  if (orderDiff) return orderDiff;
+  return itemTime(second) - itemTime(first);
+};
+
 const wallItems = computed(() => {
   const photoItems = props.photos.map((photo) => ({ type: 'photo', key: `photo-${photo.id}`, data: photo }));
   if (!props.includeAlbums || !props.albums.length) return withLoadIndex(photoItems);
   const albumItems = props.albums.map((album) => ({ type: 'album', key: `album-${album.id}`, data: album }));
-  const mixed = [];
-  let albumIndex = 0;
-  photoItems.forEach((item, index) => {
-    mixed.push(item);
-    if ((index + 1) % 8 === 0 && albumItems[albumIndex]) {
-      mixed.push(albumItems[albumIndex]);
-      albumIndex += 1;
-    }
-  });
-  return withLoadIndex([...mixed, ...albumItems.slice(albumIndex)]);
+  return withLoadIndex([...photoItems, ...albumItems].sort(compareWallOrder));
 });
 
 const configuredColumns = () => {
@@ -204,25 +205,48 @@ const estimateHeight = (item) => {
   return imageRatio + bodyRatio;
 };
 
-const distributePhotos = (items, count) => {
+const shortestColumnIndex = (heights) => {
+  let shortest = 0;
+  for (let index = 1; index < heights.length; index += 1) {
+    if (heights[index] < heights[shortest]) shortest = index;
+  }
+  return shortest;
+};
+
+const distributeByShortestColumn = (items, count) => {
   const nextColumns = Array.from({ length: Math.max(1, count) }, () => []);
   const heights = Array.from({ length: Math.max(1, count) }, () => 0);
 
   items.forEach((item) => {
-    let target = 0;
-    for (let index = 1; index < heights.length; index += 1) {
-      if (heights[index] < heights[target]) target = index;
-    }
+    const target = shortestColumnIndex(heights);
     nextColumns[target].push(item);
     heights[target] += estimateHeight(item);
   });
 
+  return { nextColumns, heights };
+};
+
+const distributeByReadingOrder = (items, count) => {
+  const columnCount = Math.max(1, count);
+  const nextColumns = Array.from({ length: columnCount }, () => []);
+  const heights = Array.from({ length: columnCount }, () => 0);
+
+  items.forEach((item, index) => {
+    const target = index % columnCount;
+    nextColumns[target].push(item);
+    heights[target] += estimateHeight(item);
+  });
+
+  return { nextColumns, heights };
+};
+
+const distributePhotos = (items, count) => {
+  const { nextColumns, heights } = props.variant === 'wall'
+    ? distributeByReadingOrder(items, count)
+    : distributeByShortestColumn(items, count);
+
   if (props.showCreditCard && nextColumns.length) {
-    let shortest = 0;
-    for (let index = 1; index < heights.length; index += 1) {
-      if (heights[index] < heights[shortest]) shortest = index;
-    }
-    creditColumnIndex.value = shortest;
+    creditColumnIndex.value = shortestColumnIndex(heights);
   } else {
     creditColumnIndex.value = -1;
   }

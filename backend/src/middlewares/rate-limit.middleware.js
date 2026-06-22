@@ -52,3 +52,10 @@ export const commentLimiter = makeLimiter({
   },
   message: '评论提交过于频繁，请稍后再试'
 });
+
+export const geoLimiter = makeLimiter({
+  windowMs: 10 * 60 * 1000,
+  limit: 80,
+  keyGenerator: (req) => `${req.user?.id || 'guest'}:${getClientIp(req) || 'unknown'}`,
+  message: '地理检索请求过于频繁，请稍后再试'
+});

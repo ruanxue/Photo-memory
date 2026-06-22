@@ -1,9 +1,9 @@
-<template>
+﻿<template>
   <section class="admin-page">
     <div class="section-head">
       <div>
         <h1 class="section-title">照片管理</h1>
-        <p class="section-subtitle">审核、编辑、删除、置顶、精选和批量修改照片。</p>
+        <p class="section-subtitle">审核、编辑、删除、精选和批量修改照片。</p>
       </div>
     </div>
     <div class="toolbar surface">
@@ -15,8 +15,6 @@
         <el-option label="设为精选" value="feature" />
         <el-option label="取消精选" value="unfeature" />
         <el-option label="打标签" value="tags" />
-        <el-option label="加入瀑布流单独展示" value="waterfall-show" />
-        <el-option label="移出瀑布流单独展示" value="waterfall-hide" />
       </el-select>
       <TagSelect v-if="batch.action === 'tags'" v-model="batch.tags" placeholder="选择标签" />
       <el-button @click="runBatch">执行</el-button>
@@ -52,15 +50,6 @@
           <div class="status-buttons">
             <el-button
               size="small"
-              :type="row.isPinned ? 'primary' : 'default'"
-              :plain="!row.isPinned"
-              :loading="statusBusyId === `pin-${row.id}`"
-              @click="pin(row)"
-            >
-              置顶
-            </el-button>
-            <el-button
-              size="small"
               :type="row.isFeatured ? 'primary' : 'default'"
               :plain="!row.isFeatured"
               :loading="statusBusyId === `feature-${row.id}`"
@@ -86,40 +75,52 @@
       <el-form :model="form" label-position="top">
         <el-form-item label="标题"><el-input v-model="form.title" /></el-form-item>
         <el-form-item label="描述"><el-input v-model="form.description" type="textarea" :rows="3" /></el-form-item>
-        <div v-if="isExternalPhoto(form)" class="external-url-fields">
-          <el-form-item label="图片 URL"><el-input v-model="form.originalUrl" /></el-form-item>
-          <el-form-item label="中图 URL"><el-input v-model="form.mediumUrl" /></el-form-item>
-          <el-form-item label="缩略图 URL"><el-input v-model="form.thumbnailUrl" /></el-form-item>
-        </div>
+        <el-collapse v-if="isExternalPhoto(form)" v-model="urlCollapse" class="edit-collapse">
+          <el-collapse-item name="url">
+            <template #title>
+              <span class="collapse-title">图片 URL</span>
+              <span class="collapse-subtitle">{{ form.originalUrl || '未填写外链地址' }}</span>
+            </template>
+            <div class="external-url-fields">
+              <el-form-item label="图片 URL"><el-input v-model="form.originalUrl" /></el-form-item>
+              <el-form-item label="中图 URL"><el-input v-model="form.mediumUrl" /></el-form-item>
+              <el-form-item label="缩略图 URL"><el-input v-model="form.thumbnailUrl" /></el-form-item>
+            </div>
+          </el-collapse-item>
+        </el-collapse>
         <div class="edit-grid">
           <el-form-item label="相册"><el-select v-model="form.albumId" clearable><el-option v-for="album in albums" :key="album.id" :label="album.title" :value="album.id" /></el-select></el-form-item>
           <el-form-item label="可见性"><el-select v-model="form.visibility"><el-option label="公开" value="public" /><el-option label="私密" value="private" /></el-select></el-form-item>
-          <el-form-item label="排序"><el-input-number v-model="form.sortOrder" /></el-form-item>
-          <el-form-item label="城市"><el-input v-model="form.city" /></el-form-item>
-          <el-form-item label="地点"><el-input v-model="form.locationName" /></el-form-item>
-          <el-form-item label="纬度"><el-input v-model="form.latitude" /></el-form-item>
-          <el-form-item label="经度"><el-input v-model="form.longitude" /></el-form-item>
-          <div class="location-tools">
-            <el-button @click="openLocationPicker">地图选点</el-button>
-            <el-button @click="clearLocation">清除坐标</el-button>
-            <span>可直接输入经纬度，也可以在地图上点击或拖动标记选择拍摄地。</span>
-          </div>
+          <el-form-item class="location-editor-item" label="拍摄地点">
+            <PhotoLocationEditor
+              :key="`location-${currentId || 'new'}`"
+              v-model="locationModel"
+              collapsible
+              :initial-open="false"
+            />
+          </el-form-item>
         </div>
-        <div class="edit-grid exif-edit-grid">
-          <el-form-item label="相机品牌"><el-input v-model="form.cameraMake" /></el-form-item>
-          <el-form-item label="相机型号"><el-input v-model="form.cameraModel" /></el-form-item>
-          <el-form-item label="镜头"><el-input v-model="form.lensModel" /></el-form-item>
-          <el-form-item label="焦距 mm"><el-input v-model="form.focalLength" /></el-form-item>
-          <el-form-item label="光圈"><el-input v-model="form.aperture" /></el-form-item>
-          <el-form-item label="快门"><el-input v-model="form.shutterSpeed" /></el-form-item>
-          <el-form-item label="ISO"><el-input-number v-model="form.iso" :min="0" /></el-form-item>
-          <el-form-item label="曝光补偿"><el-input v-model="form.exposureCompensation" /></el-form-item>
-          <el-form-item label="白平衡"><el-input v-model="form.whiteBalance" /></el-form-item>
-        </div>
+        <el-collapse v-model="exifCollapse" class="edit-collapse exif-edit-collapse">
+          <el-collapse-item name="exif">
+            <template #title>
+              <span class="collapse-title">EXIF 信息</span>
+              <span class="collapse-subtitle">{{ exifSummary }}</span>
+            </template>
+            <div class="edit-grid exif-edit-grid">
+              <el-form-item label="相机品牌"><el-input v-model="form.cameraMake" /></el-form-item>
+              <el-form-item label="相机型号"><el-input v-model="form.cameraModel" /></el-form-item>
+              <el-form-item label="镜头"><el-input v-model="form.lensModel" /></el-form-item>
+              <el-form-item label="焦距 mm"><el-input v-model="form.focalLength" /></el-form-item>
+              <el-form-item label="光圈"><el-input v-model="form.aperture" /></el-form-item>
+              <el-form-item label="快门"><el-input v-model="form.shutterSpeed" /></el-form-item>
+              <el-form-item label="ISO"><el-input-number v-model="form.iso" :min="0" /></el-form-item>
+              <el-form-item label="曝光补偿"><el-input v-model="form.exposureCompensation" /></el-form-item>
+              <el-form-item label="白平衡"><el-input v-model="form.whiteBalance" /></el-form-item>
+            </div>
+          </el-collapse-item>
+        </el-collapse>
         <el-form-item label="标签"><TagSelect v-model="form.tags" placeholder="选择标签" /></el-form-item>
-        <el-checkbox v-model="form.isPinned">置顶</el-checkbox>
         <el-checkbox v-model="form.isFeatured">精选</el-checkbox>
-        <el-checkbox v-model="form.showInWaterfall">相册内也单独展示到瀑布流</el-checkbox>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -127,38 +128,19 @@
       </template>
     </el-dialog>
 
-    <el-dialog
-      v-model="locationPickerVisible"
-      title="地图选择拍摄地"
-      width="840px"
-      append-to-body
-      destroy-on-close
-      @opened="refreshLocationPicker"
-    >
-      <LocationPickerMap
-        ref="locationPickerRef"
-        :latitude="locationDraft.latitude"
-        :longitude="locationDraft.longitude"
-        @select="updateLocationDraft"
-      />
-      <template #footer>
-        <el-button @click="locationPickerVisible = false">取消</el-button>
-        <el-button type="primary" @click="applyLocationDraft">使用坐标</el-button>
-      </template>
-    </el-dialog>
   </section>
 </template>
 
 <script setup>
-import { nextTick, onMounted, reactive, ref } from 'vue';
+import { computed, nextTick, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { adminApi } from '../../api/admin.api.js';
 import { albumApi } from '../../api/album.api.js';
 import Pagination from '../../components/common/Pagination.vue';
-import LocationPickerMap from '../../components/map/LocationPickerMap.vue';
 import VisibilityToggleButton from '../../components/common/VisibilityToggleButton.vue';
 import TagSelect from '../../components/common/TagSelect.vue';
+import PhotoLocationEditor from '../../components/map/PhotoLocationEditor.vue';
 import { isExternalPhoto } from '../../utils/image.js';
 
 const router = useRouter();
@@ -171,14 +153,43 @@ const pageSize = ref(20);
 const total = ref(0);
 const currentId = ref(null);
 const dialogVisible = ref(false);
-const locationPickerVisible = ref(false);
-const locationPickerRef = ref(null);
+const urlCollapse = ref([]);
+const exifCollapse = ref([]);
 const batch = reactive({ action: '', tags: [] });
 const form = reactive({});
-const locationDraft = reactive({ latitude: '', longitude: '' });
 const visibilityBusyId = ref(null);
 const statusBusyId = ref('');
 const listStateKey = 'photo-memory.admin-photos.state';
+
+const locationModel = computed({
+  get: () => ({
+    country: form.country || '',
+    city: form.city || '',
+    locationName: form.locationName || '',
+    latitude: form.latitude ?? '',
+    longitude: form.longitude ?? ''
+  }),
+  set: (value) => {
+    form.country = value.country || '';
+    form.city = value.city || '';
+    form.locationName = value.locationName || '';
+    form.latitude = value.latitude || '';
+    form.longitude = value.longitude || '';
+  }
+});
+
+const exifSummary = computed(() => {
+  const aperture = String(form.aperture || '').trim();
+  const parts = [
+    form.cameraMake,
+    form.cameraModel,
+    form.lensModel,
+    form.focalLength ? `${form.focalLength}mm` : '',
+    aperture ? (aperture.toLowerCase().startsWith('f/') ? aperture : `f/${aperture}`) : '',
+    form.iso ? `ISO ${form.iso}` : ''
+  ].filter(Boolean);
+  return parts.length ? parts.slice(0, 4).join(' · ') : '暂无 EXIF 信息';
+});
 
 const load = async () => {
   const res = await adminApi.photos({ q: q.value, page: page.value, pageSize: pageSize.value });
@@ -214,6 +225,8 @@ const openDetail = (row) => {
 };
 const openEdit = (row) => {
   currentId.value = row.id;
+  urlCollapse.value = [];
+  exifCollapse.value = [];
   Object.keys(form).forEach((key) => delete form[key]);
   Object.assign(form, {
     title: row.title || '',
@@ -225,7 +238,7 @@ const openEdit = (row) => {
     fileSize: row.fileSize ?? null,
     albumId: row.albumId || null,
     visibility: row.visibility || 'public',
-    sortOrder: row.sortOrder ?? 0,
+    country: row.country || '',
     city: row.city || '',
     locationName: row.locationName || '',
     latitude: row.latitude ?? '',
@@ -240,9 +253,7 @@ const openEdit = (row) => {
     exposureCompensation: row.exposureCompensation || '',
     whiteBalance: row.whiteBalance || '',
     tags: row.tags?.map((item) => item.tag.name) || [],
-    isPinned: Boolean(row.isPinned),
-    isFeatured: Boolean(row.isFeatured),
-    showInWaterfall: Boolean(row.showInWaterfall)
+    isFeatured: Boolean(row.isFeatured)
   });
   dialogVisible.value = true;
 };
@@ -256,39 +267,13 @@ const save = async () => {
     payload.mediumUrl = payload.mediumUrl || payload.originalUrl;
     payload.thumbnailUrl = payload.thumbnailUrl || payload.mediumUrl || payload.originalUrl;
   }
+  delete payload.sortOrder;
+  delete payload.showInWaterfall;
+  delete payload.isPinned;
   await adminApi.updatePhoto(currentId.value, payload);
   ElMessage.success('已保存');
   dialogVisible.value = false;
   load();
-};
-const updateLocationDraft = ({ latitude, longitude }) => {
-  locationDraft.latitude = latitude;
-  locationDraft.longitude = longitude;
-};
-const openLocationPicker = async () => {
-  locationDraft.latitude = form.latitude ?? '';
-  locationDraft.longitude = form.longitude ?? '';
-  locationPickerVisible.value = true;
-  await nextTick();
-  refreshLocationPicker();
-};
-const refreshLocationPicker = () => {
-  locationPickerRef.value?.refresh?.();
-};
-const applyLocationDraft = () => {
-  const latitude = Number(locationDraft.latitude);
-  const longitude = Number(locationDraft.longitude);
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-    ElMessage.warning('请先在地图上选择拍摄地');
-    return;
-  }
-  form.latitude = latitude.toFixed(6);
-  form.longitude = longitude.toFixed(6);
-  locationPickerVisible.value = false;
-};
-const clearLocation = () => {
-  form.latitude = '';
-  form.longitude = '';
 };
 const toggleVisibility = async (row, visibility) => {
   visibilityBusyId.value = row.id;
@@ -298,16 +283,6 @@ const toggleVisibility = async (row, visibility) => {
     ElMessage.success('可见性已更新');
   } finally {
     visibilityBusyId.value = null;
-  }
-};
-const pin = async (row) => {
-  statusBusyId.value = `pin-${row.id}`;
-  try {
-    const next = !row.isPinned;
-    await adminApi.pinPhoto(row.id, { isPinned: next });
-    row.isPinned = next;
-  } finally {
-    statusBusyId.value = '';
   }
 };
 const feature = async (row) => {
@@ -329,8 +304,6 @@ const runBatch = async () => {
   if (batch.action === 'visibility-private') await adminApi.batchPhotos({ ids, action: 'visibility', visibility: 'private' });
   if (batch.action === 'feature') await adminApi.batchPhotos({ ids, action: 'feature', isFeatured: true });
   if (batch.action === 'unfeature') await adminApi.batchPhotos({ ids, action: 'feature', isFeatured: false });
-  if (batch.action === 'waterfall-show') await adminApi.batchPhotos({ ids, action: 'waterfall', showInWaterfall: true });
-  if (batch.action === 'waterfall-hide') await adminApi.batchPhotos({ ids, action: 'waterfall', showInWaterfall: false });
   if (batch.action === 'tags') await adminApi.batchPhotos({ ids, action: 'tags', tags: batch.tags });
   ElMessage.success('批量操作完成');
   load();
@@ -349,30 +322,62 @@ onMounted(async () => {
 .toolbar { padding: 14px; }
 .toolbar .el-input, .toolbar .el-select { width: 190px; }
 .edit-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.location-editor-item {
+  grid-column: 1 / -1;
+}
+.edit-collapse {
+  margin: 12px 0;
+  border: 1px solid var(--theme-line);
+  border-radius: var(--theme-card-radius, var(--radius));
+  background: var(--theme-surface-soft);
+  overflow: hidden;
+}
+.edit-collapse :deep(.el-collapse-item__header) {
+  min-height: 46px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--theme-line);
+  border-radius: var(--theme-card-radius, var(--radius)) !important;
+  color: var(--theme-text);
+  background: transparent;
+}
+
+.edit-collapse :deep(.el-collapse-item__header.is-active) {
+  border-radius: var(--theme-card-radius, var(--radius)) var(--theme-card-radius, var(--radius)) 0 0 !important;
+}
+
+.edit-collapse :deep(.el-collapse-item__content) {
+  padding: 12px;
+  color: var(--theme-text);
+  background: transparent;
+}
+.edit-collapse :deep(.el-collapse-item__wrap) {
+  border-bottom: 0;
+  border-radius: 0 0 var(--theme-card-radius, var(--radius)) var(--theme-card-radius, var(--radius)) !important;
+  background: transparent;
+  overflow: hidden;
+}
+.collapse-title {
+  flex: 0 0 auto;
+  font-weight: 700;
+  color: var(--theme-text);
+}
+.collapse-subtitle {
+  min-width: 0;
+  margin-left: 10px;
+  overflow: hidden;
+  color: var(--theme-muted-strong);
+  font-size: 12px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .external-url-fields {
   display: grid;
   grid-template-columns: 1fr;
   gap: 8px;
-  padding: 12px;
-  margin-bottom: 12px;
-  border: 1px solid var(--theme-line);
-  border-radius: var(--theme-radius);
-  background: var(--theme-surface-soft);
 }
 .exif-edit-grid {
-  margin-top: 10px;
-}
-.location-tools {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  color: var(--theme-muted-strong);
-  font-size: 12px;
-}
-.location-tools :deep(.el-button + .el-button) {
-  margin-left: 0;
+  margin-top: 0;
 }
 .admin-photo-table {
   width: 100%;
@@ -386,7 +391,7 @@ onMounted(async () => {
   height: 52px;
   padding: 0;
   border: 0;
-  border-radius: calc(var(--theme-card-radius) * 0.75);
+  border-radius: calc(var(--theme-card-radius, var(--radius)) * 0.75);
   background: transparent;
   cursor: pointer;
   overflow: hidden;
@@ -401,7 +406,7 @@ onMounted(async () => {
 .status-buttons {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   white-space: nowrap;
 }
 
@@ -409,10 +414,19 @@ onMounted(async () => {
   margin-left: 0;
 }
 
+.status-buttons :deep(.el-button),
+.action-buttons :deep(.el-button),
+.toolbar :deep(.el-button) {
+  min-height: 32px;
+  padding-inline: 12px;
+  border-radius: var(--theme-control-radius, var(--radius));
+  font-weight: 700;
+}
+
 .action-buttons {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   white-space: nowrap;
 }
 .action-buttons :deep(.el-button + .el-button) {

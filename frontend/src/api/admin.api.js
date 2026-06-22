@@ -13,7 +13,6 @@ export const adminApi = {
   updatePhoto: (id, data) => request.put(`/admin/photos/${id}`, data),
   deletePhoto: (id) => request.delete(`/admin/photos/${id}`),
   batchPhotos: (data) => request.put('/admin/photos/batch', data),
-  pinPhoto: (id, data) => request.put(`/admin/photos/${id}/pin`, data),
   featurePhoto: (id, data) => request.put(`/admin/photos/${id}/feature`, data),
   visibilityPhoto: (id, data) => request.put(`/admin/photos/${id}/visibility`, data),
   albums: () => request.get('/admin/albums'),

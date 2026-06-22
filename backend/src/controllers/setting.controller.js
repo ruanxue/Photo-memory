@@ -35,12 +35,15 @@ const defaultSettings = {
   waterfallCustomLoadCss: '',
   mapTileProvider: 'amap',
   mapTileUrl: '',
+  baiduMapWebAk: '',
   mapPageZoomChina: '12',
   mapPageZoomOverseas: '7',
   mapDetailZoomChina: '11',
   mapDetailZoomOverseas: '7',
   mapTileAttribution: '© 高德地图'
 };
+
+const privatePublicSettingKeys = new Set(['baiduMapServerAk']);
 
 const themeColorKeys = new Set([
   'primary',
@@ -183,7 +186,7 @@ const normalizeValue = (key, value) => {
   if (key === 'waterfallLoadDurationMs') return clampNumber(value, 720, 200, 1600);
   if (key === 'waterfallLoadStaggerMs') return clampNumber(value, 24, 0, 120);
   if (key === 'waterfallCustomLoadCss') return sanitizeWaterfallLoadCss(value);
-  if (key === 'mapTileProvider') return ['amap', 'osm', 'custom'].includes(value) ? value : 'amap';
+  if (key === 'mapTileProvider') return ['amap', 'osm', 'custom', 'baidu'].includes(value) ? value : 'amap';
   if (mapZoomKeys.has(key)) {
     const fallback = key === 'mapPageZoomChina' ? 12 : key === 'mapDetailZoomChina' ? 11 : 7;
     return clampNumber(value, fallback, 3, 14);
@@ -194,6 +197,8 @@ const normalizeValue = (key, value) => {
     return url.slice(0, 500);
   }
   if (key === 'mapTileAttribution') return String(value || '').replace(/[<>]/g, '').slice(0, 120);
+  if (key === 'baiduMapWebAk') return String(value || '').replace(/[^a-z0-9_-]/gi, '').slice(0, 120);
+  if (key === 'baiduMapServerAk') return '';
   if (key === 'heroMode') return value === 'fixed' ? 'fixed' : 'random';
   if (key === 'heroPhotoIds') return normalizeIds(value);
   if (key === 'heroFixedPhotoId') {
@@ -209,7 +214,7 @@ const normalizeValue = (key, value) => {
 };
 
 export const publicSettings = async (req, res) => {
-  const rows = await prisma.systemSetting.findMany();
+  const rows = await prisma.systemSetting.findMany({ where: { key: { notIn: [...privatePublicSettingKeys] } } });
   const settings = rows.reduce((acc, item) => {
     acc[item.key] = normalizeValue(item.key, item.value);
     return acc;

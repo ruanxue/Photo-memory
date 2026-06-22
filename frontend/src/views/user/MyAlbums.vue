@@ -31,7 +31,7 @@
       </el-table-column>
     </el-table>
 
-    <el-dialog v-model="dialogVisible" :title="currentId ? '编辑相册' : '新建相册'" width="520px">
+    <el-dialog v-model="dialogVisible" :title="currentId ? '编辑相册' : '新建相册'" width="760px">
       <el-form :model="form" label-position="top">
         <el-form-item label="标题"><el-input v-model="form.title" /></el-form-item>
         <el-form-item label="描述"><el-input v-model="form.description" type="textarea" :rows="3" /></el-form-item>
@@ -41,10 +41,16 @@
             <el-option label="私密" value="private" />
           </el-select>
         </el-form-item>
-        <el-form-item label="卡片头图">
-          <AlbumCoverSelector v-loading="coverLoading" v-model="form.coverPhotoId" :photos="coverPhotos" />
+        <el-form-item label="卡片头图与照片排序">
+          <AlbumCoverSelector
+            v-loading="coverLoading"
+            v-model:order="photoOrder"
+            v-model:standalone="standaloneMap"
+            v-model:visibility="photoVisibilityMap"
+            :album-visibility="form.visibility"
+            :photos="coverPhotos"
+          />
         </el-form-item>
-        <el-form-item label="排序权重"><el-input-number v-model="form.sortOrder" /></el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -59,6 +65,7 @@ import { onMounted, reactive, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import request from '../../api/request.js';
 import { albumApi } from '../../api/album.api.js';
+import { photoApi } from '../../api/photo.api.js';
 import AlbumCard from '../../components/album/AlbumCard.vue';
 import AlbumCoverSelector from '../../components/album/AlbumCoverSelector.vue';
 import VisibilityToggleButton from '../../components/common/VisibilityToggleButton.vue';
@@ -66,8 +73,14 @@ import VisibilityToggleButton from '../../components/common/VisibilityToggleButt
 const albums = ref([]);
 const dialogVisible = ref(false);
 const currentId = ref(null);
-const form = reactive({ title: '', description: '', visibility: 'public', coverPhotoId: null, sortOrder: 0 });
+const form = reactive({ title: '', description: '', visibility: 'public', coverPhotoId: null });
 const coverPhotos = ref([]);
+const photoOrder = ref([]);
+const originalPhotoOrder = ref([]);
+const standaloneMap = ref({});
+const originalStandaloneMap = ref({});
+const photoVisibilityMap = ref({});
+const originalPhotoVisibilityMap = ref({});
 const coverLoading = ref(false);
 const visibilityBusyId = ref(null);
 
@@ -78,10 +91,19 @@ const load = async () => {
 
 const openCreate = () => {
   currentId.value = null;
-  Object.assign(form, { title: '', description: '', visibility: 'public', coverPhotoId: null, sortOrder: 0 });
+  Object.assign(form, { title: '', description: '', visibility: 'public', coverPhotoId: null });
   coverPhotos.value = [];
+  photoOrder.value = [];
+  originalPhotoOrder.value = [];
+  standaloneMap.value = {};
+  originalStandaloneMap.value = {};
+  photoVisibilityMap.value = {};
+  originalPhotoVisibilityMap.value = {};
   dialogVisible.value = true;
 };
+
+const buildStandaloneMap = (photos) => Object.fromEntries((photos || []).map((photo) => [Number(photo.id), Boolean(photo.showInWaterfall)]));
+const buildPhotoVisibilityMap = (photos) => Object.fromEntries((photos || []).map((photo) => [Number(photo.id), photo.visibility === 'private' ? 'private' : 'public']));
 
 const openEdit = async (row) => {
   currentId.value = row.id;
@@ -92,15 +114,49 @@ const openEdit = async (row) => {
   try {
     const res = await albumApi.detail(row.id);
     coverPhotos.value = res.data?.photos || [];
-    form.coverPhotoId = row.coverPhotoId || res.data?.coverPhotoId || null;
+    photoOrder.value = coverPhotos.value.map((photo) => Number(photo.id));
+    originalPhotoOrder.value = [...photoOrder.value];
+    standaloneMap.value = buildStandaloneMap(coverPhotos.value);
+    originalStandaloneMap.value = { ...standaloneMap.value };
+    photoVisibilityMap.value = buildPhotoVisibilityMap(coverPhotos.value);
+    originalPhotoVisibilityMap.value = { ...photoVisibilityMap.value };
+    form.coverPhotoId = null;
   } finally {
     coverLoading.value = false;
   }
 };
 
+const hasOrderChanged = () => JSON.stringify(photoOrder.value) !== JSON.stringify(originalPhotoOrder.value);
+const changedPhotoIds = () => {
+  const ids = new Set();
+  Object.entries(standaloneMap.value).forEach(([id, value]) => {
+    if (Boolean(value) !== Boolean(originalStandaloneMap.value[id])) ids.add(Number(id));
+  });
+  Object.entries(photoVisibilityMap.value).forEach(([id, value]) => {
+    const next = value === 'private' ? 'private' : 'public';
+    const previous = originalPhotoVisibilityMap.value[id] === 'private' ? 'private' : 'public';
+    if (next !== previous) ids.add(Number(id));
+  });
+  return [...ids];
+};
+
 const save = async () => {
-  if (currentId.value) await albumApi.update(currentId.value, form);
-  else await albumApi.create(form);
+  if (currentId.value) {
+    await albumApi.update(currentId.value, { ...form, coverPhotoId: null });
+    if (photoOrder.value.length && hasOrderChanged()) {
+      await albumApi.sortPhotos(currentId.value, { photoIds: photoOrder.value });
+    }
+    for (const id of changedPhotoIds()) {
+      const payload = {
+        showInWaterfall: Boolean(standaloneMap.value[id]),
+        visibility: photoVisibilityMap.value[id] === 'private' ? 'private' : 'public'
+      };
+      if (payload.visibility === 'private') payload.showInWaterfall = false;
+      await photoApi.update(Number(id), payload);
+    }
+  } else {
+    await albumApi.create({ ...form, coverPhotoId: null });
+  }
   ElMessage.success('已保存');
   dialogVisible.value = false;
   load();
@@ -116,7 +172,7 @@ const remove = async (row) => {
 const toggleVisibility = async (row, visibility) => {
   visibilityBusyId.value = row.id;
   try {
-    await albumApi.update(row.id, { ...row, visibility, coverPhotoId: row.coverPhotoId || null });
+    await albumApi.update(row.id, { ...row, visibility, coverPhotoId: null });
     row.visibility = visibility;
     ElMessage.success('可见性已更新');
   } finally {

@@ -1,6 +1,7 @@
 import { prisma } from '../config/prisma.js';
 import { success } from '../utils/response.js';
 import { photoInclude, visibilityFilter } from '../services/photo.service.js';
+import { geocodeBaiduAddress, reverseGeocodeBaidu, searchBaiduPlaces } from '../services/baidu-geo.service.js';
 
 const mapWhere = (req) => {
   const clauses = [visibilityFilter(req.user), { latitude: { not: null } }, { longitude: { not: null } }];
@@ -67,4 +68,19 @@ export const mapYears = async (req, res) => {
     .map(([year, count]) => ({ year: Number(year), count }))
     .sort((a, b) => b.year - a.year);
   success(res, years);
+};
+
+export const searchPlaces = async (req, res) => {
+  const places = await searchBaiduPlaces(req.query);
+  success(res, places);
+};
+
+export const geocodeAddress = async (req, res) => {
+  const place = await geocodeBaiduAddress(req.query);
+  success(res, place);
+};
+
+export const reverseGeocode = async (req, res) => {
+  const place = await reverseGeocodeBaidu(req.query);
+  success(res, place);
 };

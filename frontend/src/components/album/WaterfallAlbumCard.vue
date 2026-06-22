@@ -25,6 +25,9 @@
         <el-icon><Collection /></el-icon>
         {{ album.photoCount || album.photos?.length || 0 }}
       </span>
+      <span v-if="album.isPinned" class="album-pin" aria-label="置顶" title="置顶">
+        <el-icon><Top /></el-icon>
+      </span>
     </button>
     <div class="album-body">
       <button class="album-title" type="button" @click="$emit('detail', album)">{{ album.title }}</button>
@@ -35,7 +38,7 @@
 
 <script setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
-import { Collection } from '@element-plus/icons-vue';
+import { Collection, Top } from '@element-plus/icons-vue';
 import { albumCover } from '../../utils/image.js';
 import { useSettingsStore } from '../../stores/settings.store.js';
 
@@ -254,6 +257,30 @@ onMounted(checkCachedImage);
   backdrop-filter: blur(10px);
   font-size: 13px;
   transition: opacity 0.22s ease;
+}
+
+.album-pin {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  right: 10px;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--theme-image-overlay-border-strong);
+  border-radius: 50%;
+  color: var(--theme-image-overlay-text);
+  background: var(--theme-image-overlay-bg);
+  box-shadow:
+    inset 0 1px 0 var(--theme-image-hover-ring),
+    var(--theme-image-overlay-shadow);
+}
+
+.album-pin :deep(svg) {
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.8;
 }
 
 .album-body {
