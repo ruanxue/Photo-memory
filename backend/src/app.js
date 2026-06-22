@@ -156,7 +156,7 @@ const baiduMapCspHosts = [
   'https://*.bcebos.com'
 ];
 const baiduMapResourceSources = ['https:', ...baiduMapCspHosts];
-const baiduMapScriptSources = ["'self'", "'wasm-unsafe-eval'", ...baiduMapResourceSources];
+const baiduMapScriptSources = ["'self'", "'unsafe-eval'", "'wasm-unsafe-eval'", ...baiduMapResourceSources];
 
 app.use(
   helmet({
