@@ -15,6 +15,7 @@
   --theme-surface-strong: var(--surface-strong);
   --theme-surface-overlay: var(--surface-overlay);
   --theme-surface-glass: var(--surface-glass);
+  --theme-card-bg: var(--theme-surface);
   --theme-text: var(--text);
   --theme-text-soft: var(--text-soft);
   --theme-muted: var(--muted);
@@ -31,16 +32,27 @@
   --theme-danger: var(--danger);
   --theme-warning: var(--warning);
   --theme-shadow: var(--shadow);
+  --theme-card-radius: var(--radius);
+  --theme-panel-radius: calc(var(--theme-card-radius) + 2px);
+  --theme-dialog-radius: calc(var(--theme-card-radius) + 4px);
+  --theme-control-radius: var(--theme-card-radius);
 
   /* Form / button / selectable controls */
   --theme-input-bg: var(--input-bg);
   --theme-input-border: var(--input-border);
+  --theme-input-text: var(--theme-text);
   --theme-placeholder: var(--placeholder);
   --theme-button-bg: var(--button-bg);
   --theme-button-border: var(--button-border);
   --theme-button-text: var(--button-text);
   --theme-button-hover-bg: var(--button-hover-bg);
   --theme-button-hover-border: var(--button-hover-border);
+  --theme-button-hover-text: var(--theme-text);
+  --theme-button-primary-bg: var(--theme-primary);
+  --theme-button-primary-border: var(--theme-primary);
+  --theme-button-primary-text: var(--theme-primary-text);
+  --theme-button-primary-hover-bg: var(--theme-primary-strong);
+  --theme-button-primary-hover-border: var(--theme-primary-strong);
   --theme-button-disabled-bg: color-mix(in srgb, var(--theme-button-bg) 70%, var(--theme-surface) 30%);
   --theme-button-disabled-border: color-mix(in srgb, var(--theme-button-border) 62%, transparent);
   --theme-button-disabled-text: color-mix(in srgb, var(--theme-button-text) 48%, var(--theme-muted));

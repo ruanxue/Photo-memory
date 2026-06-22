@@ -95,17 +95,20 @@ onMounted(load);
   font-weight: 700;
 }
 .advanced-panel {
-  border-top: 1px solid var(--theme-line);
-  border-bottom: 1px solid var(--theme-line);
-  background: var(--theme-surface);
+  border: 1px solid var(--theme-line);
+  border-radius: var(--theme-panel-radius, var(--radius));
+  background: var(--theme-surface-soft);
+  overflow: hidden;
 }
 .advanced-panel :deep(.el-collapse-item__header) {
+  min-height: 46px;
   padding: 0 12px;
   background: var(--theme-surface-soft) !important;
   color: var(--theme-text) !important;
 }
 .advanced-panel :deep(.el-collapse-item__wrap) {
   background: var(--theme-surface) !important;
+  border-bottom: 0;
 }
 .advanced-panel :deep(.el-collapse-item__content) {
   padding: 14px 12px 16px;

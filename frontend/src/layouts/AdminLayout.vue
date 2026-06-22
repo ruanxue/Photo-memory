@@ -41,7 +41,7 @@ const settings = useSettingsStore();
   background: var(--theme-admin-side-bg);
   color: var(--theme-admin-side-text);
   border-right: 1px solid var(--theme-line);
-  padding: 22px 12px;
+  padding: 24px 14px;
 }
 
 .side-brand {
@@ -50,6 +50,7 @@ const settings = useSettingsStore();
   color: var(--theme-admin-side-text);
   font-size: 20px;
   font-weight: 900;
+  line-height: 1.2;
 }
 
 .admin-side small {
@@ -64,7 +65,15 @@ const settings = useSettingsStore();
 }
 
 .side-menu :deep(.el-menu-item) {
+  height: 42px;
+  margin: 3px 0;
+  border-radius: var(--theme-control-radius, var(--radius));
   color: var(--theme-text-soft);
+  font-weight: 750;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
 }
 
 .side-menu :deep(.el-menu-item.is-active),
@@ -73,9 +82,15 @@ const settings = useSettingsStore();
   background: var(--theme-admin-side-hover);
 }
 
+.side-menu :deep(.el-menu-item.is-active) {
+  box-shadow: inset 3px 0 0 var(--theme-primary);
+}
+
 .admin-main {
   min-width: 0;
-  background: var(--theme-page-bg);
+  background:
+    radial-gradient(circle at 78% 8%, color-mix(in srgb, var(--theme-primary) 8%, transparent), transparent 26%),
+    var(--theme-page-bg);
 }
 
 @media (max-width: 900px) {

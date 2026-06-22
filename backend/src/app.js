@@ -147,12 +147,23 @@ const getInitialTrustProxy = async () => {
 
 const initialTrustProxy = await getInitialTrustProxy();
 if (initialTrustProxy) app.set('trust proxy', initialTrustProxy);
+
+const baiduMapCspHosts = [
+  'https://api.map.baidu.com',
+  'https://*.baidu.com',
+  'https://*.bdimg.com',
+  'https://*.bcebos.com'
+];
+
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
     contentSecurityPolicy: {
       directives: {
         ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        'script-src': ["'self'", ...baiduMapCspHosts],
+        'script-src-elem': ["'self'", ...baiduMapCspHosts],
+        'connect-src': ["'self'", ...baiduMapCspHosts],
         'img-src': ["'self'", 'data:', 'blob:', 'https:'],
         'upgrade-insecure-requests': null
       }

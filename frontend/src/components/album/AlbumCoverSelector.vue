@@ -232,6 +232,12 @@ watch(
   transition: opacity 0.18s ease, border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
 }
 
+.photo-sort-item:hover {
+  border-color: var(--theme-button-hover-border);
+  background: color-mix(in srgb, var(--theme-surface-soft) 88%, var(--theme-primary) 12%);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--theme-text) 8%, transparent);
+}
+
 .photo-sort-item.dragging {
   opacity: 0.56;
   transform: scale(0.985);
@@ -245,7 +251,7 @@ watch(
   border: 1px solid var(--theme-line);
   border-radius: 999px;
   color: var(--theme-muted-strong);
-  background: var(--theme-card-bg);
+  background: var(--theme-surface);
   font-size: 12px;
   font-weight: 900;
 }

@@ -328,7 +328,7 @@ onMounted(async () => {
   gap: 12px;
   padding: 10px 12px;
   border: 1px solid var(--theme-line);
-  border-radius: var(--radius);
+  border-radius: var(--theme-panel-radius, var(--radius));
   background: var(--theme-surface-soft);
 }
 
@@ -373,7 +373,7 @@ onMounted(async () => {
   overflow: auto;
   padding: 8px;
   border: 1px solid var(--theme-line);
-  border-radius: var(--radius);
+  border-radius: var(--theme-panel-radius, var(--radius));
   background: var(--theme-surface-soft);
 }
 
@@ -382,7 +382,7 @@ onMounted(async () => {
   gap: 3px;
   padding: 8px 10px;
   border: 1px solid transparent;
-  border-radius: calc(var(--radius) - 1px);
+  border-radius: var(--theme-control-radius, var(--radius));
   color: var(--theme-text);
   background: transparent;
   text-align: left;

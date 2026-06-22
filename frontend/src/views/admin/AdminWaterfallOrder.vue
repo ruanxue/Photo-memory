@@ -336,7 +336,13 @@ onMounted(load);
   align-items: center;
   padding: 12px;
   border-radius: var(--theme-card-radius, var(--radius));
-  transition: opacity 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
+  transition: opacity 0.18s ease, transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.order-card:hover {
+  border-color: var(--theme-button-hover-border);
+  background: color-mix(in srgb, var(--theme-surface-glass) 86%, var(--theme-primary) 14%);
+  box-shadow: 0 12px 30px color-mix(in srgb, var(--theme-text) 7%, transparent);
 }
 
 .order-card.dragging {
