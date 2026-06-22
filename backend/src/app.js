@@ -166,7 +166,7 @@ app.use(
         ...helmet.contentSecurityPolicy.getDefaultDirectives(),
         'script-src': baiduMapScriptSources,
         'script-src-elem': ["'self'", ...baiduMapResourceSources],
-        'connect-src': ["'self'", ...baiduMapResourceSources],
+        'connect-src': ["'self'", 'data:', 'blob:', ...baiduMapResourceSources],
         'img-src': ["'self'", 'data:', 'blob:', 'https:'],
         'style-src': ["'self'", "'unsafe-inline'", ...baiduMapResourceSources],
         'font-src': ["'self'", 'data:', ...baiduMapResourceSources],
