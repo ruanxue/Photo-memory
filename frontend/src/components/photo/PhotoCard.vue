@@ -123,7 +123,8 @@ const cardStyle = computed(() => {
 });
 const imageFrameClass = computed(() => [
   `load-${loadAnimation.value}`,
-  imageLoaded.value ? 'is-loaded' : 'is-loading'
+  imageLoaded.value ? 'is-loaded' : 'is-loading',
+  { 'is-exif-hovered': exifHovered.value && showExifControl.value }
 ]);
 const showStatusMarkers = computed(() => props.variant === 'wall' && (props.photo.isFeatured || props.photo.isPinned));
 const hasPhotoExif = computed(() => hasExifInfo(props.photo));
@@ -350,6 +351,15 @@ onMounted(checkCachedImage);
 .image-frame:hover .image-button img {
   transform: scale(0.965);
   filter: brightness(0.86) saturate(1.06);
+}
+
+.image-frame.is-exif-hovered .image-button::after {
+  opacity: 0;
+}
+
+.image-frame.is-exif-hovered .image-button img {
+  transform: scale(1);
+  filter: none;
 }
 
 .overlay-pill {

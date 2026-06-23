@@ -16,7 +16,7 @@ import FloatingDock from '../components/common/FloatingDock.vue';
 
 const route = useRoute();
 const isHome = computed(() => route.name === 'home');
-const footerlessRoutes = new Set(['photos', 'albums', 'album-detail', 'timeline', 'map']);
+const footerlessRoutes = new Set(['photos', 'albums', 'album-detail', 'timeline', 'map', 'login']);
 const showFooter = computed(() => !isHome.value && !footerlessRoutes.has(route.name));
 </script>
 
