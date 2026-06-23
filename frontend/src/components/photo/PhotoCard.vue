@@ -196,13 +196,15 @@ onMounted(checkCachedImage);
   --overlay-current-edge: var(--overlay-edge);
   --overlay-gap: clamp(4px, 2.5cqw, 8px);
   --overlay-control-size: clamp(28px, 13cqw, 36px);
+  --overlay-status-size: clamp(24px, 10cqw, 30px);
+  --overlay-pill-height: calc(var(--overlay-status-size) - 1px);
   --overlay-font-size: clamp(10px, 4.4cqw, 12px);
   --overlay-icon-size: clamp(15px, 7cqw, 18px);
-  --overlay-tag-font-size: clamp(10px, 4.2cqw, 12px);
-  --overlay-tag-pad-x: clamp(6px, 3.4cqw, 9px);
-  --overlay-tag-pad-y: clamp(3px, 1.8cqw, 4px);
-  --overlay-exif-width: clamp(42px, 20cqw, 56px);
-  --overlay-status-width: calc(var(--overlay-control-size) * 2 + var(--overlay-gap));
+  --overlay-status-icon-size: clamp(12px, 5.2cqw, 15px);
+  --overlay-tag-font-size: clamp(9px, 3.8cqw, 11px);
+  --overlay-tag-pad-x: clamp(6px, 3cqw, 8px);
+  --overlay-exif-width: clamp(38px, 17cqw, 48px);
+  --overlay-status-width: calc(var(--overlay-status-size) * 2 + var(--overlay-gap));
 }
 
 .image-frame::before {
@@ -357,7 +359,7 @@ onMounted(checkCachedImage);
   justify-content: center;
   align-items: center;
   gap: clamp(3px, 2cqw, 5px);
-  min-height: var(--overlay-control-size);
+  min-height: var(--overlay-pill-height);
   border: 1px solid var(--theme-image-overlay-border);
   border-radius: 999px;
   color: var(--theme-image-overlay-text);
@@ -389,8 +391,8 @@ onMounted(checkCachedImage);
 }
 
 .status-icon {
-  width: var(--overlay-control-size);
-  height: var(--overlay-control-size);
+  width: var(--overlay-status-size);
+  height: var(--overlay-status-size);
   display: grid;
   place-items: center;
   border: 1px solid var(--theme-image-overlay-border-strong);
@@ -403,8 +405,8 @@ onMounted(checkCachedImage);
 }
 
 .status-icon :deep(svg) {
-  width: var(--overlay-icon-size);
-  height: var(--overlay-icon-size);
+  width: var(--overlay-status-icon-size);
+  height: var(--overlay-status-icon-size);
   stroke-width: 1.8;
 }
 
@@ -421,7 +423,7 @@ onMounted(checkCachedImage);
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: clamp(4px, 2.2cqw, 6px);
+  gap: clamp(3px, 1.8cqw, 5px);
   opacity: 0;
   transform: translateX(5px);
   transition: top 0.24s ease, right 0.24s ease, opacity 0.22s ease, transform 0.22s ease;
@@ -440,9 +442,12 @@ onMounted(checkCachedImage);
 }
 
 .overlay-tags a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--overlay-pill-height);
   max-width: 100%;
   overflow: hidden;
-  padding: var(--overlay-tag-pad-y) var(--overlay-tag-pad-x);
+  padding: 0 var(--overlay-tag-pad-x);
   border: 1px solid var(--theme-image-overlay-border);
   border-radius: 999px;
   color: var(--theme-image-overlay-text);
@@ -451,7 +456,7 @@ onMounted(checkCachedImage);
     inset 0 1px 0 var(--theme-image-hover-ring),
     var(--theme-image-overlay-shadow);
   font-size: var(--overlay-tag-font-size);
-  line-height: 1.35;
+  line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
   transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
@@ -469,9 +474,9 @@ onMounted(checkCachedImage);
   right: var(--overlay-current-edge);
   bottom: var(--overlay-current-edge);
   min-width: var(--overlay-exif-width);
-  padding: 0 clamp(8px, 4cqw, 11px);
+  padding: 0 clamp(7px, 3.2cqw, 9px);
   cursor: default;
-  font-size: var(--overlay-font-size);
+  font-size: var(--overlay-tag-font-size);
   font-weight: 800;
   line-height: 1;
   white-space: nowrap;
@@ -671,9 +676,12 @@ onMounted(checkCachedImage);
     --overlay-edge-hover: 8px;
     --overlay-gap: 4px;
     --overlay-control-size: 28px;
+    --overlay-status-size: 24px;
+    --overlay-pill-height: 23px;
     --overlay-font-size: 10px;
+    --overlay-status-icon-size: 12px;
     --overlay-tag-font-size: 10px;
-    --overlay-exif-width: 42px;
+    --overlay-exif-width: 38px;
   }
 
   .overlay-tags a:nth-child(n + 3) {

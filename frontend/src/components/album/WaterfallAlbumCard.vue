@@ -118,6 +118,11 @@ onMounted(checkCachedImage);
 
 .album-image {
   position: relative;
+  container-type: inline-size;
+  --album-marker-edge: clamp(7px, 4cqw, 10px);
+  --album-marker-gap: clamp(4px, 2.4cqw, 7px);
+  --album-marker-size: clamp(24px, 10cqw, 30px);
+  --album-marker-icon-size: clamp(12px, 5.2cqw, 15px);
   display: block;
   width: 100%;
   aspect-ratio: var(--album-cover-aspect-ratio, auto);
@@ -194,7 +199,8 @@ onMounted(checkCachedImage);
   transition-delay: 0ms;
 }
 
-.album-image.is-loading .album-count {
+.album-image.is-loading .album-count,
+.album-image.is-loading .album-pin {
   opacity: 0;
 }
 
@@ -243,29 +249,34 @@ onMounted(checkCachedImage);
 .album-count {
   position: absolute;
   z-index: 2;
-  top: 10px;
-  left: 10px;
-  min-height: 34px;
+  top: var(--album-marker-edge);
+  left: var(--album-marker-edge);
+  min-height: var(--album-marker-size);
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 0 11px;
+  gap: 5px;
+  padding: 0 clamp(8px, 4cqw, 10px);
   border: 1px solid var(--theme-image-overlay-border);
   border-radius: 999px;
   color: var(--theme-image-overlay-text);
   background: var(--theme-image-overlay-chip-bg);
   backdrop-filter: blur(10px);
-  font-size: 13px;
+  font-size: clamp(11px, 4.6cqw, 12px);
   transition: opacity 0.22s ease;
+}
+
+.album-count :deep(svg) {
+  width: var(--album-marker-icon-size);
+  height: var(--album-marker-icon-size);
 }
 
 .album-pin {
   position: absolute;
   z-index: 2;
-  top: 10px;
-  right: 10px;
-  width: 34px;
-  height: 34px;
+  top: calc(var(--album-marker-edge) + var(--album-marker-size) + var(--album-marker-gap));
+  left: var(--album-marker-edge);
+  width: var(--album-marker-size);
+  height: var(--album-marker-size);
   display: grid;
   place-items: center;
   border: 1px solid var(--theme-image-overlay-border-strong);
@@ -278,8 +289,8 @@ onMounted(checkCachedImage);
 }
 
 .album-pin :deep(svg) {
-  width: 16px;
-  height: 16px;
+  width: var(--album-marker-icon-size);
+  height: var(--album-marker-icon-size);
   stroke-width: 1.8;
 }
 
