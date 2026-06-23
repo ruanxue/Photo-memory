@@ -17,8 +17,13 @@
         </template>
       </el-table-column>
       <el-table-column prop="photoCount" label="照片数" min-width="140" />
-      <el-table-column label="操作" min-width="200">
-        <template #default="{ row }"><el-button size="small" @click="openEdit(row)">编辑</el-button><el-button size="small" type="danger" @click="remove(row)">删除</el-button></template>
+      <el-table-column label="操作" min-width="220">
+        <template #default="{ row }">
+          <div class="action-buttons">
+            <el-button size="small" @click="openEdit(row)">编辑</el-button>
+            <el-button size="small" type="danger" @click="remove(row)">删除</el-button>
+          </div>
+        </template>
       </el-table-column>
     </el-table>
     <el-dialog v-model="dialogVisible" :title="currentId ? '编辑标签' : '新增标签'" width="480px">

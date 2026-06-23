@@ -42,14 +42,20 @@ const showRateLimit = (event) => {
   hideTimer = window.setTimeout(hideRateLimit, 8000);
 };
 
+const disableContextMenu = (event) => {
+  event.preventDefault();
+};
+
 onMounted(() => {
   authStore.bootstrap();
   settingsStore.fetchPublicSettings();
   window.addEventListener('photo-memory:rate-limit', showRateLimit);
+  document.addEventListener('contextmenu', disableContextMenu, true);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener('photo-memory:rate-limit', showRateLimit);
+  document.removeEventListener('contextmenu', disableContextMenu, true);
   if (hideTimer) window.clearTimeout(hideTimer);
 });
 </script>

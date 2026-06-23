@@ -506,8 +506,17 @@ img {
 
 .el-dialog__footer,
 .el-message-box__btns {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 14px;
   padding: 14px 20px 18px;
   border-top: 1px solid var(--theme-line-soft);
+}
+
+.el-dialog__footer .el-button + .el-button,
+.el-message-box__btns .el-button + .el-button {
+  margin-left: 0;
 }
 
 .el-dialog__title,
@@ -805,7 +814,7 @@ img {
 .user-page .head-actions {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   white-space: nowrap;
 }
 

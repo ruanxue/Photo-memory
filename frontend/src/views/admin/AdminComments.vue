@@ -10,14 +10,18 @@
       <el-table-column label="访客邮箱" min-width="180"><template #default="{ row }">{{ row.guestEmail || '-' }}</template></el-table-column>
       <el-table-column label="来源 IP" min-width="135"><template #default="{ row }">{{ row.ip || '-' }}</template></el-table-column>
       <el-table-column prop="content" label="内容" min-width="260" />
-      <el-table-column label="状态" width="100">
-        <template #default="{ row }">{{ formatCommentStatus(row.status) }}</template>
-      </el-table-column>
-      <el-table-column label="操作" width="250">
+      <el-table-column label="操作" width="190">
         <template #default="{ row }">
-          <el-button size="small" @click="setStatus(row, 'approved')">通过</el-button>
-          <el-button size="small" @click="setStatus(row, 'rejected')">驳回</el-button>
-          <el-button size="small" type="danger" @click="remove(row)">删除</el-button>
+          <div class="action-buttons comment-actions">
+            <el-button
+              size="small"
+              :type="statusButtonType(row.status)"
+              @click="toggleStatus(row)"
+            >
+              {{ statusButtonText(row.status) }}
+            </el-button>
+            <el-button size="small" type="danger" @click="remove(row)">删除</el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -28,11 +32,19 @@
 import { onMounted, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { adminApi } from '../../api/admin.api.js';
-import { formatCommentStatus } from '../../utils/format.js';
 
 const comments = ref([]);
 const load = async () => { const res = await adminApi.comments(); comments.value = res.data; };
 const setStatus = async (row, status) => { await adminApi.updateCommentStatus(row.id, { status }); ElMessage.success('状态已更新'); load(); };
+const statusButtonText = (status) => ({ approved: '已通过', rejected: '已驳回', pending: '待审核' }[status] || '待审核');
+const statusButtonType = (status) => ({ approved: 'primary', rejected: 'warning', pending: '' }[status] || '');
+const toggleStatus = (row) => setStatus(row, row.status === 'approved' ? 'rejected' : 'approved');
 const remove = async (row) => { await ElMessageBox.confirm('确定删除这条评论吗？', '删除评论', { type: 'warning' }); await adminApi.deleteComment(row.id); load(); };
 onMounted(load);
 </script>
+
+<style scoped>
+.comment-actions :deep(.el-button:first-child) {
+  min-width: 74px;
+}
+</style>

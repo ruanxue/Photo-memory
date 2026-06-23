@@ -233,11 +233,32 @@ onBeforeUnmount(() => {
   background-position: center;
 }
 
+.home-hero::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  z-index: 1;
+  height: clamp(120px, 18vh, 240px);
+  pointer-events: none;
+  background:
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      color-mix(in srgb, var(--theme-wall-page-bg) 18%, transparent) 38%,
+      color-mix(in srgb, var(--theme-wall-page-bg) 76%, transparent) 76%,
+      var(--theme-wall-page-bg) 100%
+    );
+}
+
 .home-hero-loading {
   background: var(--theme-page-bg);
 }
 
 .hero-shade {
+  position: relative;
+  z-index: 0;
   min-height: 100vh;
   color: var(--theme-hero-text);
   background: var(--theme-hero-shade-bg);
@@ -388,7 +409,7 @@ onBeforeUnmount(() => {
   position: absolute;
   left: 50%;
   bottom: clamp(18px, 3vw, 34px);
-  z-index: 2;
+  z-index: 3;
   width: 46px;
   height: 46px;
   display: grid;
@@ -411,9 +432,12 @@ onBeforeUnmount(() => {
 }
 
 .home-wall {
+  position: relative;
+  z-index: 0;
   width: 100%;
   min-height: 100vh;
-  padding: 0 0 92px;
+  margin-top: -1px;
+  padding: clamp(28px, 4vh, 56px) 0 92px;
   background: var(--theme-wall-page-bg);
 }
 
