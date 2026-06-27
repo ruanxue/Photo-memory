@@ -30,8 +30,13 @@ import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } 
 import request from '../../api/request.js';
 import { mapApi } from '../../api/map.api.js';
 import { useSettingsStore } from '../../stores/settings.store.js';
-import { bd09ToWgs84, loadBaiduMapGL, wgs84ToBd09 } from '../../utils/baidu-map.js';
 import { isChinaCountry, mapZoomForScene } from '../../utils/map.js';
+import {
+  baiduPointToWgs84LatLng,
+  clampBaiduZoom,
+  loadBaiduMapGL,
+  toBaiduPoint
+} from '../../map/adapters/baidu.js';
 
 const props = defineProps({
   latitude: { type: [Number, String], default: '' },
@@ -60,23 +65,11 @@ const numberOrNull = (value) => {
 };
 
 const clampZoom = (zoom, fallback = props.zoom) => {
-  const value = Number(zoom);
-  return Math.max(3, Math.min(19, Number.isFinite(value) ? value : Number(fallback) || 4));
-};
-
-const clampLatLng = (latitude, longitude) => {
-  const lat = Number(latitude);
-  const lng = Number(longitude);
-  return [
-    Math.max(-85, Math.min(85, Number.isFinite(lat) ? lat : props.center[0])),
-    Math.max(-180, Math.min(180, Number.isFinite(lng) ? lng : props.center[1]))
-  ];
+  return clampBaiduZoom(zoom, fallback);
 };
 
 const toBdPoint = (latitude, longitude) => {
-  const [lat, lng] = clampLatLng(latitude, longitude);
-  const [bdLng, bdLat] = wgs84ToBd09(lng, lat);
-  return new BMapGL.Point(bdLng, bdLat);
+  return toBaiduPoint(BMapGL, latitude, longitude, props.center);
 };
 
 const currentPosition = computed(() => {
@@ -152,8 +145,7 @@ const locationOptions = computed(() => locationPhotos.value
   .sort((a, b) => a.label.localeCompare(b.label, 'zh-Hans-CN')));
 
 const emitBdPoint = (point, meta = {}) => {
-  const [lng, lat] = bd09ToWgs84(point.lng, point.lat);
-  const [safeLat, safeLng] = clampLatLng(lat, lng);
+  const [safeLat, safeLng] = baiduPointToWgs84LatLng(point, props.center);
   emit('select', {
     latitude: Number(safeLat.toFixed(6)),
     longitude: Number(safeLng.toFixed(6)),

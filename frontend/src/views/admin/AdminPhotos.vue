@@ -71,7 +71,7 @@
     </el-table>
     <Pagination v-model:page="page" v-model:page-size="pageSize" :total="total" @update:page="load" @update:page-size="reload" />
 
-    <el-dialog v-model="dialogVisible" title="编辑照片" width="680px">
+    <el-dialog v-model="dialogVisible" title="编辑照片" width="680px" class="photo-edit-dialog" :lock-scroll="false">
       <el-form :model="form" label-position="top">
         <el-form-item label="标题"><el-input v-model="form.title" /></el-form-item>
         <el-form-item label="描述"><el-input v-model="form.description" type="textarea" :rows="3" /></el-form-item>
@@ -325,6 +325,7 @@ onMounted(async () => {
 .location-editor-item {
   grid-column: 1 / -1;
 }
+
 .edit-collapse {
   margin: 12px 0;
   border: 1px solid var(--theme-line);

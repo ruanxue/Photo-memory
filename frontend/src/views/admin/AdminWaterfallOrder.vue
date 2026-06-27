@@ -1,5 +1,10 @@
 <template>
-  <section class="admin-page waterfall-order-page">
+  <section
+    class="admin-page waterfall-order-page"
+    :class="{ 'is-dragging': draggingKey }"
+    @dragover.prevent="keepMoveCursor"
+    @drop.prevent="endDrag"
+  >
     <div class="section-head">
       <div>
         <h1 class="section-title">瀑布流排序</h1>
@@ -35,8 +40,9 @@
           class="order-card surface"
           :class="{ dragging: draggingKey === item.key }"
           draggable="true"
-          @dragstart="startDrag(item.key)"
-          @dragover.prevent="dragOver(item.key)"
+          @dragstart="startDrag($event, item.key)"
+          @dragenter.prevent="keepMoveCursor"
+          @dragover.prevent="dragOver($event, item.key)"
           @drop.prevent="endDrag"
           @dragend="endDrag"
         >
@@ -221,11 +227,25 @@ const togglePin = (item) => {
   moveToPinnedTop(item.key);
 };
 
-const startDrag = (key) => {
-  draggingKey.value = key;
+const setMoveEffect = (event) => {
+  if (!event?.dataTransfer) return;
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.dropEffect = 'move';
 };
 
-const dragOver = (targetKey) => {
+const keepMoveCursor = (event) => {
+  if (!draggingKey.value) return;
+  setMoveEffect(event);
+};
+
+const startDrag = (event, key) => {
+  draggingKey.value = key;
+  setMoveEffect(event);
+  event?.dataTransfer?.setData('text/plain', key);
+};
+
+const dragOver = (event, targetKey) => {
+  keepMoveCursor(event);
   reorderByKeys(draggingKey.value, targetKey);
 };
 
@@ -336,7 +356,9 @@ onMounted(load);
   align-items: center;
   padding: 12px;
   border-radius: var(--theme-card-radius, var(--radius));
+  cursor: grab;
   transition: opacity 0.18s ease, transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+  user-select: none;
 }
 
 .order-card:hover {
@@ -348,6 +370,12 @@ onMounted(load);
 .order-card.dragging {
   opacity: 0.58;
   transform: scale(0.99);
+  cursor: grabbing;
+}
+
+.waterfall-order-page.is-dragging,
+.waterfall-order-page.is-dragging * {
+  cursor: grabbing !important;
 }
 
 .order-rank {
@@ -370,6 +398,7 @@ onMounted(load);
   object-fit: cover;
   background: var(--theme-surface-soft);
   user-select: none;
+  -webkit-user-drag: none;
 }
 
 .order-body {

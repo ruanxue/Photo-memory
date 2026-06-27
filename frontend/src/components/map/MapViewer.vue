@@ -26,6 +26,14 @@ import L from 'leaflet';
 import { imageUrl } from '../../utils/image.js';
 import { formatDate } from '../../utils/format.js';
 import { useSettingsStore } from '../../stores/settings.store.js';
+import { MAP_MIN_ZOOM, isBaiduMapProvider } from '../../map/adapters/core.js';
+import {
+  applyLeafletMapLimits,
+  clampLeafletLatLng,
+  clampLeafletZoom,
+  createLeafletWorldBounds,
+  getLeafletTileConfig
+} from '../../map/adapters/leaflet.js';
 import BaiduMapViewer from './BaiduMapViewer.vue';
 
 const props = defineProps({
@@ -49,36 +57,18 @@ let attributionControl;
 let markers = [];
 const markerByPhotoId = new Map();
 let focusedPhotoId = null;
-const minMapZoom = 3;
-const isBaiduProvider = computed(() => settings.settings.mapTileProvider === 'baidu');
-const worldBounds = L.latLngBounds(
-  L.latLng(-85.05112878, -180),
-  L.latLng(85.05112878, 180)
-);
+const isBaiduProvider = computed(() => isBaiduMapProvider(settings.settings));
+const worldBounds = createLeafletWorldBounds(L);
 
 const clampZoom = (zoom, fallback = props.zoom) => {
-  const value = Number(zoom);
   const maxZoom = Number(providerConfig.value?.options?.maxZoom) || 18;
-  if (!Number.isFinite(value)) return Math.max(minMapZoom, Math.min(maxZoom, Number(fallback) || minMapZoom));
-  return Math.max(minMapZoom, Math.min(maxZoom, value));
+  return clampLeafletZoom(zoom, fallback, maxZoom);
 };
 
-const clampLatLng = (latitude, longitude) => {
-  const lat = Number(latitude);
-  const lng = Number(longitude);
-  return [
-    Math.max(-85.05112878, Math.min(85.05112878, Number.isFinite(lat) ? lat : props.center[0])),
-    Math.max(-180, Math.min(180, Number.isFinite(lng) ? lng : props.center[1]))
-  ];
-};
+const clampLatLng = (latitude, longitude) => clampLeafletLatLng(latitude, longitude, props.center);
 
 const applyMapLimits = () => {
-  if (!map) return;
-  map.setMinZoom(minMapZoom);
-  map.setMaxZoom(Number(providerConfig.value.options.maxZoom) || 18);
-  map.setMaxBounds(worldBounds);
-  map.options.maxBoundsViscosity = 1;
-  map.panInsideBounds(worldBounds, { animate: false });
+  applyLeafletMapLimits(map, providerConfig.value, worldBounds);
 };
 
 const markerIcon = L.divIcon({
@@ -244,48 +234,7 @@ const bindHoverPopup = (marker, photo) => {
   marker.on('remove', cleanup);
 };
 
-const providerConfig = computed(() => {
-  const provider = settings.settings.mapTileProvider || 'amap';
-  if (provider === 'osm') {
-    return {
-      url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      options: {
-        subdomains: ['a', 'b', 'c'],
-        attribution: settings.settings.mapTileAttribution || '&copy; OpenStreetMap contributors',
-        minZoom: minMapZoom,
-        noWrap: true,
-        bounds: worldBounds,
-        maxZoom: 19
-      }
-    };
-  }
-
-  if (provider === 'custom' && settings.settings.mapTileUrl) {
-    return {
-      url: settings.settings.mapTileUrl,
-      options: {
-        subdomains: ['a', 'b', 'c', '1', '2', '3', '4'],
-        attribution: settings.settings.mapTileAttribution || '',
-        minZoom: minMapZoom,
-        noWrap: true,
-        bounds: worldBounds,
-        maxZoom: 20
-      }
-    };
-  }
-
-  return {
-    url: 'https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=7&x={x}&y={y}&z={z}',
-    options: {
-      subdomains: ['1', '2', '3', '4'],
-      attribution: settings.settings.mapTileAttribution || '© 高德地图',
-      minZoom: minMapZoom,
-      noWrap: true,
-      bounds: worldBounds,
-      maxZoom: 18
-    }
-  };
-});
+const providerConfig = computed(() => getLeafletTileConfig(settings.settings, worldBounds));
 
 const applyTileLayer = () => {
   if (!map || isBaiduProvider.value) return;
@@ -308,7 +257,7 @@ const initLeafletMap = () => {
   map = L.map(mapEl.value, {
     scrollWheelZoom: true,
     attributionControl: false,
-    minZoom: minMapZoom,
+    minZoom: MAP_MIN_ZOOM,
     maxBounds: worldBounds,
     maxBoundsViscosity: 1,
     worldCopyJump: false

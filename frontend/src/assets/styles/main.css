@@ -19,6 +19,7 @@ body {
 }
 
 html {
+  scrollbar-gutter: stable;
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--theme-muted) 24%, transparent) transparent;
 }
@@ -491,6 +492,29 @@ img {
 .el-message-box {
   border-radius: var(--theme-dialog-radius, var(--radius)) !important;
   overflow: hidden;
+}
+
+.el-dialog.photo-edit-dialog {
+  max-height: min(92dvh, 860px);
+  display: flex;
+  flex-direction: column;
+}
+
+.el-dialog.photo-edit-dialog .el-dialog__header,
+.el-dialog.photo-edit-dialog .el-dialog__footer {
+  flex: 0 0 auto;
+}
+
+.el-dialog.photo-edit-dialog .el-dialog__body {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.el-dialog.photo-edit-dialog .el-form {
+  min-width: 0;
 }
 
 .el-dialog__header,

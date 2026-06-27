@@ -13,7 +13,12 @@ import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { imageUrl } from '../../utils/image.js';
 import { formatDate } from '../../utils/format.js';
 import { useSettingsStore } from '../../stores/settings.store.js';
-import { escapeHtml, loadBaiduMapGL, wgs84ToBd09 } from '../../utils/baidu-map.js';
+import {
+  clampBaiduZoom,
+  escapeHtml,
+  loadBaiduMapGL,
+  toBaiduPoint
+} from '../../map/adapters/baidu.js';
 
 const props = defineProps({
   photos: { type: Array, default: () => [] },
@@ -38,24 +43,11 @@ let focusedPhotoId = null;
 let focusTimers = [];
 
 const clampZoom = (zoom, fallback = props.zoom) => {
-  const value = Number(zoom);
-  const fallbackValue = Number(fallback) || 4;
-  return Math.max(3, Math.min(19, Number.isFinite(value) ? value : fallbackValue));
-};
-
-const clampLatLng = (latitude, longitude) => {
-  const lat = Number(latitude);
-  const lng = Number(longitude);
-  return [
-    Math.max(-85, Math.min(85, Number.isFinite(lat) ? lat : props.center[0])),
-    Math.max(-180, Math.min(180, Number.isFinite(lng) ? lng : props.center[1]))
-  ];
+  return clampBaiduZoom(zoom, fallback);
 };
 
 const toBdPoint = (latitude, longitude) => {
-  const [lat, lng] = clampLatLng(latitude, longitude);
-  const [bdLng, bdLat] = wgs84ToBd09(lng, lat);
-  return new BMapGL.Point(bdLng, bdLat);
+  return toBaiduPoint(BMapGL, latitude, longitude, props.center);
 };
 
 const cssVar = (name, fallback) => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
