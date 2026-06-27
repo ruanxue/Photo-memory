@@ -6,28 +6,28 @@
   <section class="section photo-wall-section">
     <div class="full-bleed">
       <div class="toolbar surface filter-bar" :class="{ 'photo-wall-wide': settings.settings.waterfallFullBleed === true }">
-        <el-input v-model="filters.q" placeholder="搜索标题、地点、设备" clearable @keyup.enter="reload" />
+        <el-input v-model="filters.q" placeholder="搜索标题、地点、设备" clearable @keyup.enter="applyFilters" />
         <el-select v-model="filters.sort" placeholder="排序" @change="reload">
           <el-option label="最新上传" value="latest" />
           <el-option label="拍摄时间" value="taken" />
           <el-option label="浏览量" value="views" />
           <el-option label="评论数" value="comments" />
         </el-select>
-        <el-select v-model="filters.tagId" clearable placeholder="标签" @change="reload">
+        <el-select v-model="filters.tagId" clearable placeholder="标签" @change="applyFilters">
           <el-option v-for="tag in tags" :key="tag.id" :label="tag.name" :value="tag.id" />
         </el-select>
         <el-select v-model="filters.country" filterable clearable placeholder="国家 / 地区" @change="handleCountryChange">
           <el-option v-for="country in countries" :key="country.country" :label="`${country.country} (${country.count})`" :value="country.country" />
         </el-select>
-        <el-select v-model="filters.city" filterable clearable placeholder="城市" @change="reload">
-          <el-option v-for="city in filteredCities" :key="`${city.country || 'unknown'}-${city.city}`" :label="`${city.city} (${city.count})`" :value="city.city" />
+        <el-select v-model="filters.city" filterable clearable placeholder="城市" @change="handleCityChange">
+          <el-option v-for="city in cities" :key="`${city.country || 'unknown'}-${city.city}`" :label="`${city.city} (${city.count})`" :value="city.city" />
         </el-select>
-        <el-select v-model="filters.year" clearable placeholder="年份" @change="reload">
+        <el-select v-model="filters.year" clearable placeholder="年份" @change="applyFilters">
           <el-option v-for="item in years" :key="item.year" :label="`${item.year} (${item.count})`" :value="item.year" />
         </el-select>
-        <el-checkbox v-model="filters.pinned" @change="reload">置顶</el-checkbox>
-        <el-checkbox v-model="filters.featured" @change="reload">精选</el-checkbox>
-        <el-button type="primary" @click="reload">筛选</el-button>
+        <el-checkbox v-model="filters.pinned" @change="applyFilters">置顶</el-checkbox>
+        <el-checkbox v-model="filters.featured" @change="applyFilters">精选</el-checkbox>
+        <el-button type="primary" @click="applyFilters">筛选</el-button>
       </div>
       <PhotoWaterfall
         variant="wall"
@@ -82,13 +82,11 @@ const filters = reactive({
   featured: route.query.featured === 'true'
 });
 let observer = null;
+let filterOptionRequestId = 0;
+let photoLoadRequestId = 0;
 
 const allPhotos = computed(() => photos.value);
 const hasMore = computed(() => allPhotos.value.length < total.value);
-const filteredCities = computed(() => {
-  if (!filters.country) return cities.value;
-  return cities.value.filter((city) => city.country === filters.country);
-});
 
 const params = () => ({
   page: page.value,
@@ -99,11 +97,26 @@ const params = () => ({
   featured: filters.featured ? 'true' : undefined
 });
 
+const filterOptionParams = () => {
+  const { q, tagId, country, city, year, pinned, featured } = filters;
+  return {
+    q: q || undefined,
+    tagId: tagId || undefined,
+    country: country || undefined,
+    city: city || undefined,
+    year: year || undefined,
+    pinned: pinned ? 'true' : undefined,
+    featured: featured ? 'true' : undefined
+  };
+};
+
 const load = async ({ append = false } = {}) => {
+  const requestId = ++photoLoadRequestId;
   if (append) loadingMore.value = true;
   else initialLoading.value = true;
   try {
     const res = await photoApi.wall(params());
+    if (requestId !== photoLoadRequestId) return;
     if (append) {
       const existing = new Set(allPhotos.value.map((photo) => photo.id));
       const nextPhotos = res.data.filter((photo) => !existing.has(photo.id));
@@ -113,23 +126,67 @@ const load = async ({ append = false } = {}) => {
     }
     total.value = res.meta?.total || 0;
   } finally {
-    initialLoading.value = false;
-    loadingMore.value = false;
-    await nextTick();
-    observeLoadMore();
+    if (requestId === photoLoadRequestId) {
+      initialLoading.value = false;
+      loadingMore.value = false;
+      await nextTick();
+      observeLoadMore();
+    }
   }
 };
 
 const reload = () => {
   page.value = 1;
+  loadingMore.value = false;
   load({ append: false });
 };
 
-const handleCountryChange = () => {
-  if (filters.city && !filteredCities.value.some((city) => city.city === filters.city)) {
+const loadFilterOptions = async () => {
+  const requestId = ++filterOptionRequestId;
+  const res = await photoApi.filterOptions(filterOptionParams());
+  if (requestId !== filterOptionRequestId) return { stale: true, changed: false };
+  countries.value = res.data?.countries || [];
+  cities.value = res.data?.cities || [];
+  years.value = res.data?.years || [];
+
+  let changed = false;
+  if (filters.country && !countries.value.some((item) => item.country === filters.country)) {
+    filters.country = '';
     filters.city = '';
+    filters.year = '';
+    changed = true;
+  }
+  if (filters.city && !cities.value.some((item) => item.city === filters.city)) {
+    filters.city = '';
+    filters.year = '';
+    changed = true;
+  }
+  if (filters.year && !years.value.some((item) => Number(item.year) === Number(filters.year))) {
+    filters.year = '';
+    changed = true;
+  }
+  return { stale: false, changed };
+};
+
+const applyFilters = async () => {
+  const result = await loadFilterOptions();
+  if (result.stale) return;
+  if (result.changed) {
+    const followUp = await loadFilterOptions();
+    if (followUp.stale) return;
   }
   reload();
+};
+
+const handleCountryChange = () => {
+  filters.city = '';
+  filters.year = '';
+  applyFilters();
+};
+
+const handleCityChange = () => {
+  filters.year = '';
+  applyFilters();
 };
 
 const loadMore = async () => {
@@ -144,14 +201,9 @@ const openLightbox = (photo) => {
 };
 
 onMounted(async () => {
-  const [tagRes, optionRes] = await Promise.all([
-    tagApi.list(),
-    photoApi.filterOptions()
-  ]);
+  const tagRes = await tagApi.list();
   tags.value = tagRes.data;
-  countries.value = optionRes.data?.countries || [];
-  cities.value = optionRes.data?.cities || [];
-  years.value = optionRes.data?.years || [];
+  await loadFilterOptions();
   await load({ append: false });
 });
 
@@ -169,7 +221,7 @@ watch(() => route.query, () => {
   filters.year = route.query.year ? Number(route.query.year) : '';
   filters.pinned = route.query.pinned === 'true';
   filters.featured = route.query.featured === 'true';
-  reload();
+  applyFilters();
 });
 
 const observeLoadMore = () => {

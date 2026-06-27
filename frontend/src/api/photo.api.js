@@ -8,7 +8,7 @@ const uploadConfig = (onUploadProgress) => ({
 export const photoApi = {
   list: (params) => request.get('/photos', { params }),
   wall: (params) => request.get('/photos/wall', { params }),
-  filterOptions: () => request.get('/photos/filter-options'),
+  filterOptions: (params) => request.get('/photos/filter-options', { params }),
   detail: (id) => request.get(`/photos/${id}`),
   upload: (formData, onUploadProgress) => request.post('/photos/upload', formData, uploadConfig(onUploadProgress)),
   batchUpload: (formData, onUploadProgress) => request.post('/photos/batch-upload', formData, uploadConfig(onUploadProgress)),

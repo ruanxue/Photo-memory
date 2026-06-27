@@ -2,6 +2,7 @@ import { prisma } from '../config/prisma.js';
 import { success } from '../utils/response.js';
 import { photoInclude, visibilityFilter } from '../services/photo.service.js';
 import { geocodeBaiduAddress, reverseGeocodeBaidu, searchBaiduPlaces } from '../services/baidu-geo.service.js';
+import { photoFilterFacets } from '../services/facet.service.js';
 
 const mapWhere = (req) => {
   const clauses = [visibilityFilter(req.user), { latitude: { not: null } }, { longitude: { not: null } }];
@@ -10,7 +11,16 @@ const mapWhere = (req) => {
   if (req.query.country) clauses.push({ country: { contains: String(req.query.country) } });
   if (req.query.year) {
     const year = Number(req.query.year);
-    if (Number.isFinite(year)) clauses.push({ takenAt: { gte: new Date(year, 0, 1), lt: new Date(year + 1, 0, 1) } });
+    if (Number.isFinite(year)) {
+      const gte = new Date(year, 0, 1);
+      const lt = new Date(year + 1, 0, 1);
+      clauses.push({
+        OR: [
+          { takenAt: { gte, lt } },
+          { AND: [{ takenAt: null }, { uploadedAt: { gte, lt } }] }
+        ]
+      });
+    }
   }
   return { AND: clauses };
 };
@@ -26,48 +36,22 @@ export const mapPhotos = async (req, res) => {
 };
 
 export const mapCities = async (req, res) => {
-  const photos = await prisma.photo.findMany({
-    where: { AND: [visibilityFilter(req.user), { city: { not: null } }, { latitude: { not: null } }, { longitude: { not: null } }] },
-    select: { city: true, country: true, latitude: true, longitude: true }
-  });
-  const grouped = new Map();
-  photos.forEach((photo) => {
-    const key = `${photo.country || ''}-${photo.city}`;
-    const current = grouped.get(key) || { city: photo.city, country: photo.country, count: 0, latitude: photo.latitude, longitude: photo.longitude };
-    current.count += 1;
-    grouped.set(key, current);
-  });
-  success(res, [...grouped.values()].sort((a, b) => b.count - a.count));
+  const facets = await photoFilterFacets(req, { gpsOnly: true });
+  success(res, facets.cities);
 };
 
 export const mapCountries = async (req, res) => {
-  const photos = await prisma.photo.findMany({
-    where: { AND: [visibilityFilter(req.user), { country: { not: null } }, { latitude: { not: null } }, { longitude: { not: null } }] },
-    select: { country: true }
-  });
-  const counts = photos.reduce((acc, photo) => {
-    acc[photo.country] = (acc[photo.country] || 0) + 1;
-    return acc;
-  }, {});
-  success(res, Object.entries(counts).map(([country, count]) => ({ country, count })));
+  const facets = await photoFilterFacets(req, { gpsOnly: true });
+  success(res, facets.countries);
 };
 
 export const mapYears = async (req, res) => {
-  const photos = await prisma.photo.findMany({
-    where: { AND: [visibilityFilter(req.user), { latitude: { not: null } }, { longitude: { not: null } }] },
-    select: { takenAt: true, uploadedAt: true }
-  });
-  const counts = photos.reduce((acc, photo) => {
-    const date = photo.takenAt || photo.uploadedAt;
-    if (!date) return acc;
-    const year = date.getFullYear();
-    acc[year] = (acc[year] || 0) + 1;
-    return acc;
-  }, {});
-  const years = Object.entries(counts)
-    .map(([year, count]) => ({ year: Number(year), count }))
-    .sort((a, b) => b.year - a.year);
-  success(res, years);
+  const facets = await photoFilterFacets(req, { gpsOnly: true });
+  success(res, facets.years);
+};
+
+export const mapFilterOptions = async (req, res) => {
+  success(res, await photoFilterFacets(req, { gpsOnly: true }));
 };
 
 export const searchPlaces = async (req, res) => {

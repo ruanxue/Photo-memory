@@ -18,6 +18,7 @@ import {
   visibilityFilter
 } from '../services/photo.service.js';
 import { processUploadedFile } from '../services/upload.service.js';
+import { photoFilterFacets } from '../services/facet.service.js';
 
 const toInt = (value) => {
   const parsed = Number(value);
@@ -144,11 +145,13 @@ const buildPhotoWhere = (req) => {
   if (year) {
     const startMonth = month ? Number(month) - 1 : 0;
     const endMonth = month ? Number(month) : 12;
+    const gte = new Date(Number(year), startMonth, 1);
+    const lt = new Date(Number(year), endMonth, 1);
     clauses.push({
-      takenAt: {
-        gte: new Date(Number(year), startMonth, 1),
-        lt: new Date(Number(year), endMonth, 1)
-      }
+      OR: [
+        { takenAt: { gte, lt } },
+        { AND: [{ takenAt: null }, { uploadedAt: { gte, lt } }] }
+      ]
     });
   }
   return clauses.length === 1 ? clauses[0] : { AND: clauses };
@@ -330,58 +333,7 @@ export const listWallPhotos = async (req, res) => {
 };
 
 export const photoFilterOptions = async (req, res) => {
-  const visibleWhere = visibilityFilter(req.user);
-  const [countryPhotos, cityPhotos, datePhotos] = await Promise.all([
-    prisma.photo.findMany({
-      where: { AND: [visibleWhere, { country: { not: null } }] },
-      select: { country: true }
-    }),
-    prisma.photo.findMany({
-      where: { AND: [visibleWhere, { city: { not: null } }] },
-      select: { city: true, country: true }
-    }),
-    prisma.photo.findMany({
-      where: visibleWhere,
-      select: { takenAt: true, uploadedAt: true }
-    })
-  ]);
-
-  const countryCounts = countryPhotos.reduce((acc, photo) => {
-    const country = String(photo.country || '').trim();
-    if (!country) return acc;
-    acc[country] = (acc[country] || 0) + 1;
-    return acc;
-  }, {});
-
-  const cityGroups = new Map();
-  cityPhotos.forEach((photo) => {
-    const city = String(photo.city || '').trim();
-    if (!city) return;
-    const country = String(photo.country || '').trim();
-    const key = `${country}::${city}`;
-    const current = cityGroups.get(key) || { city, country, count: 0 };
-    current.count += 1;
-    cityGroups.set(key, current);
-  });
-
-  const yearCounts = datePhotos.reduce((acc, photo) => {
-    const date = photo.takenAt || photo.uploadedAt;
-    if (!date) return acc;
-    const year = date.getFullYear();
-    acc[year] = (acc[year] || 0) + 1;
-    return acc;
-  }, {});
-
-  success(res, {
-    countries: Object.entries(countryCounts)
-      .map(([country, count]) => ({ country, count }))
-      .sort((a, b) => b.count - a.count || a.country.localeCompare(b.country, 'zh-Hans-CN')),
-    cities: [...cityGroups.values()]
-      .sort((a, b) => b.count - a.count || a.city.localeCompare(b.city, 'zh-Hans-CN')),
-    years: Object.entries(yearCounts)
-      .map(([year, count]) => ({ year: Number(year), count }))
-      .sort((a, b) => b.year - a.year)
-  });
+  success(res, await photoFilterFacets(req));
 };
 
 export const getPhoto = async (req, res) => {

@@ -7,17 +7,17 @@
       </div>
 
       <div class="map-filter-panel">
-        <el-input v-model="filters.q" clearable placeholder="搜索照片标题" @keyup.enter="load" />
+        <el-input v-model="filters.q" clearable placeholder="搜索照片标题" @keyup.enter="applyFilters" />
         <el-select v-model="filters.country" filterable clearable placeholder="国家 / 地区" @change="handleCountryChange">
           <el-option v-for="country in countries" :key="country.country" :label="`${country.country} (${country.count})`" :value="country.country" />
         </el-select>
-        <el-select v-model="filters.city" filterable clearable placeholder="城市" @change="load">
-          <el-option v-for="city in filteredCities" :key="`${city.country || 'unknown'}-${city.city}`" :label="`${city.city} (${city.count})`" :value="city.city" />
+        <el-select v-model="filters.city" filterable clearable placeholder="城市" @change="handleCityChange">
+          <el-option v-for="city in cities" :key="`${city.country || 'unknown'}-${city.city}`" :label="`${city.city} (${city.count})`" :value="city.city" />
         </el-select>
-        <el-select v-model="filters.year" clearable placeholder="年份" @change="load">
+        <el-select v-model="filters.year" clearable placeholder="年份" @change="applyFilters">
           <el-option v-for="item in years" :key="item.year" :label="`${item.year} (${item.count})`" :value="item.year" />
         </el-select>
-        <el-button type="primary" @click="load">筛选</el-button>
+        <el-button type="primary" @click="applyFilters">筛选</el-button>
       </div>
 
       <div class="map-list" aria-label="地图照片列表">
@@ -90,14 +90,14 @@ const filters = reactive({
   year: route.query.year ? Number(route.query.year) : ''
 });
 
-const filteredCities = computed(() => {
-  if (!filters.country) return cities.value;
-  return cities.value.filter((city) => city.country === filters.country);
-});
 const mapScene = computed(() => mapSceneForPhotos(photos.value, filters.country));
 const mapPageZoom = computed(() => mapZoomForScene(settings.settings, mapScene.value, 'page'));
 let initialFocusTimer = null;
 let initialFocusRequestId = 0;
+
+const filterParams = () => Object.fromEntries(
+  Object.entries(filters).filter(([, value]) => value !== '' && value !== null && value !== undefined)
+);
 
 const clearInitialFocus = () => {
   initialFocusRequestId += 1;
@@ -130,17 +130,52 @@ const scheduleInitialFocus = () => {
 };
 
 const load = async () => {
-  const res = await request.get('/map/photos', { params: filters });
+  const res = await request.get('/map/photos', { params: filterParams() });
   photos.value = Array.isArray(res.data) ? res.data : [];
   selectedPhotoId.value = null;
   scheduleInitialFocus();
 };
 
-const handleCountryChange = () => {
-  if (filters.city && !filteredCities.value.some((city) => city.city === filters.city)) {
+const loadFilterOptions = async () => {
+  const res = await request.get('/map/filter-options', { params: filterParams() });
+  countries.value = res.data?.countries || [];
+  cities.value = res.data?.cities || [];
+  years.value = res.data?.years || [];
+
+  let changed = false;
+  if (filters.country && !countries.value.some((item) => item.country === filters.country)) {
+    filters.country = '';
     filters.city = '';
+    filters.year = '';
+    changed = true;
   }
-  load();
+  if (filters.city && !cities.value.some((item) => item.city === filters.city)) {
+    filters.city = '';
+    filters.year = '';
+    changed = true;
+  }
+  if (filters.year && !years.value.some((item) => Number(item.year) === Number(filters.year))) {
+    filters.year = '';
+    changed = true;
+  }
+  return changed;
+};
+
+const applyFilters = async () => {
+  const changed = await loadFilterOptions();
+  if (changed) await loadFilterOptions();
+  await load();
+};
+
+const handleCountryChange = () => {
+  filters.city = '';
+  filters.year = '';
+  applyFilters();
+};
+
+const handleCityChange = () => {
+  filters.year = '';
+  applyFilters();
 };
 
 const placeText = (photo) => {
@@ -168,16 +203,8 @@ const syncPhoto = (fresh) => {
   if (detailPhoto.value?.id === fresh.id) detailPhoto.value = { ...detailPhoto.value, ...fresh };
 };
 
-onMounted(async () => {
-  const [cityRes, countryRes, yearRes] = await Promise.all([
-    request.get('/map/cities'),
-    request.get('/map/countries'),
-    request.get('/map/years'),
-    load()
-  ]);
-  cities.value = cityRes.data;
-  countries.value = countryRes.data;
-  years.value = yearRes.data;
+onMounted(() => {
+  applyFilters();
 });
 
 onBeforeUnmount(() => {
