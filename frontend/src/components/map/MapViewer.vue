@@ -23,7 +23,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import L from 'leaflet';
-import { imageUrl } from '../../utils/image.js';
+import { photoImageUrl } from '../../utils/image.js';
 import { formatDate } from '../../utils/format.js';
 import { useSettingsStore } from '../../stores/settings.store.js';
 import { MAP_MIN_ZOOM, isBaiduMapProvider } from '../../map/adapters/core.js';
@@ -121,7 +121,7 @@ const renderMarkers = () => {
       if (props.showPopup) {
         marker.bindPopup(`
           <a href="/photos/${photo.id}" class="map-popup" aria-label="查看照片 ${escapeHtml(photo.title)}">
-            <img src="${escapeHtml(imageUrl(photo.thumbnailUrl))}" alt="${escapeHtml(photo.title)}" />
+            <img src="${escapeHtml(photoImageUrl(photo))}" alt="${escapeHtml(photo.title)}" />
             <strong>${escapeHtml(photo.title)}</strong>
             <span>${escapeHtml(photo.city || photo.locationName || '')} ${formatDate(photo.takenAt || photo.uploadedAt)}</span>
           </a>

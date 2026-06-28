@@ -207,7 +207,7 @@
             <el-select v-model="form.heroFixedPhotoId" :disabled="!selectedHeroPhotos.length" placeholder="请选择固定主图">
               <el-option v-for="photo in selectedHeroPhotos" :key="photo.id" :label="photo.title" :value="photo.id">
                 <div class="photo-option compact">
-                  <img :src="imageUrl(photo.thumbnailUrl || photo.mediumUrl)" :alt="photo.title" />
+                  <img :src="photoImageUrl(photo)" :alt="photo.title" @error="handleImageError" />
                   <span>{{ photo.title }}</span>
                 </div>
               </el-option>
@@ -231,7 +231,7 @@
           >
             <el-option v-for="photo in heroOptions" :key="photo.id" :label="photo.title" :value="photo.id">
               <div class="photo-option">
-                <img :src="imageUrl(photo.thumbnailUrl || photo.mediumUrl)" :alt="photo.title" />
+                <img :src="photoImageUrl(photo)" :alt="photo.title" @error="handleImageError" />
                 <div>
                   <strong>{{ photo.title }}</strong>
                   <small>{{ photo.city || photo.locationName || '未知地点' }} · {{ formatDate(photo.takenAt || photo.uploadedAt) }}</small>
@@ -242,7 +242,7 @@
         </el-form-item>
         <div v-if="selectedHeroPhotos.length" class="hero-preview-grid">
           <article v-for="photo in selectedHeroPhotos" :key="photo.id" :class="{ active: photo.id === form.heroFixedPhotoId }">
-            <img :src="imageUrl(photo.thumbnailUrl || photo.mediumUrl)" :alt="photo.title" />
+            <img :src="photoImageUrl(photo)" :alt="photo.title" @error="handleImageError" />
             <span>{{ photo.title }}</span>
           </article>
         </div>
@@ -465,7 +465,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { adminApi } from '../../api/admin.api.js';
 import { defaultCustomThemeColors, useSettingsStore } from '../../stores/settings.store.js';
-import { imageUrl } from '../../utils/image.js';
+import { handleImageError, photoImageUrl } from '../../utils/image.js';
 import { formatDate } from '../../utils/format.js';
 
 const settingsStore = useSettingsStore();

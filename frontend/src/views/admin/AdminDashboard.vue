@@ -18,7 +18,7 @@
       <div class="surface panel">
         <h2>热门照片</h2>
         <div v-for="photo in stats.popularPhotos || []" :key="photo.id" class="rank-row">
-          <img :src="photo.thumbnailUrl" />
+          <img :src="photoImageUrl(photo)" @error="handleImageError" />
           <span>{{ photo.title }}</span>
           <small>{{ photo.viewCount }} 浏览</small>
         </div>
@@ -35,7 +35,7 @@
       <div class="surface panel">
         <h2>最近上传</h2>
         <div v-for="photo in stats.recentPhotos || []" :key="photo.id" class="rank-row">
-          <img :src="photo.thumbnailUrl" />
+          <img :src="photoImageUrl(photo)" @error="handleImageError" />
           <span>{{ photo.title }}</span>
           <small>{{ formatDate(photo.createdAt) }}</small>
         </div>
@@ -48,6 +48,7 @@
 import { onMounted, ref } from 'vue';
 import { adminApi } from '../../api/admin.api.js';
 import { formatDate } from '../../utils/format.js';
+import { handleImageError, photoImageUrl } from '../../utils/image.js';
 
 const stats = ref({});
 onMounted(async () => {

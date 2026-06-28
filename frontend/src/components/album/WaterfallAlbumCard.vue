@@ -19,7 +19,7 @@
         draggable="false"
         @dragstart.prevent
         @load="markImageLoaded"
-        @error="markImageLoaded"
+        @error="handleCoverImageError"
       />
       <span class="album-count">
         <el-icon><Collection /></el-icon>
@@ -39,7 +39,7 @@
 <script setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { Collection, Top } from '@element-plus/icons-vue';
-import { albumCover } from '../../utils/image.js';
+import { albumCover, handleImageError } from '../../utils/image.js';
 import { useSettingsStore } from '../../stores/settings.store.js';
 
 const props = defineProps({
@@ -82,6 +82,11 @@ const markImageLoaded = () => {
   if (imageLoaded.value) return;
   imageLoaded.value = true;
   emit('loaded', props.album);
+};
+
+const handleCoverImageError = (event) => {
+  handleImageError(event);
+  markImageLoaded();
 };
 
 const checkCachedImage = async () => {

@@ -6,6 +6,8 @@ import { requireAdmin } from '../middlewares/admin.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import {
   batchPhotos,
+  batchCacheExternalPhotos,
+  cacheExternalPhoto,
   createAlbum,
   createCategory,
   createTag,
@@ -24,6 +26,7 @@ import {
   listPhotos,
   listTags,
   listUsers,
+  markExternalPhotoFailed,
   mergeTags,
   resetUserPassword,
   statistics,
@@ -55,6 +58,9 @@ router.put('/users/:id/password', asyncHandler(resetUserPassword));
 
 router.get('/photos', asyncHandler(listPhotos));
 router.put('/photos/batch', asyncHandler(batchPhotos));
+router.post('/photos/external/cache', asyncHandler(batchCacheExternalPhotos));
+router.post('/photos/:id/external-failed', asyncHandler(markExternalPhotoFailed));
+router.post('/photos/:id/cache-external', asyncHandler(cacheExternalPhoto));
 router.put('/photos/:id', asyncHandler(updatePhoto));
 router.delete('/photos/:id', asyncHandler(deletePhoto));
 router.put('/photos/:id/feature', asyncHandler(featurePhoto));

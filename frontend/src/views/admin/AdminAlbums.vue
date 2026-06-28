@@ -7,7 +7,7 @@
     <el-table :data="albums" class="surface admin-album-table" scrollbar-always-on table-layout="auto">
       <el-table-column prop="id" label="ID" width="70" />
       <el-table-column label="卡片头图" width="120">
-        <template #default="{ row }"><img class="album-thumb" :src="albumCover(row)" :alt="row.title" /></template>
+        <template #default="{ row }"><img class="album-thumb" :src="albumCover(row)" :alt="row.title" @error="handleImageError" /></template>
       </el-table-column>
       <el-table-column prop="title" label="标题" min-width="230" />
       <el-table-column label="作者" min-width="160"><template #default="{ row }">{{ row.user?.nickname || row.user?.username }}</template></el-table-column>
@@ -60,7 +60,7 @@ import { adminApi } from '../../api/admin.api.js';
 import { albumApi } from '../../api/album.api.js';
 import AlbumCoverSelector from '../../components/album/AlbumCoverSelector.vue';
 import VisibilityToggleButton from '../../components/common/VisibilityToggleButton.vue';
-import { albumCover } from '../../utils/image.js';
+import { albumCover, handleImageError } from '../../utils/image.js';
 
 const albums = ref([]);
 const dialogVisible = ref(false);

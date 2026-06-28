@@ -21,7 +21,7 @@
       >
         <div class="photo-rank">{{ index + 1 }}</div>
         <div class="photo-cover">
-          <img :src="imageUrl(photo.thumbnailUrl || photo.mediumUrl || photo.originalUrl)" :alt="photo.title" draggable="false" />
+          <img :src="photoImageUrl(photo)" :alt="photo.title" draggable="false" @error="handleImageError" />
         </div>
 
         <div class="photo-sort-body">
@@ -60,7 +60,7 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue';
-import { imageUrl } from '../../utils/image.js';
+import { handleImageError, photoImageUrl } from '../../utils/image.js';
 
 const props = defineProps({
   photos: { type: Array, default: () => [] },

@@ -8,7 +8,7 @@
       </button>
       <div class="container detail-layout" :class="{ 'detail-layout-simple': !hasTechnicalSide }">
         <div class="detail-photo">
-          <img :src="imageUrl(photo.mediumUrl || photo.originalUrl)" :alt="photo.title" />
+          <img :src="photoImageUrl(photo, ['mediumUrl', 'originalUrl', 'thumbnailUrl'])" :alt="photo.title" @error="handleImageError" />
         </div>
 
         <aside class="detail-side">
@@ -140,7 +140,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { ArrowLeft } from '@element-plus/icons-vue';
 import { photoApi } from '../../api/photo.api.js';
-import { imageUrl, isExternalPhoto } from '../../utils/image.js';
+import { handleImageError, isExternalPhoto, photoImageUrl } from '../../utils/image.js';
 import { hasExifInfo, hasGpsInfo } from '../../utils/exif.js';
 import { mapSceneForPhoto, mapZoomForScene } from '../../utils/map.js';
 import { readGuestProfile, saveGuestProfile } from '../../utils/guest.js';

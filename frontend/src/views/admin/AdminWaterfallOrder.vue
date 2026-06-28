@@ -47,7 +47,7 @@
           @dragend="endDrag"
         >
           <div class="order-rank">{{ index + 1 }}</div>
-          <img class="order-thumb" :src="item.thumb" :alt="item.title" draggable="false" />
+          <img class="order-thumb" :src="item.thumb" :alt="item.title" draggable="false" @error="handleImageError" />
 
           <div class="order-body">
             <div class="order-title-line">
@@ -86,7 +86,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { adminApi } from '../../api/admin.api.js';
-import { albumCover, imageUrl } from '../../utils/image.js';
+import { albumCover, handleImageError, photoImageUrl } from '../../utils/image.js';
 
 const topItems = ref([]);
 const loading = ref(false);
@@ -109,7 +109,7 @@ const loadAllPhotos = async () => {
 };
 
 const albumThumb = (album) => albumCover(album);
-const photoThumb = (photo) => imageUrl(photo.thumbnailUrl || photo.mediumUrl || photo.originalUrl);
+const photoThumb = (photo) => photoImageUrl(photo);
 const isPublic = (value) => value === 'public';
 const isNotDeleted = (item) => item.status !== 'deleted';
 

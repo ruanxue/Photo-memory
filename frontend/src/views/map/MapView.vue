@@ -29,7 +29,7 @@
           type="button"
           @click="focusPhoto(photo)"
         >
-          <img :src="imageUrl(photo.thumbnailUrl || photo.mediumUrl || photo.originalUrl)" :alt="photo.title" />
+          <img :src="photoImageUrl(photo)" :alt="photo.title" @error="handleImageError" />
           <span class="map-photo-title">{{ photo.title }}</span>
           <span class="map-photo-meta">
             <span class="map-photo-place">{{ placeText(photo) }}</span>
@@ -67,7 +67,7 @@ import { useRoute } from 'vue-router';
 import request from '../../api/request.js';
 import MapViewer from '../../components/map/MapViewer.vue';
 import PhotoDetailSheet from '../../components/photo/PhotoDetailSheet.vue';
-import { imageUrl } from '../../utils/image.js';
+import { handleImageError, photoImageUrl } from '../../utils/image.js';
 import { formatDate } from '../../utils/format.js';
 import { mapSceneForPhoto, mapSceneForPhotos, mapZoomForScene } from '../../utils/map.js';
 import { useSettingsStore } from '../../stores/settings.store.js';

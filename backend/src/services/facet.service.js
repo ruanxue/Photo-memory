@@ -16,7 +16,10 @@ const hasFilter = (omit, key) => !omit.includes(key);
 
 export const buildFacetPhotoWhere = (req, { gpsOnly = false, omit = [] } = {}) => {
   const q = String(req.query.q || '').trim();
-  const clauses = [visibilityFilter(req.user)];
+  const clauses = [
+    visibilityFilter(req.user),
+    { OR: [{ externalStatus: null }, { externalStatus: { not: 'failed' } }] }
+  ];
   const { albumId, categoryId, tagId, year, month, city, country, pinned, featured, ids } = req.query;
 
   if (q && hasFilter(omit, 'q')) {

@@ -201,6 +201,7 @@
           :src="urlForm.imageUrl"
           alt="外链图片预览"
           draggable="false"
+          @error="handleImageError"
         />
       </template>
 
@@ -223,6 +224,7 @@ import { useSettingsStore } from '../../stores/settings.store.js';
 import EmptyState from '../common/EmptyState.vue';
 import TagSelect from '../common/TagSelect.vue';
 import PhotoLocationEditor from '../map/PhotoLocationEditor.vue';
+import { handleImageError } from '../../utils/image.js';
 
 const emit = defineEmits(['uploaded']);
 const settings = useSettingsStore();

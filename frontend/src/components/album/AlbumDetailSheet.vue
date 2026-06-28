@@ -26,7 +26,7 @@
 
           <div v-if="album.photos?.length" class="album-photos">
             <figure v-for="photo in album.photos" :key="photo.id">
-              <img :src="imageUrl(photo.mediumUrl || photo.originalUrl || photo.thumbnailUrl)" :alt="photo.title" loading="lazy" />
+              <img :src="photoImageUrl(photo, ['mediumUrl', 'originalUrl', 'thumbnailUrl'])" :alt="photo.title" loading="lazy" @error="handleImageError" />
               <figcaption>
                 <strong>{{ photo.title }}</strong>
                 <span>{{ formatDate(photo.takenAt || photo.uploadedAt) }}<template v-if="photo.city || photo.locationName"> · {{ photo.city || photo.locationName }}</template></span>
@@ -44,7 +44,7 @@
 import { onBeforeUnmount, ref, watch } from 'vue';
 import { Close } from '@element-plus/icons-vue';
 import { albumApi } from '../../api/album.api.js';
-import { imageUrl } from '../../utils/image.js';
+import { handleImageError, photoImageUrl } from '../../utils/image.js';
 import { formatDate } from '../../utils/format.js';
 import { setPageScrollLocked, unlockPageScroll } from '../../utils/scrollLock.js';
 import LoadingState from '../common/LoadingState.vue';

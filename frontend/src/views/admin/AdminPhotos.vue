@@ -15,9 +15,10 @@
         <el-option label="设为精选" value="feature" />
         <el-option label="取消精选" value="unfeature" />
         <el-option label="打标签" value="tags" />
+        <el-option label="缓存外链到本地" value="external-cache" />
       </el-select>
       <TagSelect v-if="batch.action === 'tags'" v-model="batch.tags" placeholder="选择标签" />
-      <el-button @click="runBatch">执行</el-button>
+      <el-button :loading="batchBusy" @click="runBatch">执行</el-button>
       <el-button type="primary" @click="load">搜索</el-button>
     </div>
     <el-table :data="photos" class="surface admin-photo-table" scrollbar-always-on table-layout="auto" @selection-change="selection = $event">
@@ -25,7 +26,7 @@
       <el-table-column label="图" width="104">
         <template #default="{ row }">
           <button class="thumb-button" type="button" :aria-label="`查看 ${row.title}`" @click="openDetail(row)">
-            <img class="table-thumb" :src="row.thumbnailUrl" :alt="row.title" />
+            <img class="table-thumb" :src="photoImageUrl(row)" :alt="row.title" @error="handleAdminImageError($event, row)" />
           </button>
         </template>
       </el-table-column>
@@ -42,7 +43,9 @@
       </el-table-column>
       <el-table-column label="来源" min-width="96">
         <template #default="{ row }">
-          <span class="source-badge" :class="{ external: isExternalPhoto(row) }">{{ isExternalPhoto(row) ? '外链' : '本地' }}</span>
+          <span class="source-badge" :class="sourceBadgeClass(row)" :title="row.externalError || ''">
+            {{ externalStatusText(row) }}
+          </span>
         </template>
       </el-table-column>
       <el-table-column label="状态" min-width="190">
@@ -60,9 +63,10 @@
           </div>
         </template>
       </el-table-column>
-      <el-table-column label="操作" min-width="160">
+      <el-table-column label="操作" min-width="260">
         <template #default="{ row }">
           <div class="action-buttons">
+            <el-button v-if="isExternalPhoto(row)" size="small" :loading="externalBusyId === `cache-${row.id}`" @click="cacheExternal(row)">缓存</el-button>
             <el-button size="small" @click="openEdit(row)">编辑</el-button>
             <el-button size="small" type="danger" @click="remove(row)">删除</el-button>
           </div>
@@ -141,7 +145,7 @@ import Pagination from '../../components/common/Pagination.vue';
 import VisibilityToggleButton from '../../components/common/VisibilityToggleButton.vue';
 import TagSelect from '../../components/common/TagSelect.vue';
 import PhotoLocationEditor from '../../components/map/PhotoLocationEditor.vue';
-import { isExternalPhoto } from '../../utils/image.js';
+import { externalStatusLevel, externalStatusText, handleImageError, isExternalPhoto, photoImageUrl } from '../../utils/image.js';
 
 const router = useRouter();
 const photos = ref([]);
@@ -159,7 +163,10 @@ const batch = reactive({ action: '', tags: [] });
 const form = reactive({});
 const visibilityBusyId = ref(null);
 const statusBusyId = ref('');
+const externalBusyId = ref('');
+const batchBusy = ref(false);
 const listStateKey = 'photo-memory.admin-photos.state';
+const externalFailingIds = new Set();
 
 const locationModel = computed({
   get: () => ({
@@ -295,18 +302,58 @@ const feature = async (row) => {
     statusBusyId.value = '';
   }
 };
+const sourceBadgeClass = (row) => ({
+  external: isExternalPhoto(row),
+  [`status-${externalStatusLevel(row)}`]: true
+});
+const handleAdminImageError = async (event, row) => {
+  handleImageError(event);
+  if (!isExternalPhoto(row) || row.externalStatus === 'failed' || externalFailingIds.has(row.id)) return;
+  externalFailingIds.add(row.id);
+  try {
+    const res = await adminApi.markExternalPhotoFailed(row.id, { message: '后台照片列表缩略图加载失败' });
+    Object.assign(row, res.data || {});
+    photos.value = [row, ...photos.value.filter((item) => item.id !== row.id)];
+  } catch {
+    // 图片已经用占位图兜底，标记失败不打断页面浏览。
+  } finally {
+    externalFailingIds.delete(row.id);
+  }
+};
+const cacheExternal = async (row) => {
+  await ElMessageBox.confirm(`确定把「${row.title}」缓存到本地吗？缓存后会使用服务器本地图片。`, '缓存外链图片', { type: 'warning' });
+  externalBusyId.value = `cache-${row.id}`;
+  try {
+    const res = await adminApi.cacheExternalPhoto(row.id);
+    Object.assign(row, res.data || {});
+    ElMessage.success('已缓存到本地');
+  } finally {
+    externalBusyId.value = '';
+  }
+};
 const remove = async (row) => { await ElMessageBox.confirm(`确定删除「${row.title}」吗？`, '删除照片', { type: 'warning' }); await adminApi.deletePhoto(row.id); load(); };
 const runBatch = async () => {
+  if (!batch.action) return ElMessage.warning('请选择批量操作');
   if (!selection.value.length) return ElMessage.warning('请选择照片');
   const ids = selection.value.map((item) => item.id);
-  if (batch.action === 'delete') await adminApi.batchPhotos({ ids, action: 'delete' });
-  if (batch.action === 'visibility-public') await adminApi.batchPhotos({ ids, action: 'visibility', visibility: 'public' });
-  if (batch.action === 'visibility-private') await adminApi.batchPhotos({ ids, action: 'visibility', visibility: 'private' });
-  if (batch.action === 'feature') await adminApi.batchPhotos({ ids, action: 'feature', isFeatured: true });
-  if (batch.action === 'unfeature') await adminApi.batchPhotos({ ids, action: 'feature', isFeatured: false });
-  if (batch.action === 'tags') await adminApi.batchPhotos({ ids, action: 'tags', tags: batch.tags });
-  ElMessage.success('批量操作完成');
-  load();
+  batchBusy.value = true;
+  try {
+    if (batch.action === 'delete') await adminApi.batchPhotos({ ids, action: 'delete' });
+    if (batch.action === 'visibility-public') await adminApi.batchPhotos({ ids, action: 'visibility', visibility: 'public' });
+    if (batch.action === 'visibility-private') await adminApi.batchPhotos({ ids, action: 'visibility', visibility: 'private' });
+    if (batch.action === 'feature') await adminApi.batchPhotos({ ids, action: 'feature', isFeatured: true });
+    if (batch.action === 'unfeature') await adminApi.batchPhotos({ ids, action: 'feature', isFeatured: false });
+    if (batch.action === 'tags') await adminApi.batchPhotos({ ids, action: 'tags', tags: batch.tags });
+    if (batch.action === 'external-cache') {
+      await ElMessageBox.confirm('确定把选中的外链图片缓存到本地吗？失败项会保留外链状态。', '批量缓存外链', { type: 'warning' });
+      const res = await adminApi.batchCacheExternalPhotos({ ids });
+      ElMessage.success(`缓存完成：成功 ${res.data.cached}，失败 ${res.data.failed}`);
+    }
+    if (batch.action !== 'external-cache') ElMessage.success('批量操作完成');
+    load();
+  } finally {
+    batchBusy.value = false;
+  }
 };
 onMounted(async () => {
   const restoreY = restoreListState();
@@ -449,5 +496,25 @@ onMounted(async () => {
   color: var(--theme-tag-text);
   border-color: var(--theme-tag-border);
   background: var(--theme-tag-bg);
+}
+.source-badge.status-danger {
+  color: var(--theme-danger-text, #fca5a5);
+  border-color: var(--theme-danger-border, rgba(248, 113, 113, 0.55));
+  background: var(--theme-danger-soft, rgba(127, 29, 29, 0.22));
+}
+.source-badge.status-warning {
+  color: var(--theme-warning-text, #f59e0b);
+  border-color: var(--theme-warning-border, rgba(245, 158, 11, 0.5));
+  background: var(--theme-warning-soft, rgba(245, 158, 11, 0.14));
+}
+.source-badge.status-success {
+  color: var(--theme-success-text, #86efac);
+  border-color: var(--theme-success-border, rgba(74, 222, 128, 0.42));
+  background: var(--theme-success-soft, rgba(22, 101, 52, 0.18));
+}
+.source-badge.status-muted {
+  color: var(--theme-muted-strong);
+  border-color: var(--theme-line);
+  background: var(--theme-surface-soft);
 }
 </style>

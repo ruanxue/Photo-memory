@@ -41,6 +41,11 @@ model Photo {
   originalUrl          String
   mediumUrl            String
   thumbnailUrl         String
+  externalStatus       String?
+  externalCheckedAt    DateTime?
+  externalError        String?
+  externalSourceUrl    String?
+  externalCachedAt     DateTime?
   filename             String
   mimeType             String
   fileSize             Int
@@ -99,6 +104,7 @@ model Photo {
   @@index([city, status])
   @@index([country, status])
   @@index([latitude, longitude, status])
+  @@index([externalStatus])
 }
 
 model Album {

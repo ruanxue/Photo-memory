@@ -21,6 +21,7 @@
             :alt="current?.title"
             :width="current?.width || undefined"
             :height="current?.height || undefined"
+            @error="handleImageError"
             @click.stop
           />
         </div>
@@ -47,7 +48,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { ArrowLeft, ArrowRight } from '@element-plus/icons-vue';
 import { gsap } from 'gsap';
-import { imageUrl } from '../../utils/image.js';
+import { handleImageError, photoImageUrl } from '../../utils/image.js';
 import { setPageScrollLocked, unlockPageScroll } from '../../utils/scrollLock.js';
 import PhotoDetailSheet from './PhotoDetailSheet.vue';
 
@@ -64,8 +65,8 @@ const emit = defineEmits(['close', 'update:index']);
 
 const current = computed(() => props.photos[props.index]);
 const currentId = computed(() => current.value?.id);
-const previewSrc = computed(() => imageUrl(current.value?.thumbnailUrl || current.value?.mediumUrl || current.value?.originalUrl));
-const fullSrc = computed(() => imageUrl(current.value?.originalUrl || current.value?.mediumUrl || current.value?.thumbnailUrl));
+const previewSrc = computed(() => photoImageUrl(current.value, ['thumbnailUrl', 'mediumUrl', 'originalUrl']));
+const fullSrc = computed(() => photoImageUrl(current.value, ['originalUrl', 'mediumUrl', 'thumbnailUrl']));
 const lightboxRef = ref(null);
 const backdropRef = ref(null);
 const photoRef = ref(null);
@@ -148,8 +149,8 @@ const loadFullImage = (id) => {
   if (preloader.complete && preloader.naturalWidth > 0) swap();
 };
 
-const photoPreviewUrl = (photo) => imageUrl(photo?.thumbnailUrl || photo?.mediumUrl || photo?.originalUrl);
-const photoFullUrl = (photo) => imageUrl(photo?.originalUrl || photo?.mediumUrl || photo?.thumbnailUrl);
+const photoPreviewUrl = (photo) => photoImageUrl(photo, ['thumbnailUrl', 'mediumUrl', 'originalUrl']);
+const photoFullUrl = (photo) => photoImageUrl(photo, ['originalUrl', 'mediumUrl', 'thumbnailUrl']);
 
 const warmImage = (source) => {
   if (!source) return;

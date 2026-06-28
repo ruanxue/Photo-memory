@@ -99,6 +99,12 @@ img {
   max-width: 100%;
 }
 
+img.image-fallback {
+  background:
+    linear-gradient(135deg, var(--theme-surface-soft), color-mix(in srgb, var(--theme-surface) 70%, var(--theme-muted) 30%));
+  object-fit: cover;
+}
+
 .container {
   width: min(1480px, calc(100% - 28px));
   margin: 0 auto;

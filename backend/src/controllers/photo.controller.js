@@ -159,10 +159,12 @@ const buildPhotoWhere = (req) => {
 
 const buildWallPhotoWhere = (req) => {
   const baseWhere = buildPhotoWhere(req);
-  if (toBool(req.query.includeAlbumPhotos)) return baseWhere;
+  const notFailedExternal = { OR: [{ externalStatus: null }, { externalStatus: { not: 'failed' } }] };
+  if (toBool(req.query.includeAlbumPhotos)) return { AND: [baseWhere, notFailedExternal] };
   return {
     AND: [
       baseWhere,
+      notFailedExternal,
       {
         OR: [
           { albumId: null },
@@ -234,6 +236,11 @@ const normalizeExternalPhotoBody = (body) => {
     originalUrl,
     mediumUrl,
     thumbnailUrl,
+    externalStatus: 'unchecked',
+    externalCheckedAt: null,
+    externalError: null,
+    externalSourceUrl: originalUrl,
+    externalCachedAt: null,
     filename: filenameFromUrl(originalUrl),
     mimeType: mimeFromUrl(originalUrl),
     fileSize: 0,
@@ -299,6 +306,11 @@ const updatePhotoData = (body) => {
       throw err;
     }
     data[field] = value;
+    data.externalStatus = 'unchecked';
+    data.externalCheckedAt = null;
+    data.externalError = null;
+    if (field === 'originalUrl') data.externalSourceUrl = value;
+    data.externalCachedAt = null;
   });
   if (Object.prototype.hasOwnProperty.call(body, 'takenAt')) data.takenAt = parseDate(body.takenAt) || null;
   if (Object.prototype.hasOwnProperty.call(body, 'isPinned')) {

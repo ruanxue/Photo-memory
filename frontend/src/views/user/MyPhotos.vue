@@ -28,7 +28,7 @@
     <el-table :data="photos" class="surface user-photo-table" scrollbar-always-on table-layout="auto" @selection-change="selection = $event">
       <el-table-column type="selection" width="46" />
       <el-table-column label="照片" width="104">
-        <template #default="{ row }"><img class="table-thumb" :src="row.thumbnailUrl" :alt="row.title" /></template>
+        <template #default="{ row }"><img class="table-thumb" :src="photoImageUrl(row)" :alt="row.title" @error="handleImageError" /></template>
       </el-table-column>
       <el-table-column prop="title" label="标题" min-width="230" />
       <el-table-column label="可见性" min-width="126">
@@ -131,7 +131,7 @@ import Pagination from '../../components/common/Pagination.vue';
 import VisibilityToggleButton from '../../components/common/VisibilityToggleButton.vue';
 import TagSelect from '../../components/common/TagSelect.vue';
 import PhotoLocationEditor from '../../components/map/PhotoLocationEditor.vue';
-import { isExternalPhoto } from '../../utils/image.js';
+import { handleImageError, isExternalPhoto, photoImageUrl } from '../../utils/image.js';
 
 const photos = ref([]);
 const albums = ref([]);

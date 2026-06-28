@@ -29,7 +29,7 @@ export const getAdminStatistics = async () => {
       where: { status: 'normal' },
       orderBy: [{ viewCount: 'desc' }],
       take: 8,
-      select: { id: true, title: true, thumbnailUrl: true, viewCount: true }
+      select: { id: true, title: true, thumbnailUrl: true, externalStatus: true, viewCount: true }
     }),
     prisma.tag.findMany({ orderBy: [{ photoCount: 'desc' }], take: 12 }),
     prisma.category.findMany({ orderBy: [{ photoCount: 'desc' }] }),
@@ -37,7 +37,7 @@ export const getAdminStatistics = async () => {
       where: { status: 'normal' },
       orderBy: [{ createdAt: 'desc' }],
       take: 8,
-      select: { id: true, title: true, thumbnailUrl: true, createdAt: true }
+      select: { id: true, title: true, thumbnailUrl: true, externalStatus: true, createdAt: true }
     })
   ]);
 

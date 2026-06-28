@@ -53,7 +53,7 @@ import request from '../../api/request.js';
 import { albumApi } from '../../api/album.api.js';
 import { photoApi } from '../../api/photo.api.js';
 import { tagApi } from '../../api/tag.api.js';
-import { imageUrl } from '../../utils/image.js';
+import { imageUrl, photoImageUrl } from '../../utils/image.js';
 import { useSettingsStore } from '../../stores/settings.store.js';
 import FloatingDock from '../../components/common/FloatingDock.vue';
 import PhotoWaterfall from '../../components/photo/PhotoWaterfall.vue';
@@ -82,7 +82,8 @@ let wallObserver = null;
 const fallbackHero = 'https://picsum.photos/seed/photo-memory-hero/2200/1400';
 const heroImage = computed(() => {
   if (!heroReady.value) return '';
-  return imageUrl(heroPhoto.value?.mediumUrl || heroPhoto.value?.originalUrl || fallbackHero);
+  if (!heroPhoto.value || heroPhoto.value.externalStatus === 'failed') return imageUrl(fallbackHero);
+  return photoImageUrl(heroPhoto.value, ['mediumUrl', 'originalUrl', 'thumbnailUrl']);
 });
 const heroStyle = computed(() => (heroImage.value ? { backgroundImage: `url(${heroImage.value})` } : {}));
 const heroTitleLines = computed(() => {

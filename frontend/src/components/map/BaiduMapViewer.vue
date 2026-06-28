@@ -10,7 +10,7 @@
 
 <script setup>
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { imageUrl } from '../../utils/image.js';
+import { photoImageUrl } from '../../utils/image.js';
 import { formatDate } from '../../utils/format.js';
 import { useSettingsStore } from '../../stores/settings.store.js';
 import {
@@ -65,7 +65,7 @@ const markerIcon = (active = false) => {
 
 const popupHtml = (photo) => `
   <a href="/photos/${photo.id}" class="baidu-map-card-popup" aria-label="查看照片 ${escapeHtml(photo.title)}">
-    <img src="${escapeHtml(imageUrl(photo.thumbnailUrl || photo.mediumUrl || photo.originalUrl))}" alt="${escapeHtml(photo.title)}" />
+    <img src="${escapeHtml(photoImageUrl(photo))}" alt="${escapeHtml(photo.title)}" />
     <strong>${escapeHtml(photo.title)}</strong>
     <span>${escapeHtml(photo.city || photo.locationName || '')} ${formatDate(photo.takenAt || photo.uploadedAt)}</span>
   </a>

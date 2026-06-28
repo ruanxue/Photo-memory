@@ -60,7 +60,7 @@ import { Flip } from 'gsap/Flip';
 import { ElMessage } from 'element-plus';
 import { albumApi } from '../../api/album.api.js';
 import { useSettingsStore } from '../../stores/settings.store.js';
-import { albumCover, imageUrl } from '../../utils/image.js';
+import { albumCover, photoImageUrl } from '../../utils/image.js';
 import LoadingState from '../common/LoadingState.vue';
 import EmptyState from '../common/EmptyState.vue';
 import WaterfallCreditCard from '../common/WaterfallCreditCard.vue';
@@ -288,11 +288,10 @@ const wait = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
 const imageForItem = (item) => {
   if (!item) return '';
   if (item.type === 'album') return albumCover(item.data);
-  const photo = item.data;
   const source = props.variant === 'wall'
-    ? (photo.mediumUrl || photo.originalUrl || photo.thumbnailUrl)
-    : (photo.thumbnailUrl || photo.mediumUrl || photo.originalUrl);
-  return imageUrl(source);
+    ? ['mediumUrl', 'originalUrl', 'thumbnailUrl']
+    : ['thumbnailUrl', 'mediumUrl', 'originalUrl'];
+  return photoImageUrl(item.data, source);
 };
 
 const preloadImage = (url) => {

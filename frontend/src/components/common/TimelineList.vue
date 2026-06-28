@@ -13,7 +13,7 @@
           </div>
           <div class="day-photos">
             <router-link v-for="photo in day.photos.slice(0, 4)" :key="photo.id" :to="dayPhotosTo(day)" class="timeline-photo-link">
-              <img :src="photo.thumbnailUrl" :alt="photo.title" />
+              <img :src="photoImageUrl(photo)" :alt="photo.title" @error="handleImageError" />
             </router-link>
           </div>
         </article>
@@ -23,6 +23,8 @@
 </template>
 
 <script setup>
+import { handleImageError, photoImageUrl } from '../../utils/image.js';
+
 defineProps({
   timeline: { type: Array, default: () => [] }
 });

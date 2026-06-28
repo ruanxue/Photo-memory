@@ -14,6 +14,11 @@ import {
   refreshPhotoRelatedCounters,
   setPhotoTags
 } from '../services/photo.service.js';
+import {
+  cacheExternalPhotoToLocal,
+  externalPhotoUrls,
+  isExternalPhotoRecord
+} from '../services/external-image.service.js';
 
 const toBool = (value) => value === true || value === 'true' || value === '1';
 const toInt = (value) => {
@@ -97,6 +102,11 @@ const adminPhotoData = (body) => {
       throw err;
     }
     data[field] = value;
+    data.externalStatus = 'unchecked';
+    data.externalCheckedAt = null;
+    data.externalError = null;
+    if (field === 'originalUrl') data.externalSourceUrl = value;
+    data.externalCachedAt = null;
   });
   if (Object.prototype.hasOwnProperty.call(body, 'takenAt')) data.takenAt = parseDate(body.takenAt) || null;
   if (Object.prototype.hasOwnProperty.call(body, 'isPinned')) {
@@ -215,10 +225,39 @@ export const listPhotos = async (req, res) => {
   if (req.query.visibility) clauses.push({ visibility: req.query.visibility });
   if (req.query.status) clauses.push({ status: req.query.status });
   const where = { AND: clauses };
-  const [items, total] = await Promise.all([
-    prisma.photo.findMany({ where, include: photoInclude, orderBy: buildPhotoOrder(req.query.sort), skip, take }),
+  const abnormalStatuses = ['failed', 'partial'];
+  const abnormalWhere = { AND: [...clauses, { externalStatus: { in: abnormalStatuses } }] };
+  const restWhere = {
+    AND: [
+      ...clauses,
+      { OR: [{ externalStatus: null }, { externalStatus: { notIn: abnormalStatuses } }] }
+    ]
+  };
+  const orderBy = buildPhotoOrder(req.query.sort);
+  const [abnormalTotal, total] = await Promise.all([
+    prisma.photo.count({ where: abnormalWhere }),
     prisma.photo.count({ where })
   ]);
+  const items = [];
+  if (skip < abnormalTotal) {
+    const abnormalTake = Math.min(take, abnormalTotal - skip);
+    items.push(...await prisma.photo.findMany({
+      where: abnormalWhere,
+      include: photoInclude,
+      orderBy: [{ externalStatus: 'asc' }, ...orderBy],
+      skip,
+      take: abnormalTake
+    }));
+  }
+  if (items.length < take) {
+    items.push(...await prisma.photo.findMany({
+      where: restWhere,
+      include: photoInclude,
+      orderBy,
+      skip: Math.max(0, skip - abnormalTotal),
+      take: take - items.length
+    }));
+  }
   success(res, items, 'ok', buildPageMeta(total, page, pageSize));
 };
 
@@ -303,6 +342,75 @@ export const batchPhotos = async (req, res) => {
   success(res, null, '批量操作已完成');
 };
 
+const externalPhotoWhere = (ids = []) => ({
+  status: { not: 'deleted' },
+  ...(ids.length ? { id: { in: ids } } : {}),
+  OR: [
+    { mimeType: 'image/external-url' },
+    { fileSize: 0 },
+    { originalUrl: { startsWith: 'http' } },
+    { mediumUrl: { startsWith: 'http' } },
+    { thumbnailUrl: { startsWith: 'http' } }
+  ]
+});
+
+const externalPhotoIdsFromRequest = async (req) => {
+  const ids = Array.isArray(req.body.ids) ? req.body.ids.map(Number).filter(Boolean) : [];
+  if (ids.length) return [...new Set(ids)].slice(0, 200);
+  if (!req.body.all) {
+    const err = new Error('请选择要处理的外链照片');
+    err.status = 422;
+    throw err;
+  }
+  const rows = await prisma.photo.findMany({
+    where: externalPhotoWhere(),
+    select: { id: true },
+    orderBy: { updatedAt: 'desc' },
+    take: 500
+  });
+  return rows.map((item) => item.id);
+};
+
+export const cacheExternalPhoto = async (req, res) => {
+  const result = await cacheExternalPhotoToLocal(req.params.id, req.user.id);
+  success(res, result.photo, '外链图片已缓存到本地');
+};
+
+export const markExternalPhotoFailed = async (req, res) => {
+  const id = Number(req.params.id);
+  const photo = await prisma.photo.findUnique({ where: { id } });
+  if (!photo) return fail(res, 404, '照片不存在');
+  if (!isExternalPhotoRecord(photo)) return success(res, photo, '本地照片无需标记');
+  const message = String(req.body?.message || '图片加载失败').replace(/<[^>]*>/g, '').trim().slice(0, 900);
+  const updated = await prisma.photo.update({
+    where: { id: photo.id },
+    data: {
+      externalStatus: 'failed',
+      externalCheckedAt: new Date(),
+      externalError: message || '图片加载失败',
+      externalSourceUrl: photo.externalSourceUrl || externalPhotoUrls(photo)[0] || null
+    },
+    include: photoInclude
+  });
+  success(res, updated, '已标记为外链失效');
+};
+
+export const batchCacheExternalPhotos = async (req, res) => {
+  const ids = await externalPhotoIdsFromRequest(req);
+  const rows = await prisma.photo.findMany({ where: externalPhotoWhere(ids), select: { id: true } });
+  const summary = { total: rows.length, cached: 0, failed: 0, skipped: ids.length - rows.length, errors: [] };
+  for (const row of rows) {
+    try {
+      await cacheExternalPhotoToLocal(row.id, req.user.id);
+      summary.cached += 1;
+    } catch (error) {
+      summary.failed += 1;
+      summary.errors.push({ id: row.id, message: error.message });
+    }
+  }
+  success(res, summary, '外链批量缓存完成');
+};
+
 export const listAlbums = async (req, res) => {
   const albums = await prisma.album.findMany({
     include: { user: { select: { id: true, username: true, nickname: true } }, photos: { take: 1, orderBy: [{ sortOrder: 'desc' }, { createdAt: 'desc' }] } },
@@ -310,7 +418,7 @@ export const listAlbums = async (req, res) => {
   });
   const coverIds = albums.map((album) => album.coverPhotoId).filter(Boolean);
   const covers = coverIds.length
-    ? await prisma.photo.findMany({ where: { id: { in: coverIds } }, select: { id: true, thumbnailUrl: true, mediumUrl: true, title: true } })
+    ? await prisma.photo.findMany({ where: { id: { in: coverIds } }, select: { id: true, thumbnailUrl: true, mediumUrl: true, title: true, externalStatus: true } })
     : [];
   const coverMap = new Map(covers.map((photo) => [photo.id, photo]));
   success(res, albums.map((album) => ({ ...album, coverPhoto: coverMap.get(album.coverPhotoId) || album.photos?.[0] || null })));
@@ -445,7 +553,7 @@ export const listComments = async (req, res) => {
   const comments = await prisma.comment.findMany({
     include: {
       user: { select: { id: true, username: true, nickname: true } },
-      photo: { select: { id: true, title: true, thumbnailUrl: true } }
+      photo: { select: { id: true, title: true, thumbnailUrl: true, externalStatus: true } }
     },
     orderBy: { createdAt: 'desc' }
   });

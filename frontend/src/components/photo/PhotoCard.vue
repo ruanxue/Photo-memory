@@ -12,7 +12,7 @@
           draggable="false"
           @dragstart.prevent
           @load="markImageLoaded"
-          @error="markImageLoaded"
+          @error="handleCardImageError"
         />
       </button>
 
@@ -67,7 +67,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { Star, Top } from '@element-plus/icons-vue';
 import { useSettingsStore } from '../../stores/settings.store.js';
 import { hasExifInfo } from '../../utils/exif.js';
-import { imageUrl } from '../../utils/image.js';
+import { handleImageError, photoImageUrl } from '../../utils/image.js';
 import { formatDate, numberText } from '../../utils/format.js';
 
 const props = defineProps({
@@ -85,9 +85,9 @@ const imageLoaded = ref(false);
 
 const cardImageUrl = computed(() => {
   const source = props.variant === 'wall'
-    ? (props.photo.mediumUrl || props.photo.originalUrl || props.photo.thumbnailUrl)
-    : (props.photo.thumbnailUrl || props.photo.mediumUrl || props.photo.originalUrl);
-  return imageUrl(source);
+    ? ['mediumUrl', 'originalUrl', 'thumbnailUrl']
+    : ['thumbnailUrl', 'mediumUrl', 'originalUrl'];
+  return photoImageUrl(props.photo, source);
 });
 const photoAspectStyle = computed(() => {
   const width = Number(props.photo.width);
@@ -146,6 +146,11 @@ const markImageLoaded = () => {
   if (imageLoaded.value) return;
   imageLoaded.value = true;
   emit('loaded', props.photo);
+};
+
+const handleCardImageError = (event) => {
+  handleImageError(event);
+  markImageLoaded();
 };
 
 const checkCachedImage = async () => {

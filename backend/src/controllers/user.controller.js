@@ -44,7 +44,7 @@ export const myFavorites = async (req, res) => {
 export const myComments = async (req, res) => {
   const comments = await prisma.comment.findMany({
     where: { userId: req.user.id },
-    include: { photo: { select: { id: true, title: true, thumbnailUrl: true } } },
+    include: { photo: { select: { id: true, title: true, thumbnailUrl: true, externalStatus: true } } },
     orderBy: { createdAt: 'desc' }
   });
   success(res, comments);

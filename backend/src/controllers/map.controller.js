@@ -5,7 +5,12 @@ import { geocodeBaiduAddress, reverseGeocodeBaidu, searchBaiduPlaces } from '../
 import { photoFilterFacets } from '../services/facet.service.js';
 
 const mapWhere = (req) => {
-  const clauses = [visibilityFilter(req.user), { latitude: { not: null } }, { longitude: { not: null } }];
+  const clauses = [
+    visibilityFilter(req.user),
+    { OR: [{ externalStatus: null }, { externalStatus: { not: 'failed' } }] },
+    { latitude: { not: null } },
+    { longitude: { not: null } }
+  ];
   if (req.query.q) clauses.push({ title: { contains: String(req.query.q).trim() } });
   if (req.query.city) clauses.push({ city: { contains: String(req.query.city) } });
   if (req.query.country) clauses.push({ country: { contains: String(req.query.country) } });

@@ -7,7 +7,7 @@
       </div>
     </div>
     <el-table :data="comments" class="surface">
-      <el-table-column label="照片" width="94"><template #default="{ row }"><img class="table-thumb" :src="row.photo?.thumbnailUrl" /></template></el-table-column>
+      <el-table-column label="照片" width="94"><template #default="{ row }"><img class="table-thumb" :src="photoImageUrl(row.photo)" @error="handleImageError" /></template></el-table-column>
       <el-table-column prop="photo.title" label="照片标题" min-width="160" />
       <el-table-column prop="content" label="评论" min-width="260" />
       <el-table-column label="状态" width="100">
@@ -22,6 +22,7 @@
 import { onMounted, ref } from 'vue';
 import request from '../../api/request.js';
 import { formatCommentStatus, formatDateTime } from '../../utils/format.js';
+import { handleImageError, photoImageUrl } from '../../utils/image.js';
 
 const comments = ref([]);
 onMounted(async () => {
