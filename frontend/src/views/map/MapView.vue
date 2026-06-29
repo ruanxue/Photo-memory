@@ -62,7 +62,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import request from '../../api/request.js';
 import MapViewer from '../../components/map/MapViewer.vue';
@@ -92,48 +92,15 @@ const filters = reactive({
 
 const mapScene = computed(() => mapSceneForPhotos(photos.value, filters.country));
 const mapPageZoom = computed(() => mapZoomForScene(settings.settings, mapScene.value, 'page'));
-let initialFocusTimer = null;
-let initialFocusRequestId = 0;
 
 const filterParams = () => Object.fromEntries(
   Object.entries(filters).filter(([, value]) => value !== '' && value !== null && value !== undefined)
 );
 
-const clearInitialFocus = () => {
-  initialFocusRequestId += 1;
-  if (initialFocusTimer) {
-    window.clearTimeout(initialFocusTimer);
-    initialFocusTimer = null;
-  }
-};
-
-const hasLocation = (photo) => Number.isFinite(Number(photo?.latitude)) && Number.isFinite(Number(photo?.longitude));
-const firstLocatedPhoto = () => photos.value.find(hasLocation) || photos.value[0];
-
-const focusFirstLocatedPhoto = async (requestId, attempt = 0) => {
-  const first = firstLocatedPhoto();
-  if (!first || requestId !== initialFocusRequestId) return;
-  selectedPhotoId.value = first.id;
-  await nextTick();
-  const photoZoom = mapZoomForScene(settings.settings, mapSceneForPhoto(first), 'detail');
-  const focused = await mapViewerRef.value?.focusPhoto(first, photoZoom);
-  if (!focused && requestId === initialFocusRequestId && selectedPhotoId.value === first.id && attempt < 10) {
-    initialFocusTimer = window.setTimeout(() => focusFirstLocatedPhoto(requestId, attempt + 1), 180);
-  }
-};
-
-const scheduleInitialFocus = () => {
-  if (initialFocusTimer) window.clearTimeout(initialFocusTimer);
-  initialFocusRequestId += 1;
-  const requestId = initialFocusRequestId;
-  initialFocusTimer = window.setTimeout(() => focusFirstLocatedPhoto(requestId), 80);
-};
-
 const load = async () => {
   const res = await request.get('/map/photos', { params: filterParams() });
   photos.value = Array.isArray(res.data) ? res.data : [];
   selectedPhotoId.value = null;
-  scheduleInitialFocus();
 };
 
 const loadFilterOptions = async () => {
@@ -185,7 +152,6 @@ const placeText = (photo) => {
 };
 
 const focusPhoto = (photo) => {
-  clearInitialFocus();
   selectedPhotoId.value = photo.id;
   const photoZoom = mapZoomForScene(settings.settings, mapSceneForPhoto(photo), 'detail');
   return mapViewerRef.value?.focusPhoto(photo, photoZoom);
@@ -205,10 +171,6 @@ const syncPhoto = (fresh) => {
 
 onMounted(() => {
   applyFilters();
-});
-
-onBeforeUnmount(() => {
-  clearInitialFocus();
 });
 </script>
 
@@ -373,6 +335,26 @@ onBeforeUnmount(() => {
   border-radius: 0;
 }
 
+.map-stage :deep(.leaflet-bottom.leaflet-right) {
+  right: clamp(92px, 7vw, 132px);
+  bottom: clamp(16px, 2vw, 30px);
+}
+
+.map-stage :deep(.leaflet-bottom.leaflet-left) {
+  left: 12px;
+  bottom: 12px;
+}
+
+.map-stage :deep(.leaflet-control-attribution) {
+  max-width: min(56vw, 720px);
+  white-space: normal;
+  text-align: left;
+}
+
+.map-stage :deep(.map-hint) {
+  right: clamp(104px, 8vw, 144px);
+}
+
 @media (max-width: 900px) {
   .map-page {
     grid-template-columns: 1fr;
@@ -392,6 +374,17 @@ onBeforeUnmount(() => {
   .map-stage,
   .map-stage :deep(.map-shell) {
     min-height: 58dvh;
+  }
+
+  .map-stage :deep(.leaflet-bottom.leaflet-right),
+  .map-stage :deep(.map-hint) {
+    right: 86px;
+    bottom: 14px;
+  }
+
+  .map-stage :deep(.leaflet-bottom.leaflet-left) {
+    left: 10px;
+    bottom: 10px;
   }
 }
 </style>

@@ -3,7 +3,6 @@
     <div class="section-head">
       <div>
         <h1 class="section-title">用户管理</h1>
-        <p class="section-subtitle">搜索、新增、禁用、设置管理员和重置密码。</p>
       </div>
       <el-button type="primary" @click="openCreate">新增用户</el-button>
     </div>
@@ -55,7 +54,8 @@
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessage } from 'element-plus/es/components/message/index';
+import { ElMessageBox } from 'element-plus/es/components/message-box/index';
 import { adminApi } from '../../api/admin.api.js';
 import Pagination from '../../components/common/Pagination.vue';
 import { formatUserRole, formatUserStatus } from '../../utils/format.js';

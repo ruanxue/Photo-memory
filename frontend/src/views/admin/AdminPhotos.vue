@@ -3,7 +3,6 @@
     <div class="section-head">
       <div>
         <h1 class="section-title">照片管理</h1>
-        <p class="section-subtitle">审核、编辑、删除、精选和批量修改照片。</p>
       </div>
     </div>
     <div class="toolbar surface">
@@ -138,7 +137,8 @@
 <script setup>
 import { computed, nextTick, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessage } from 'element-plus/es/components/message/index';
+import { ElMessageBox } from 'element-plus/es/components/message-box/index';
 import { adminApi } from '../../api/admin.api.js';
 import { albumApi } from '../../api/album.api.js';
 import Pagination from '../../components/common/Pagination.vue';

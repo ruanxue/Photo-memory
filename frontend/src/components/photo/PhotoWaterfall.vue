@@ -57,7 +57,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { gsap } from 'gsap';
 import { Flip } from 'gsap/Flip';
-import { ElMessage } from 'element-plus';
+import { ElMessage } from 'element-plus/es/components/message/index';
 import { albumApi } from '../../api/album.api.js';
 import { useSettingsStore } from '../../stores/settings.store.js';
 import { albumCover, photoImageUrl } from '../../utils/image.js';

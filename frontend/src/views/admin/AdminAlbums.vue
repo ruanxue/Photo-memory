@@ -1,7 +1,7 @@
 <template>
   <section class="admin-page">
     <div class="section-head">
-      <div><h1 class="section-title">相册管理</h1><p class="section-subtitle">新增、编辑、删除和公开控制。</p></div>
+      <div><h1 class="section-title">相册管理</h1></div>
       <el-button type="primary" @click="openCreate">新增相册</el-button>
     </div>
     <el-table :data="albums" class="surface admin-album-table" scrollbar-always-on table-layout="auto">
@@ -55,7 +55,8 @@
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessage } from 'element-plus/es/components/message/index';
+import { ElMessageBox } from 'element-plus/es/components/message-box/index';
 import { adminApi } from '../../api/admin.api.js';
 import { albumApi } from '../../api/album.api.js';
 import AlbumCoverSelector from '../../components/album/AlbumCoverSelector.vue';

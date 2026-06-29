@@ -3,7 +3,6 @@
     <div class="section-head">
       <div>
         <h1 class="section-title">数据看板</h1>
-        <p class="section-subtitle">站点整体统计、热门内容和最近上传。</p>
       </div>
     </div>
     <div class="stats-grid">

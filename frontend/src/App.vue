@@ -1,21 +1,24 @@
 <template>
-  <router-view />
-  <transition name="rate-limit-panel">
-    <div v-if="rateLimit.visible" class="rate-limit-layer" @click.self="hideRateLimit">
-      <section class="rate-limit-card">
-        <span class="rate-limit-mark">429</span>
-        <p class="rate-limit-kicker">{{ settingsStore.siteName }}</p>
-        <h2>访问有点太快了</h2>
-        <p>{{ rateLimit.message }}</p>
-        <small v-if="rateLimit.retryAfter">建议 {{ rateLimit.retryAfter }} 秒后再试。</small>
-        <button type="button" @click="hideRateLimit">我知道了</button>
-      </section>
-    </div>
-  </transition>
+  <el-config-provider :locale="zhCn">
+    <router-view />
+    <transition name="rate-limit-panel">
+      <div v-if="rateLimit.visible" class="rate-limit-layer" @click.self="hideRateLimit">
+        <section class="rate-limit-card">
+          <span class="rate-limit-mark">429</span>
+          <p class="rate-limit-kicker">{{ settingsStore.siteName }}</p>
+          <h2>访问有点太快了</h2>
+          <p>{{ rateLimit.message }}</p>
+          <small v-if="rateLimit.retryAfter">建议 {{ rateLimit.retryAfter }} 秒后再试。</small>
+          <button type="button" @click="hideRateLimit">我知道了</button>
+        </section>
+      </div>
+    </transition>
+  </el-config-provider>
 </template>
 
 <script setup>
 import { onBeforeUnmount, onMounted, reactive } from 'vue';
+import zhCn from 'element-plus/es/locale/lang/zh-cn';
 import { useAuthStore } from './stores/auth.store.js';
 import { useSettingsStore } from './stores/settings.store.js';
 

@@ -3,7 +3,6 @@
     <div class="section-head">
       <div>
         <h1 class="section-title">系统设置</h1>
-        <p class="section-subtitle">维护站点名称、首页文案、访问开关、上传限制和浏览器图标。</p>
       </div>
       <el-button type="primary" @click="save">保存设置</el-button>
     </div>
@@ -462,7 +461,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { ElMessage } from 'element-plus';
+import { ElMessage } from 'element-plus/es/components/message/index';
 import { adminApi } from '../../api/admin.api.js';
 import { defaultCustomThemeColors, useSettingsStore } from '../../stores/settings.store.js';
 import { handleImageError, photoImageUrl } from '../../utils/image.js';

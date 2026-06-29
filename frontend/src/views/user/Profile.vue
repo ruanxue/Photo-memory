@@ -18,7 +18,7 @@
 
 <script setup>
 import { reactive } from 'vue';
-import { ElMessage } from 'element-plus';
+import { ElMessage } from 'element-plus/es/components/message/index';
 import { useAuthStore } from '../../stores/auth.store.js';
 
 const auth = useAuthStore();

@@ -102,7 +102,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { Close } from '@element-plus/icons-vue';
-import { ElMessage } from 'element-plus';
+import { ElMessage } from 'element-plus/es/components/message/index';
 import { photoApi } from '../../api/photo.api.js';
 import { useAuthStore } from '../../stores/auth.store.js';
 import { useSettingsStore } from '../../stores/settings.store.js';

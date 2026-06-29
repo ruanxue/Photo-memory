@@ -1,7 +1,7 @@
 <template>
   <section class="admin-page">
     <div class="section-head">
-      <div><h1 class="section-title">评论管理</h1><p class="section-subtitle">审核、驳回和删除评论。</p></div>
+      <div><h1 class="section-title">评论管理</h1></div>
     </div>
     <el-table :data="comments" class="surface">
       <el-table-column label="照片" width="92"><template #default="{ row }"><img class="table-thumb" :src="photoImageUrl(row.photo)" @error="handleImageError" /></template></el-table-column>
@@ -30,7 +30,8 @@
 
 <script setup>
 import { onMounted, ref } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessage } from 'element-plus/es/components/message/index';
+import { ElMessageBox } from 'element-plus/es/components/message-box/index';
 import { adminApi } from '../../api/admin.api.js';
 import { handleImageError, photoImageUrl } from '../../utils/image.js';
 

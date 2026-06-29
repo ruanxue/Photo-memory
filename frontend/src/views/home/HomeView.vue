@@ -123,7 +123,11 @@ const updateDockVisibility = () => {
 };
 
 const scrollToWall = () => {
-  wallSectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const wall = wallSectionRef.value;
+  if (!wall) return;
+  const target = wall.querySelector('.waterfall') || wall;
+  const top = target.getBoundingClientRect().top + window.scrollY;
+  window.scrollTo({ top: Math.max(0, top - 1), behavior: 'smooth' });
 };
 
 const wallPhotoParams = () => ({

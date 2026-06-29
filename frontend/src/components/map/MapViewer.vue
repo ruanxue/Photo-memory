@@ -25,6 +25,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import L from 'leaflet';
 import { photoImageUrl } from '../../utils/image.js';
 import { formatDate } from '../../utils/format.js';
+import { createPhotoClusters } from '../../utils/photoCluster.js';
 import { useSettingsStore } from '../../stores/settings.store.js';
 import { MAP_MIN_ZOOM, isBaiduMapProvider } from '../../map/adapters/core.js';
 import {
@@ -59,6 +60,8 @@ const markerByPhotoId = new Map();
 let focusedPhotoId = null;
 const isBaiduProvider = computed(() => isBaiduMapProvider(settings.settings));
 const worldBounds = createLeafletWorldBounds(L);
+const clusterRadius = 78;
+const maxClusterZoom = 15;
 
 const clampZoom = (zoom, fallback = props.zoom) => {
   const maxZoom = Number(providerConfig.value?.options?.maxZoom) || 18;
@@ -85,21 +88,88 @@ const escapeHtml = (value = '') => String(value)
   .replaceAll('"', '&quot;')
   .replaceAll("'", '&#039;');
 
+const popupContent = (photo) => `
+  <a href="/photos/${photo.id}" class="map-popup" aria-label="鏌ョ湅鐓х墖 ${escapeHtml(photo.title)}">
+    <img src="${escapeHtml(photoImageUrl(photo))}" alt="${escapeHtml(photo.title)}" />
+    <strong>${escapeHtml(photo.title)}</strong>
+    <span>${escapeHtml(photo.city || photo.locationName || '')} ${formatDate(photo.takenAt || photo.uploadedAt)}</span>
+  </a>
+`;
+
+const photoClusterIcon = (cluster, active = false) => {
+  const photo = cluster.coverPhoto;
+  const title = escapeHtml(photo?.title || '');
+  const count = cluster.count > 99 ? '99+' : String(cluster.count);
+  const meta = escapeHtml([photo?.city || photo?.locationName, formatDate(photo?.takenAt || photo?.uploadedAt)].filter(Boolean).join(' · '));
+  return L.divIcon({
+    className: [
+      'photo-cluster-marker',
+      'photo-cluster-marker-card',
+      cluster.count === 1 ? 'photo-cluster-marker-single' : '',
+      active ? 'photo-cluster-marker-active' : ''
+    ].filter(Boolean).join(' '),
+    html: `
+      <article class="photo-cluster-card" aria-label="${title} ${count} 张照片">
+        <img src="${escapeHtml(photoImageUrl(photo))}" alt="${title}" />
+        <span class="photo-cluster-card-body">
+          <strong>${title}</strong>
+          <span class="photo-cluster-card-meta">
+            <em>${meta}</em>
+            <b>${count} 张</b>
+          </span>
+        </span>
+      </article>
+    `,
+    iconSize: [184, 146],
+    iconAnchor: [92, 142]
+  });
+};
+
+const openLeafletPopupAt = (photo, point) => {
+  if (!map || !props.showPopup) return;
+  const popup = L.popup({ closeButton: false, autoPan: false })
+    .setLatLng(point)
+    .setContent(popupContent(photo))
+    .openOn(map);
+  window.setTimeout(() => {
+    const popupEl = popup.getElement();
+    popupEl?.addEventListener('click', (event) => {
+      if (!event.target?.closest?.('.map-popup')) return;
+      event.preventDefault();
+      event.stopPropagation();
+      emit('detail', photo);
+    });
+  }, 0);
+};
+
 const setFocusedMarker = (photoId) => {
   focusedPhotoId = photoId ? Number(photoId) : null;
   markerByPhotoId.forEach((marker, id) => {
     const element = marker.getElement();
     element?.classList.toggle('photo-marker-active', id === focusedPhotoId);
+    element?.classList.toggle('photo-cluster-marker-active', id === focusedPhotoId);
   });
 };
 
 const closePopupMode = () => {
-  if (!map || props.showPopup) return;
+  if (!map) return;
   map.closePopup();
   mapEl.value?.querySelectorAll('.leaflet-popup').forEach((popup) => popup.remove());
 };
 
-const renderMarkers = () => {
+const isClusterNearFocusedPhoto = (point) => {
+  if (!focusedPhotoId || !map) return false;
+  const focusedPhoto = props.photos.find((photo) => Number(photo.id) === Number(focusedPhotoId));
+  if (!focusedPhoto?.latitude || !focusedPhoto?.longitude) return false;
+  const focusedPoint = clampLatLng(focusedPhoto.latitude, focusedPhoto.longitude);
+  const focusedPixel = map.latLngToContainerPoint(focusedPoint);
+  const clusterPixel = map.latLngToContainerPoint(point);
+  const dx = Math.abs(clusterPixel.x - focusedPixel.x);
+  const dy = Math.abs(clusterPixel.y - focusedPixel.y);
+  return dx < 190 && dy < 150;
+};
+
+const renderMarkers = ({ fit = true } = {}) => {
   if (!map || isBaiduProvider.value) return;
   closePopupMode();
   markers.forEach((marker) => {
@@ -110,29 +180,62 @@ const renderMarkers = () => {
   markers = [];
   markerByPhotoId.clear();
   const bounds = [];
-  props.photos
+  const locatedPhotos = props.photos
     .filter((photo) => photo.latitude && photo.longitude)
-    .forEach((photo) => {
-      const point = clampLatLng(photo.latitude, photo.longitude);
-      const marker = L.marker(point, {
-        icon: markerIcon,
-        interactive: props.showPopup
+    .map((photo) => ({ ...photo, __point: clampLatLng(photo.latitude, photo.longitude) }));
+
+  locatedPhotos.forEach((photo) => bounds.push(photo.__point));
+
+  const clusters = createPhotoClusters(locatedPhotos, {
+    radius: clusterRadius,
+    zoom: map.getZoom(),
+    maxClusterZoom,
+    focusedPhotoId,
+    project: (photo) => {
+      const point = map.latLngToContainerPoint(photo.__point || clampLatLng(photo.latitude, photo.longitude));
+      return { x: point.x, y: point.y };
+    }
+  });
+
+  clusters.forEach((cluster) => {
+    const clusterPoint = clampLatLng(cluster.latitude, cluster.longitude);
+    if (props.showPopup) {
+      const hasFocusedPhoto = cluster.photos.some((photo) => Number(photo.id) === Number(focusedPhotoId));
+      if (focusedPhotoId && !hasFocusedPhoto && isClusterNearFocusedPhoto(clusterPoint)) return;
+      const marker = L.marker(clusterPoint, {
+        icon: photoClusterIcon(cluster, hasFocusedPhoto),
+        interactive: props.showPopup,
+        zIndexOffset: 500
       }).addTo(map);
-      if (props.showPopup) {
-        marker.bindPopup(`
-          <a href="/photos/${photo.id}" class="map-popup" aria-label="查看照片 ${escapeHtml(photo.title)}">
-            <img src="${escapeHtml(photoImageUrl(photo))}" alt="${escapeHtml(photo.title)}" />
-            <strong>${escapeHtml(photo.title)}</strong>
-            <span>${escapeHtml(photo.city || photo.locationName || '')} ${formatDate(photo.takenAt || photo.uploadedAt)}</span>
-          </a>
-        `, { closeButton: false, autoPan: false });
-        bindHoverPopup(marker, photo);
-      }
+      marker.on('click', () => {
+        if (cluster.count === 1) {
+          emit('detail', cluster.coverPhoto);
+          return;
+        }
+          map.flyTo(clusterPoint, clampZoom(Math.max(map.getZoom() + 2, props.focusZoom - 1), props.focusZoom), {
+            animate: true,
+            duration: 0.55
+          });
+      });
       markers.push(marker);
-      markerByPhotoId.set(Number(photo.id), marker);
-      bounds.push(point);
+      if (cluster.count === 1) markerByPhotoId.set(Number(cluster.coverPhoto.id), marker);
+      return;
+    }
+
+    const photo = cluster.coverPhoto;
+    const point = photo.__point || clampLatLng(photo.latitude, photo.longitude);
+    const marker = L.marker(point, {
+      icon: markerIcon,
+      interactive: props.showPopup
+    }).addTo(map);
+    if (props.showPopup) {
+      marker.bindPopup(popupContent(photo), { closeButton: false, autoPan: false });
+      bindHoverPopup(marker, photo);
+    }
+    markers.push(marker);
+    markerByPhotoId.set(Number(photo.id), marker);
     });
-  if (bounds.length) {
+  if (fit && bounds.length) {
     map.fitBounds(bounds, { padding: [30, 30], maxZoom: clampZoom(props.fitMaxZoom) });
     map.panInsideBounds(worldBounds, { animate: false });
   }
@@ -147,21 +250,18 @@ const focusPhoto = async (photoOrId, zoomOverride = props.focusZoom) => {
   const photoId = Number(typeof photoOrId === 'object' ? photoOrId?.id : photoOrId);
   if (!map || !Number.isFinite(photoId)) return false;
   await nextTick();
-  const marker = markerByPhotoId.get(photoId);
   const photo = props.photos.find((item) => Number(item.id) === photoId);
-  if (!marker || !photo?.latitude || !photo?.longitude) return false;
+  if (!photo?.latitude || !photo?.longitude) return false;
 
   setFocusedMarker(photoId);
+  const point = clampLatLng(photo.latitude, photo.longitude);
   const targetZoom = clampZoom(zoomOverride, props.focusZoom);
-  map.flyTo(clampLatLng(photo.latitude, photo.longitude), targetZoom, {
+  map.flyTo(point, targetZoom, {
     animate: true,
     duration: 0.85
   });
-  if (props.showPopup) {
-    window.setTimeout(() => {
-      marker.openPopup();
-    }, 360);
-  }
+  renderMarkers({ fit: false });
+  window.setTimeout(() => renderMarkers({ fit: false }), 380);
   return true;
 };
 
@@ -262,9 +362,10 @@ const initLeafletMap = () => {
     maxBoundsViscosity: 1,
     worldCopyJump: false
   }).setView(clampLatLng(props.center?.[0], props.center?.[1]), clampZoom(props.zoom));
-  attributionControl = L.control.attribution({ prefix: false }).addTo(map);
+  attributionControl = L.control.attribution({ prefix: false, position: 'bottomleft' }).addTo(map);
   applyMapLimits();
   applyTileLayer();
+  map.on('zoomend moveend', () => renderMarkers({ fit: false }));
   renderMarkers();
   closePopupMode();
 };
@@ -327,6 +428,114 @@ defineExpose({ focusPhoto });
   border-color: var(--theme-map-marker-ring);
 }
 
+.photo-cluster-marker {
+  background: transparent;
+  border: 0;
+}
+
+.photo-cluster-marker:hover,
+.photo-cluster-marker-active {
+  z-index: 900 !important;
+}
+
+.photo-cluster-marker-card {
+  width: 184px !important;
+  height: 146px !important;
+}
+
+.photo-cluster-card {
+  position: relative;
+  display: grid;
+  gap: 7px;
+  width: 176px;
+  padding: 10px;
+  border: 1px solid var(--theme-map-popup-border);
+  border-radius: 13px;
+  color: var(--theme-map-popup-text);
+  background: var(--theme-map-popup-bg);
+  box-shadow: var(--theme-map-popup-shadow);
+  backdrop-filter: blur(12px);
+  transform-origin: 50% 100%;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.photo-cluster-card::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  width: 14px;
+  height: 14px;
+  border-right: 1px solid var(--theme-map-popup-border);
+  border-bottom: 1px solid var(--theme-map-popup-border);
+  background: var(--theme-map-popup-bg);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.photo-cluster-card img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 88px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.photo-cluster-card-body {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.photo-cluster-card strong {
+  overflow: hidden;
+  color: var(--theme-map-popup-text);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.photo-cluster-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.photo-cluster-card em {
+  overflow: hidden;
+  color: var(--theme-map-popup-muted);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.photo-cluster-card b {
+  flex: 0 0 auto;
+  min-width: 34px;
+  display: inline-grid;
+  place-items: center;
+  padding: 4px 7px;
+  border-radius: 999px;
+  color: var(--theme-button-primary-text);
+  background: var(--theme-primary);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.photo-cluster-marker:hover .photo-cluster-card,
+.photo-cluster-marker-active .photo-cluster-card {
+  border-color: var(--theme-primary);
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: var(--theme-shadow-strong, var(--theme-map-marker-shadow));
+}
+
 .map-shell .leaflet-tile {
   filter: var(--theme-map-tile-filter);
 }
@@ -352,6 +561,16 @@ defineExpose({ focusPhoto });
 .map-shell .leaflet-bar a:focus {
   background: var(--theme-map-control-hover-bg) !important;
   color: var(--theme-map-control-hover-text) !important;
+}
+
+.map-shell .leaflet-control-attribution {
+  max-width: min(56vw, 720px);
+  padding: 4px 8px !important;
+  border: 1px solid var(--theme-map-control-border) !important;
+  border-radius: 999px;
+  box-shadow: var(--theme-shadow-soft, none);
+  line-height: 1.45;
+  white-space: normal;
 }
 
 .map-shell .leaflet-popup-content-wrapper,

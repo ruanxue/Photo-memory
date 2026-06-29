@@ -1,7 +1,7 @@
 <template>
   <section class="admin-page">
     <div class="section-head">
-      <div><h1 class="section-title">标签管理</h1><p class="section-subtitle">新增、编辑、删除和合并标签。</p></div>
+      <div><h1 class="section-title">标签管理</h1></div>
       <el-button type="primary" @click="openCreate">新增标签</el-button>
     </div>
     <div class="toolbar surface">
@@ -45,7 +45,8 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessage } from 'element-plus/es/components/message/index';
+import { ElMessageBox } from 'element-plus/es/components/message-box/index';
 import { adminApi } from '../../api/admin.api.js';
 
 const items = ref([]);

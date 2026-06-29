@@ -8,7 +8,6 @@
     <div class="section-head">
       <div>
         <h1 class="section-title">瀑布流排序</h1>
-        <p class="section-subtitle">只管理首页瀑布流中可能出现的公开相册和照片卡片。</p>
       </div>
       <div class="head-actions">
         <el-button :loading="loading" @click="load">刷新</el-button>
@@ -84,7 +83,7 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import { ElMessage } from 'element-plus';
+import { ElMessage } from 'element-plus/es/components/message/index';
 import { adminApi } from '../../api/admin.api.js';
 import { albumCover, handleImageError, photoImageUrl } from '../../utils/image.js';
 

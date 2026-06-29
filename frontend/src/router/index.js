@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import { ElMessage } from 'element-plus';
+import { ElMessage } from 'element-plus/es/components/message/index';
 import { useAuthStore } from '../stores/auth.store.js';
 import PublicLayout from '../layouts/PublicLayout.vue';
 import UserLayout from '../layouts/UserLayout.vue';

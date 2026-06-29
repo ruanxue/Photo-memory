@@ -62,7 +62,8 @@
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessage } from 'element-plus/es/components/message/index';
+import { ElMessageBox } from 'element-plus/es/components/message-box/index';
 import request from '../../api/request.js';
 import { albumApi } from '../../api/album.api.js';
 import { photoApi } from '../../api/photo.api.js';

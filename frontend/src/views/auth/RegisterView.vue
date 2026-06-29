@@ -18,7 +18,7 @@
 <script setup>
 import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { ElMessage } from 'element-plus';
+import { ElMessage } from 'element-plus/es/components/message/index';
 import { useAuthStore } from '../../stores/auth.store.js';
 import { useSettingsStore } from '../../stores/settings.store.js';
 import EmptyState from '../../components/common/EmptyState.vue';

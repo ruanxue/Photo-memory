@@ -217,7 +217,7 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
-import { ElMessage } from 'element-plus';
+import { ElMessage } from 'element-plus/es/components/message/index';
 import { albumApi } from '../../api/album.api.js';
 import { photoApi } from '../../api/photo.api.js';
 import { useSettingsStore } from '../../stores/settings.store.js';

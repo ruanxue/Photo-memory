@@ -97,7 +97,7 @@
 
 <script setup>
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
-import { ElMessage } from 'element-plus';
+import { ElMessage } from 'element-plus/es/components/message/index';
 import { mapApi } from '../../api/map.api.js';
 import { photoApi } from '../../api/photo.api.js';
 import LocationPickerMap from './LocationPickerMap.vue';

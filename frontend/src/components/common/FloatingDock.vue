@@ -13,7 +13,7 @@
 <script setup>
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { ElMessage } from 'element-plus';
+import { ElMessage } from 'element-plus/es/components/message/index';
 import { Clock, Collection, HomeFilled, Location, Picture, Setting, User } from '@element-plus/icons-vue';
 import { useAuthStore } from '../../stores/auth.store.js';
 import { useSettingsStore } from '../../stores/settings.store.js';
@@ -77,7 +77,7 @@ const handleNavigate = async (event, item, navigate) => {
   position: fixed;
   right: clamp(14px, 2vw, 32px);
   bottom: clamp(14px, 2vw, 32px);
-  z-index: 90;
+  z-index: 1200;
   display: grid;
   grid-template-columns: repeat(2, 44px);
   gap: 10px;
