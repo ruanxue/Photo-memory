@@ -160,12 +160,13 @@ export const isExternalPhotoRecord = (photo) => {
   if (!photo) return false;
   return photo.mimeType === 'image/external-url'
     || Number(photo.fileSize) === 0
-    || [photo.originalUrl, photo.mediumUrl, photo.thumbnailUrl].some((url) => Boolean(isHttpUrl(url)));
+    || [photo.originalUrl, photo.mediumUrl, photo.smallUrl, photo.thumbnailUrl].some((url) => Boolean(isHttpUrl(url)));
 };
 
 export const externalPhotoUrls = (photo) => [...new Set([
   photo?.originalUrl,
   photo?.mediumUrl,
+  photo?.smallUrl,
   photo?.thumbnailUrl
 ].filter((url) => Boolean(isHttpUrl(url))))];
 
@@ -305,6 +306,7 @@ export const cacheExternalPhotoToLocal = async (photoId, userId) => {
     data: {
       originalUrl: imageInfo.originalUrl,
       mediumUrl: imageInfo.mediumUrl,
+      smallUrl: imageInfo.smallUrl || imageInfo.mediumUrl,
       thumbnailUrl: imageInfo.thumbnailUrl,
       filename,
       mimeType: downloaded.mimeType,

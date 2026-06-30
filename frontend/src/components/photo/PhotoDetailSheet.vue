@@ -20,7 +20,13 @@
         <div v-else-if="photo" class="sheet-scroll">
           <div class="detail-presentation" :class="{ 'detail-presentation-simple': !hasTechnicalSide }">
             <div class="photo-media">
-              <img :src="photoImageUrl(photo, ['mediumUrl', 'thumbnailUrl', 'originalUrl'])" :alt="photo.title" @error="handleImageError" />
+              <img
+                :src="photoImageUrl(photo, ['mediumUrl', 'smallUrl', 'thumbnailUrl', 'originalUrl'])"
+                :srcset="photoImageSrcset(photo, ['smallUrl', 'mediumUrl', 'originalUrl']) || undefined"
+                :sizes="photoImageSizes.detail"
+                :alt="photo.title"
+                @error="handleImageError"
+              />
             </div>
 
             <aside v-if="hasTechnicalSide" class="technical-side">
@@ -106,7 +112,7 @@ import { ElMessage } from 'element-plus/es/components/message/index';
 import { photoApi } from '../../api/photo.api.js';
 import { useAuthStore } from '../../stores/auth.store.js';
 import { useSettingsStore } from '../../stores/settings.store.js';
-import { handleImageError, photoImageUrl } from '../../utils/image.js';
+import { handleImageError, photoImageSizes, photoImageSrcset, photoImageUrl } from '../../utils/image.js';
 import { hasExifInfo, hasGpsInfo } from '../../utils/exif.js';
 import { mapSceneForPhoto, mapZoomForScene } from '../../utils/map.js';
 import { setPageScrollLocked, unlockPageScroll } from '../../utils/scrollLock.js';

@@ -12,6 +12,8 @@
       <img
         ref="imageRef"
         :src="coverImageUrl"
+        :srcset="coverImageSrcset || undefined"
+        :sizes="photoImageSizes.wall"
         :alt="album.title"
         :width="coverPhoto?.width || undefined"
         :height="coverPhoto?.height || undefined"
@@ -39,7 +41,7 @@
 <script setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { Collection, Top } from '@element-plus/icons-vue';
-import { albumCover, handleImageError } from '../../utils/image.js';
+import { albumCover, albumCoverSrcset, handleImageError, photoImageSizes } from '../../utils/image.js';
 import { useSettingsStore } from '../../stores/settings.store.js';
 
 const props = defineProps({
@@ -54,6 +56,7 @@ const imageRef = ref(null);
 const imageLoaded = ref(false);
 const coverPhoto = computed(() => props.album.coverPhoto || props.album.photos?.[0] || null);
 const coverImageUrl = computed(() => albumCover(props.album));
+const coverImageSrcset = computed(() => albumCoverSrcset(props.album));
 const coverAspectStyle = computed(() => {
   const width = Number(coverPhoto.value?.width);
   const height = Number(coverPhoto.value?.height);
@@ -95,7 +98,7 @@ const checkCachedImage = async () => {
   if (image?.complete) markImageLoaded();
 };
 
-watch(coverImageUrl, () => {
+watch([coverImageUrl, coverImageSrcset], () => {
   imageLoaded.value = false;
   checkCachedImage();
 });

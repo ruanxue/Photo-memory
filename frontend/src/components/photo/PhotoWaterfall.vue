@@ -289,8 +289,8 @@ const imageForItem = (item) => {
   if (!item) return '';
   if (item.type === 'album') return albumCover(item.data);
   const source = props.variant === 'wall'
-    ? ['mediumUrl', 'originalUrl', 'thumbnailUrl']
-    : ['thumbnailUrl', 'mediumUrl', 'originalUrl'];
+    ? ['smallUrl', 'mediumUrl', 'thumbnailUrl', 'originalUrl']
+    : ['thumbnailUrl', 'smallUrl', 'mediumUrl', 'originalUrl'];
   return photoImageUrl(item.data, source);
 };
 

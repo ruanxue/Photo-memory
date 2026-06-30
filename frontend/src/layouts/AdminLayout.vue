@@ -22,12 +22,43 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import FloatingDock from '../components/common/FloatingDock.vue';
 import { useSettingsStore } from '../stores/settings.store.js';
 
 const route = useRoute();
 const settings = useSettingsStore();
+
+const adminViewPrefetchers = [
+  () => import('../views/admin/AdminDashboard.vue'),
+  () => import('../views/admin/AdminUsers.vue'),
+  () => import('../views/admin/AdminPhotos.vue'),
+  () => import('../views/admin/AdminWaterfallOrder.vue'),
+  () => import('../views/admin/AdminAlbums.vue'),
+  () => import('../views/admin/AdminTags.vue'),
+  () => import('../views/admin/AdminComments.vue'),
+  () => import('../views/admin/AdminSettings.vue')
+];
+
+const warmAdminViews = () => {
+  if (typeof window === 'undefined') return;
+
+  const run = () => {
+    adminViewPrefetchers.forEach((loadView) => {
+      loadView().catch(() => {});
+    });
+  };
+
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(run, { timeout: 1800 });
+    return;
+  }
+
+  window.setTimeout(run, 350);
+};
+
+onMounted(warmAdminViews);
 </script>
 
 <style scoped>

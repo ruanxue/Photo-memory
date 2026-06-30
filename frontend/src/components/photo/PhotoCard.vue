@@ -5,6 +5,8 @@
         <img
           ref="imageRef"
           :src="cardImageUrl"
+          :srcset="cardImageSrcset || undefined"
+          :sizes="cardImageSizes"
           :alt="photo.title"
           :width="photo.width || undefined"
           :height="photo.height || undefined"
@@ -67,7 +69,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { Star, Top } from '@element-plus/icons-vue';
 import { useSettingsStore } from '../../stores/settings.store.js';
 import { hasExifInfo } from '../../utils/exif.js';
-import { handleImageError, photoImageUrl } from '../../utils/image.js';
+import { handleImageError, photoImageSizes, photoImageSrcset, photoImageUrl } from '../../utils/image.js';
 import { formatDate, numberText } from '../../utils/format.js';
 
 const props = defineProps({
@@ -83,12 +85,15 @@ const exifHovered = ref(false);
 const imageRef = ref(null);
 const imageLoaded = ref(false);
 
+const cardImageFields = computed(() => (props.variant === 'wall'
+  ? ['smallUrl', 'mediumUrl', 'thumbnailUrl', 'originalUrl']
+  : ['thumbnailUrl', 'smallUrl', 'mediumUrl', 'originalUrl']));
+const cardSrcsetFields = computed(() => ['thumbnailUrl', 'smallUrl', 'mediumUrl']);
 const cardImageUrl = computed(() => {
-  const source = props.variant === 'wall'
-    ? ['mediumUrl', 'originalUrl', 'thumbnailUrl']
-    : ['thumbnailUrl', 'mediumUrl', 'originalUrl'];
-  return photoImageUrl(props.photo, source);
+  return photoImageUrl(props.photo, cardImageFields.value);
 });
+const cardImageSrcset = computed(() => photoImageSrcset(props.photo, cardSrcsetFields.value));
+const cardImageSizes = computed(() => (props.variant === 'wall' ? photoImageSizes.wall : photoImageSizes.card));
 const photoAspectStyle = computed(() => {
   const width = Number(props.photo.width);
   const height = Number(props.photo.height);
@@ -159,7 +164,7 @@ const checkCachedImage = async () => {
   if (image?.complete) markImageLoaded();
 };
 
-watch(cardImageUrl, () => {
+watch([cardImageUrl, cardImageSrcset], () => {
   imageLoaded.value = false;
   checkCachedImage();
 });

@@ -31,9 +31,9 @@
         </div>
         <el-form-item label="主题模式">
           <el-radio-group v-model="form.themeMode" :disabled="form.themeCustomEnabled">
-            <el-radio-button label="light">亮色</el-radio-button>
-            <el-radio-button label="dark">暗色</el-radio-button>
-            <el-radio-button label="auto">自动</el-radio-button>
+            <el-radio-button value="light">亮色</el-radio-button>
+            <el-radio-button value="dark">暗色</el-radio-button>
+            <el-radio-button value="auto">自动</el-radio-button>
           </el-radio-group>
           <p v-if="form.themeCustomEnabled" class="field-help">当前已启用自定义主题，预设主题模式暂不参与页面配色。</p>
         </el-form-item>
@@ -55,8 +55,8 @@
             </el-form-item>
             <el-form-item label="编辑模式">
               <el-radio-group v-model="form.themeCustomEditorMode">
-                <el-radio-button label="simple">简单</el-radio-button>
-                <el-radio-button label="advanced">高级</el-radio-button>
+                <el-radio-button value="simple">简单</el-radio-button>
+                <el-radio-button value="advanced">高级</el-radio-button>
               </el-radio-group>
             </el-form-item>
             <el-form-item label="已保存方案">
@@ -198,8 +198,8 @@
         <div class="settings-grid">
           <el-form-item label="主图模式">
             <el-radio-group v-model="form.heroMode" @change="syncFixedHero">
-              <el-radio-button label="random">随机主图</el-radio-button>
-              <el-radio-button label="fixed">固定主图</el-radio-button>
+              <el-radio-button value="random">随机主图</el-radio-button>
+              <el-radio-button value="fixed">固定主图</el-radio-button>
             </el-radio-group>
           </el-form-item>
           <el-form-item v-if="form.heroMode === 'fixed'" label="固定照片">

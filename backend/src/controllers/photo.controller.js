@@ -185,6 +185,7 @@ const normalizePhotoBody = (body, file, imageInfo, exifInfo) => {
     description: body.description || null,
     originalUrl: imageInfo.originalUrl,
     mediumUrl: imageInfo.mediumUrl,
+    smallUrl: imageInfo.smallUrl || imageInfo.mediumUrl || imageInfo.thumbnailUrl,
     thumbnailUrl: imageInfo.thumbnailUrl,
     filename: file.filename,
     mimeType: file.mimetype,
@@ -220,6 +221,7 @@ const normalizePhotoBody = (body, file, imageInfo, exifInfo) => {
 const normalizeExternalPhotoBody = (body) => {
   const originalUrl = normalizeImageUrl(body.originalUrl || body.imageUrl || body.url);
   const mediumUrl = normalizeImageUrl(body.mediumUrl) || originalUrl;
+  const smallUrl = normalizeImageUrl(body.smallUrl) || mediumUrl;
   const thumbnailUrl = normalizeImageUrl(body.thumbnailUrl) || mediumUrl;
   if (!originalUrl) {
     const err = new Error('请填写有效的图片 URL');
@@ -235,6 +237,7 @@ const normalizeExternalPhotoBody = (body) => {
     description: sanitizeText(body.description, 2000) || null,
     originalUrl,
     mediumUrl,
+    smallUrl,
     thumbnailUrl,
     externalStatus: 'unchecked',
     externalCheckedAt: null,
@@ -297,7 +300,7 @@ const updatePhotoData = (body) => {
   ['focalLength', 'aperture', 'latitude', 'longitude'].forEach((field) => {
     if (Object.prototype.hasOwnProperty.call(body, field)) data[field] = toFloatOrNull(body[field]);
   });
-  ['originalUrl', 'mediumUrl', 'thumbnailUrl'].forEach((field) => {
+  ['originalUrl', 'mediumUrl', 'smallUrl', 'thumbnailUrl'].forEach((field) => {
     if (!Object.prototype.hasOwnProperty.call(body, field)) return;
     const value = normalizeImageUrl(body[field]);
     if (!value) {
@@ -312,6 +315,11 @@ const updatePhotoData = (body) => {
     if (field === 'originalUrl') data.externalSourceUrl = value;
     data.externalCachedAt = null;
   });
+  if ((Object.prototype.hasOwnProperty.call(body, 'originalUrl') || Object.prototype.hasOwnProperty.call(body, 'mediumUrl'))
+    && !Object.prototype.hasOwnProperty.call(body, 'smallUrl')) {
+    const fallbackSmallUrl = data.mediumUrl || data.originalUrl;
+    if (fallbackSmallUrl) data.smallUrl = fallbackSmallUrl;
+  }
   if (Object.prototype.hasOwnProperty.call(body, 'takenAt')) data.takenAt = parseDate(body.takenAt) || null;
   if (Object.prototype.hasOwnProperty.call(body, 'isPinned')) {
     data.isPinned = toBool(body.isPinned);

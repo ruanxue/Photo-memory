@@ -58,14 +58,17 @@ export const deleteImageArtifacts = async (file) => {
   await Promise.all([
     safeUnlinkUpload(publicUploadUrl('originals', file.filename)),
     safeUnlinkUpload(publicUploadUrl('mediums', buildDerivativeName(file.filename, 'medium'))),
+    safeUnlinkUpload(publicUploadUrl('smalls', buildDerivativeName(file.filename, 'small'))),
     safeUnlinkUpload(publicUploadUrl('thumbnails', buildDerivativeName(file.filename, 'thumb')))
   ]);
 };
 
 export const processImage = async (file) => {
   const mediumName = buildDerivativeName(file.filename, 'medium');
+  const smallName = buildDerivativeName(file.filename, 'small');
   const thumbName = buildDerivativeName(file.filename, 'thumb');
   const mediumPath = path.join(uploadDirs.mediums, mediumName);
+  const smallPath = path.join(uploadDirs.smalls, smallName);
   const thumbPath = path.join(uploadDirs.thumbnails, thumbName);
 
   const source = sharp(file.path, { failOn: 'error', limitInputPixels: maxImagePixels }).rotate();
@@ -89,6 +92,14 @@ export const processImage = async (file) => {
   if (shouldWatermark) mediumPipeline.composite([watermarkOverlay(1600)]);
   await mediumPipeline.toFile(mediumPath);
 
+  const smallPipeline = sharp(file.path, { failOn: 'error', limitInputPixels: maxImagePixels })
+    .rotate()
+    .resize({ width: 960, withoutEnlargement: true })
+    .webp({ quality: 80 });
+
+  if (shouldWatermark) smallPipeline.composite([watermarkOverlay(960)]);
+  await smallPipeline.toFile(smallPath);
+
   await sharp(file.path, { failOn: 'error', limitInputPixels: maxImagePixels })
     .rotate()
     .resize({ width: 480, withoutEnlargement: true })
@@ -100,6 +111,7 @@ export const processImage = async (file) => {
     height: metadata.height,
     originalUrl: publicUploadUrl('originals', file.filename),
     mediumUrl: publicUploadUrl('mediums', mediumName),
+    smallUrl: publicUploadUrl('smalls', smallName),
     thumbnailUrl: publicUploadUrl('thumbnails', thumbName)
   };
 };

@@ -11,6 +11,7 @@ export const uploadRoot = process.env.UPLOAD_ROOT
 export const uploadDirs = {
   originals: path.join(uploadRoot, 'originals'),
   mediums: path.join(uploadRoot, 'mediums'),
+  smalls: path.join(uploadRoot, 'smalls'),
   thumbnails: path.join(uploadRoot, 'thumbnails')
 };
 

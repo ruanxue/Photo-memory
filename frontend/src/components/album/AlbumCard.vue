@@ -1,6 +1,13 @@
 <template>
   <router-link :to="`/albums/${album.id}`" class="album-card">
-    <img :src="albumCover(album)" :alt="album.title" loading="lazy" @error="handleImageError" />
+    <img
+      :src="albumCover(album)"
+      :srcset="albumCoverSrcset(album) || undefined"
+      :sizes="photoImageSizes.album"
+      :alt="album.title"
+      loading="lazy"
+      @error="handleImageError"
+    />
     <div>
       <strong>{{ album.title }}</strong>
       <p>{{ album.description || '没有描述，照片自己会说话。' }}</p>
@@ -10,7 +17,7 @@
 </template>
 
 <script setup>
-import { albumCover, handleImageError } from '../../utils/image.js';
+import { albumCover, albumCoverSrcset, handleImageError, photoImageSizes } from '../../utils/image.js';
 
 defineProps({
   album: { type: Object, required: true }

@@ -93,7 +93,7 @@ const adminPhotoData = (body) => {
   ['focalLength', 'aperture', 'latitude', 'longitude'].forEach((field) => {
     if (Object.prototype.hasOwnProperty.call(body, field)) data[field] = toFloatOrNull(body[field]);
   });
-  ['originalUrl', 'mediumUrl', 'thumbnailUrl'].forEach((field) => {
+  ['originalUrl', 'mediumUrl', 'smallUrl', 'thumbnailUrl'].forEach((field) => {
     if (!Object.prototype.hasOwnProperty.call(body, field)) return;
     const value = normalizeImageUrl(body[field]);
     if (!value) {
@@ -108,6 +108,11 @@ const adminPhotoData = (body) => {
     if (field === 'originalUrl') data.externalSourceUrl = value;
     data.externalCachedAt = null;
   });
+  if ((Object.prototype.hasOwnProperty.call(body, 'originalUrl') || Object.prototype.hasOwnProperty.call(body, 'mediumUrl'))
+    && !Object.prototype.hasOwnProperty.call(body, 'smallUrl')) {
+    const fallbackSmallUrl = data.mediumUrl || data.originalUrl;
+    if (fallbackSmallUrl) data.smallUrl = fallbackSmallUrl;
+  }
   if (Object.prototype.hasOwnProperty.call(body, 'takenAt')) data.takenAt = parseDate(body.takenAt) || null;
   if (Object.prototype.hasOwnProperty.call(body, 'isPinned')) {
     data.isPinned = toBool(body.isPinned);
@@ -350,6 +355,7 @@ const externalPhotoWhere = (ids = []) => ({
     { fileSize: 0 },
     { originalUrl: { startsWith: 'http' } },
     { mediumUrl: { startsWith: 'http' } },
+    { smallUrl: { startsWith: 'http' } },
     { thumbnailUrl: { startsWith: 'http' } }
   ]
 });
@@ -418,7 +424,7 @@ export const listAlbums = async (req, res) => {
   });
   const coverIds = albums.map((album) => album.coverPhotoId).filter(Boolean);
   const covers = coverIds.length
-    ? await prisma.photo.findMany({ where: { id: { in: coverIds } }, select: { id: true, thumbnailUrl: true, mediumUrl: true, title: true, externalStatus: true } })
+    ? await prisma.photo.findMany({ where: { id: { in: coverIds } }, select: { id: true, thumbnailUrl: true, smallUrl: true, mediumUrl: true, title: true, externalStatus: true } })
     : [];
   const coverMap = new Map(covers.map((photo) => [photo.id, photo]));
   success(res, albums.map((album) => ({ ...album, coverPhoto: coverMap.get(album.coverPhotoId) || album.photos?.[0] || null })));

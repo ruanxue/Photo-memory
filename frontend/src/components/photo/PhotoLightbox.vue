@@ -65,7 +65,7 @@ const emit = defineEmits(['close', 'update:index']);
 
 const current = computed(() => props.photos[props.index]);
 const currentId = computed(() => current.value?.id);
-const previewSrc = computed(() => photoImageUrl(current.value, ['thumbnailUrl', 'mediumUrl', 'originalUrl']));
+const previewSrc = computed(() => photoImageUrl(current.value, ['smallUrl', 'mediumUrl', 'thumbnailUrl', 'originalUrl']));
 const fullSrc = computed(() => photoImageUrl(current.value, ['originalUrl', 'mediumUrl', 'thumbnailUrl']));
 const lightboxRef = ref(null);
 const backdropRef = ref(null);
@@ -149,7 +149,7 @@ const loadFullImage = (id) => {
   if (preloader.complete && preloader.naturalWidth > 0) swap();
 };
 
-const photoPreviewUrl = (photo) => photoImageUrl(photo, ['thumbnailUrl', 'mediumUrl', 'originalUrl']);
+const photoPreviewUrl = (photo) => photoImageUrl(photo, ['smallUrl', 'mediumUrl', 'thumbnailUrl', 'originalUrl']);
 const photoFullUrl = (photo) => photoImageUrl(photo, ['originalUrl', 'mediumUrl', 'thumbnailUrl']);
 
 const warmImage = (source) => {

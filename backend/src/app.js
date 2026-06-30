@@ -1,8 +1,10 @@
 import express from 'express';
+import compression from 'compression';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
+import expressStaticGzip from 'express-static-gzip';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { env } from './config/env.js';
@@ -11,6 +13,7 @@ import { backendRoot, ensureUploadDirs, uploadRoot } from './utils/file.js';
 import { parseTrustProxyValue } from './utils/proxy.js';
 import { errorHandler, notFound } from './middlewares/error.middleware.js';
 import { guardRequestPayload } from './middlewares/security.middleware.js';
+import { invalidatePublicApiCacheOnMutation, publicApiCache } from './middlewares/cache.middleware.js';
 import authRoutes from './routes/auth.routes.js';
 import photoRoutes from './routes/photo.routes.js';
 import albumRoutes from './routes/album.routes.js';
@@ -29,7 +32,7 @@ await ensureUploadDirs();
 
 const setUploadCacheHeaders = (res, filePath) => {
   const normalized = filePath.replace(/\\/g, '/');
-  if (normalized.includes('/mediums/') || normalized.includes('/thumbnails/')) {
+  if (normalized.includes('/mediums/') || normalized.includes('/smalls/') || normalized.includes('/thumbnails/')) {
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     return;
   }
@@ -43,6 +46,14 @@ const setFrontendCacheHeaders = (res, filePath) => {
     return;
   }
   res.setHeader('Cache-Control', 'no-cache');
+};
+
+const shouldCompressResponse = (req, res) => {
+  if (req.headers['x-no-compression']) return false;
+  if (/\.(?:br|gz|zip|rar|7z|jpg|jpeg|png|webp|avif|gif|ico|mp4|mov|pdf)$/i.test(req.path || '')) {
+    return false;
+  }
+  return compression.filter(req, res);
 };
 
 const renderRateLimitPage = (retryAfter) => `<!doctype html>
@@ -179,6 +190,7 @@ app.use(
   })
 );
 app.use(cors({ origin: env.clientOrigin, credentials: true }));
+app.use(compression({ threshold: 1024, filter: shouldCompressResponse }));
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(guardRequestPayload);
@@ -205,6 +217,8 @@ app.use(
     }
   })
 );
+app.use(invalidatePublicApiCacheOnMutation);
+app.use(publicApiCache);
 app.use('/uploads', express.static(uploadRoot, { setHeaders: setUploadCacheHeaders }));
 
 app.get('/api/health', (req, res) => res.json({ success: true, message: 'Photo Memory API is running' }));
@@ -222,9 +236,18 @@ app.use('/api/admin', adminRoutes);
 
 const frontendDist = process.env.FRONTEND_DIST_DIR || path.resolve(backendRoot, '../frontend/dist');
 if (env.nodeEnv === 'production') {
-  app.use(express.static(frontendDist, { setHeaders: setFrontendCacheHeaders }));
+  app.use(
+    expressStaticGzip(frontendDist, {
+      enableBrotli: true,
+      orderPreference: ['br', 'gz'],
+      serveStatic: {
+        setHeaders: setFrontendCacheHeaders
+      }
+    })
+  );
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) return next();
+    setFrontendCacheHeaders(res, path.join(frontendDist, 'index.html'));
     res.sendFile(path.join(frontendDist, 'index.html'));
   });
 }

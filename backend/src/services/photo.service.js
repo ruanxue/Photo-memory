@@ -15,6 +15,7 @@ export const photoWallSelect = {
   id: true,
   title: true,
   mediumUrl: true,
+  smallUrl: true,
   thumbnailUrl: true,
   originalUrl: true,
   externalStatus: true,
@@ -216,6 +217,7 @@ export const deletePhotoFiles = async (photo) => {
   await Promise.all([
     safeUnlinkUpload(photo.originalUrl),
     safeUnlinkUpload(photo.mediumUrl),
+    safeUnlinkUpload(photo.smallUrl),
     safeUnlinkUpload(photo.thumbnailUrl)
   ]);
 };

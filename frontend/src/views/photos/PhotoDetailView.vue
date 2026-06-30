@@ -8,7 +8,13 @@
       </button>
       <div class="container detail-layout" :class="{ 'detail-layout-simple': !hasTechnicalSide }">
         <div class="detail-photo">
-          <img :src="photoImageUrl(photo, ['mediumUrl', 'originalUrl', 'thumbnailUrl'])" :alt="photo.title" @error="handleImageError" />
+          <img
+            :src="photoImageUrl(photo, ['mediumUrl', 'smallUrl', 'originalUrl', 'thumbnailUrl'])"
+            :srcset="photoImageSrcset(photo, ['smallUrl', 'mediumUrl', 'originalUrl']) || undefined"
+            :sizes="photoImageSizes.detail"
+            :alt="photo.title"
+            @error="handleImageError"
+          />
         </div>
 
         <aside class="detail-side">
@@ -141,7 +147,7 @@ import { ElMessage } from 'element-plus/es/components/message/index';
 import { ElMessageBox } from 'element-plus/es/components/message-box/index';
 import { ArrowLeft } from '@element-plus/icons-vue';
 import { photoApi } from '../../api/photo.api.js';
-import { handleImageError, isExternalPhoto, photoImageUrl } from '../../utils/image.js';
+import { handleImageError, isExternalPhoto, photoImageSizes, photoImageSrcset, photoImageUrl } from '../../utils/image.js';
 import { hasExifInfo, hasGpsInfo } from '../../utils/exif.js';
 import { mapSceneForPhoto, mapZoomForScene } from '../../utils/map.js';
 import { readGuestProfile, saveGuestProfile } from '../../utils/guest.js';

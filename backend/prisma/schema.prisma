@@ -40,6 +40,7 @@ model Photo {
   description          String?
   originalUrl          String
   mediumUrl            String
+  smallUrl             String?
   thumbnailUrl         String
   externalStatus       String?
   externalCheckedAt    DateTime?

@@ -162,6 +162,7 @@ async function createPhotos({ admin, demo, categoryMap, tagMap, albumMap }) {
           description: variantDescription,
           originalUrl: imageUrl(seed, 2400, Math.round((2400 * height) / width)),
           mediumUrl: imageUrl(seed, 1600, height),
+          smallUrl: imageUrl(seed, 960, Math.round((960 * height) / width)),
           thumbnailUrl: imageUrl(seed, 720, Math.round((720 * height) / width)),
           filename: `sample-${index}.jpg`,
           mimeType: 'image/jpeg',
