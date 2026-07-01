@@ -4,7 +4,7 @@
       <router-view />
     </main>
     <Footer v-if="showFooter" />
-    <FloatingDock v-if="!isHome" />
+    <FloatingDock v-if="showDock" />
   </div>
 </template>
 
@@ -17,7 +17,9 @@ import FloatingDock from '../components/common/FloatingDock.vue';
 const route = useRoute();
 const isHome = computed(() => route.name === 'home');
 const footerlessRoutes = new Set(['photos', 'albums', 'album-detail', 'timeline', 'map', 'login']);
+const docklessRoutes = new Set(['albums', 'album-detail']);
 const showFooter = computed(() => !isHome.value && !footerlessRoutes.has(route.name));
+const showDock = computed(() => !isHome.value && !docklessRoutes.has(route.name));
 </script>
 
 <style scoped>
