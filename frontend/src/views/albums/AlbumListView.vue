@@ -1,8 +1,6 @@
 <template>
-  <main class="album-roll-page" :style="rollStyle">
-    <LoadingState v-if="loading" class="album-loading" />
-
-    <template v-else-if="albums.length">
+  <main class="album-roll-page" :class="{ 'is-fetching': isFetching }" :style="rollStyle">
+    <template v-if="albums.length">
       <header class="roll-nav" aria-label="相册章节导航">
         <span>PHOTO MEMORY JOURNAL</span>
         <div class="roll-progress" aria-hidden="true">
@@ -88,6 +86,7 @@
       </section>
     </template>
 
+    <div v-else-if="isFetching" class="album-roll-placeholder" aria-hidden="true" />
     <EmptyState v-else class="album-empty" title="暂无相册" description="创建相册后会出现在这里。" />
   </main>
 </template>
@@ -96,14 +95,14 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { albumApi } from '../../api/album.api.js';
-import LoadingState from '../../components/common/LoadingState.vue';
 import EmptyState from '../../components/common/EmptyState.vue';
+import { readAlbumListPreview, rememberAlbumListPreview, rememberAlbumPreview } from '../../utils/albumPreviewCache.js';
 import { albumCover, albumCoverSrcset, handleImageError, photoImageSizes } from '../../utils/image.js';
 import { formatDate } from '../../utils/format.js';
 
 const router = useRouter();
-const albums = ref([]);
-const loading = ref(true);
+const albums = ref(readAlbumListPreview());
+const isFetching = ref(false);
 const activeIndex = ref(0);
 
 const palette = ['#d64a38', '#168c98', '#55723b', '#b16a3f', '#263d73', '#d6ad4a', '#9b4859'];
@@ -140,15 +139,23 @@ const setActive = (index) => {
 
 const openAlbum = (album) => {
   if (!album?.id) return;
-  router.push({ name: 'album-detail', params: { id: album.id } });
+  const preview = rememberAlbumPreview(album);
+  router.push({
+    name: 'album-detail',
+    params: { id: album.id },
+    state: preview ? { albumPreview: preview } : {}
+  });
 };
 
 onMounted(async () => {
+  isFetching.value = true;
   try {
     const res = await albumApi.list({ pageSize: 60 });
     albums.value = res.data || [];
+    rememberAlbumListPreview(albums.value);
+    if (activeIndex.value >= albums.value.length) activeIndex.value = 0;
   } finally {
-    loading.value = false;
+    isFetching.value = false;
   }
 });
 </script>
@@ -191,14 +198,19 @@ onMounted(async () => {
   opacity: 0.32;
 }
 
-.album-loading,
 .album-empty {
   width: min(820px, 100%);
   margin: 22dvh auto 0;
 }
 
+.album-roll-placeholder {
+  min-height: calc(100dvh - 60px);
+}
+
 .roll-nav {
+  width: min(100%, 1720px);
   height: 34px;
+  margin: 0 auto;
   display: grid;
   grid-template-columns: minmax(180px, 1fr) auto minmax(180px, 1fr);
   align-items: center;
@@ -239,16 +251,18 @@ onMounted(async () => {
 }
 
 .roll-stage {
+  width: min(100%, 1720px);
   min-height: calc(100dvh - 82px);
+  margin: 0 auto;
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(20px, 44px) minmax(420px, 0.95fr);
+  grid-template-columns: minmax(330px, 0.72fr) minmax(18px, 34px) minmax(520px, 1.18fr);
   align-items: center;
-  gap: clamp(18px, 3vw, 46px);
+  gap: clamp(18px, 2.3vw, 36px);
   padding-top: clamp(10px, 2.8vh, 28px);
 }
 
 .roll-copy {
-  max-width: 660px;
+  max-width: 620px;
   padding-left: clamp(4px, 1vw, 18px);
 }
 
@@ -288,7 +302,7 @@ h1 span {
   max-width: min(8.6ch, 100%);
   overflow-wrap: anywhere;
   color: #f7ecd6;
-  font-size: clamp(58px, 10vw, 150px);
+  font-size: clamp(56px, 8.2vw, 132px);
   font-weight: 950;
 }
 
@@ -296,7 +310,7 @@ h1 strong {
   margin-top: 6px;
   color: transparent;
   -webkit-text-stroke: clamp(1px, 0.16vw, 2px) color-mix(in srgb, var(--roll-accent) 76%, #f7ecd6);
-  font-size: clamp(56px, 9vw, 136px);
+  font-size: clamp(54px, 7.2vw, 118px);
   font-weight: 900;
 }
 
@@ -404,6 +418,9 @@ h1 strong {
 }
 
 .album-strip {
+  width: 100%;
+  max-width: 960px;
+  justify-self: end;
   display: grid;
   align-content: center;
   gap: clamp(7px, 1vh, 10px);
@@ -510,6 +527,40 @@ h1 strong {
   font-style: normal;
   font-weight: 900;
   letter-spacing: 0.12em;
+}
+
+@media (min-width: 1200px) and (min-aspect-ratio: 16/9) {
+  .roll-stage {
+    min-height: calc(100dvh - 62px);
+    padding-top: 0;
+  }
+
+  .kicker {
+    margin-bottom: 12px;
+  }
+
+  .description {
+    min-height: auto;
+    margin: 10px 0 18px;
+  }
+
+  .accent-line {
+    margin-block: clamp(14px, 2.4vh, 22px) 10px;
+  }
+
+  .enter-roll {
+    margin-top: 16px;
+  }
+
+  .strip-card {
+    height: clamp(62px, 8.4vh, 84px);
+  }
+
+  .strip-card.active,
+  .strip-card:hover,
+  .strip-card:focus-visible {
+    height: clamp(84px, 10.8vh, 108px);
+  }
 }
 
 @media (max-width: 980px) {

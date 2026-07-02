@@ -1,9 +1,7 @@
 <template>
-  <LoadingState v-if="loading" class="chapter-loading" />
-
-  <main v-else-if="album" class="album-chapter-page" :style="chapterStyle">
+  <main class="album-chapter-page" :class="{ 'is-fetching': isFetching }" :style="chapterStyle">
     <header class="chapter-nav">
-      <button type="button" @click="router.push({ name: 'albums' })">
+      <button type="button" @click="returnToIndex">
         <el-icon><Back /></el-icon>
         <span>ROLL INDEX</span>
       </button>
@@ -40,6 +38,7 @@
         class="photo-stage"
         @mouseenter="paused = true"
         @mouseleave="paused = false"
+        @wheel.prevent="handleWheel"
       >
         <template v-if="photos.length">
           <Transition name="photo-swap" mode="out-in">
@@ -48,7 +47,7 @@
                 <img
                   :src="photoImageUrl(currentPhoto, ['mediumUrl', 'smallUrl', 'thumbnailUrl', 'originalUrl'])"
                   :srcset="photoImageSrcset(currentPhoto, ['thumbnailUrl', 'smallUrl', 'mediumUrl']) || undefined"
-                  :sizes="photoImageSizes.hero"
+                  :sizes="photoImageSizes.detail"
                   :alt="currentPhoto?.title || album.title"
                   @error="handleImageError"
                 />
@@ -72,24 +71,17 @@
             >
               <img
                 :src="photoImageUrl(photo, ['thumbnailUrl', 'smallUrl', 'mediumUrl'])"
+                :srcset="photoImageSrcset(photo, ['thumbnailUrl', 'smallUrl']) || undefined"
+                :sizes="photoImageSizes.thumb"
                 :alt="photo.title"
                 loading="lazy"
                 @error="handleImageError"
               />
             </button>
           </nav>
-
-          <div class="chapter-controls">
-            <button type="button" aria-label="上一张" @click="move(-1)">
-              <el-icon><ArrowLeft /></el-icon>
-            </button>
-            <button type="button" aria-label="下一张" @click="move(1)">
-              <el-icon><ArrowRight /></el-icon>
-            </button>
-            <span>{{ paused ? 'HOVER PAUSES' : 'FLIP PHOTO' }}</span>
-          </div>
         </template>
 
+        <div v-else-if="isFetching" class="chapter-photo-placeholder" aria-hidden="true" />
         <EmptyState v-else class="chapter-empty" title="相册暂无照片" description="照片加入相册后会出现在这里。" />
       </section>
     </section>
@@ -108,23 +100,26 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { ArrowLeft, ArrowRight, Back } from '@element-plus/icons-vue';
+import { Back } from '@element-plus/icons-vue';
 import { albumApi } from '../../api/album.api.js';
-import LoadingState from '../../components/common/LoadingState.vue';
 import EmptyState from '../../components/common/EmptyState.vue';
 import PhotoLightbox from '../../components/photo/PhotoLightbox.vue';
+import { createAlbumShell, readAlbumPreview, rememberAlbumPreview } from '../../utils/albumPreviewCache.js';
 import { handleImageError, photoImageSizes, photoImageSrcset, photoImageUrl } from '../../utils/image.js';
 import { formatDate } from '../../utils/format.js';
 
 const route = useRoute();
 const router = useRouter();
-const album = ref(null);
-const loading = ref(true);
+const album = ref(createAlbumShell(route.params.id));
+const isFetching = ref(false);
 const currentIndex = ref(0);
 const lightboxVisible = ref(false);
 const lightboxIndex = ref(0);
 const paused = ref(false);
 let autoTimer = null;
+let requestVersion = 0;
+let wheelLocked = false;
+let wheelLockTimer = null;
 
 const palette = ['#d64a38', '#d6ad4a', '#168c98', '#55723b', '#263d73', '#9b4859'];
 
@@ -165,10 +160,28 @@ const move = (step) => {
   currentIndex.value = (currentIndex.value + step + photos.value.length) % photos.value.length;
 };
 
+const handleWheel = (event) => {
+  if (lightboxVisible.value || photos.value.length < 2) return;
+  const delta = Number(event.deltaY || 0);
+  if (Math.abs(delta) < 28 || wheelLocked) return;
+  move(delta > 0 ? 1 : -1);
+  wheelLocked = true;
+  if (wheelLockTimer) window.clearTimeout(wheelLockTimer);
+  wheelLockTimer = window.setTimeout(() => {
+    wheelLocked = false;
+    wheelLockTimer = null;
+  }, 520);
+};
+
 const openLightbox = (index) => {
   lightboxIndex.value = index;
   lightboxVisible.value = true;
   paused.value = true;
+};
+
+const returnToIndex = () => {
+  rememberAlbumPreview(album.value);
+  router.push({ name: 'albums' });
 };
 
 const stopAuto = () => {
@@ -185,14 +198,25 @@ const startAuto = () => {
   }, 4600);
 };
 
+const albumPreviewFromState = () => {
+  const routeState = typeof window === 'undefined' ? null : window.history.state;
+  return readAlbumPreview(route.params.id, routeState);
+};
+
 const load = async () => {
-  loading.value = true;
+  const version = ++requestVersion;
+  const preview = albumPreviewFromState();
+  album.value = preview || createAlbumShell(route.params.id);
+  currentIndex.value = 0;
+  isFetching.value = true;
   try {
     const res = await albumApi.detail(route.params.id);
-    album.value = res.data;
+    if (version !== requestVersion) return;
+    album.value = res.data || createAlbumShell(route.params.id);
+    rememberAlbumPreview(album.value);
     currentIndex.value = 0;
   } finally {
-    loading.value = false;
+    if (version === requestVersion) isFetching.value = false;
   }
 };
 
@@ -217,15 +241,11 @@ watch(lightboxVisible, (visible) => {
 onBeforeUnmount(() => {
   stopAuto();
   window.removeEventListener('keydown', onKey);
+  if (wheelLockTimer) window.clearTimeout(wheelLockTimer);
 });
 </script>
 
 <style scoped>
-.chapter-loading {
-  width: min(820px, calc(100% - 28px));
-  margin: 22dvh auto 0;
-}
-
 .album-chapter-page {
   min-height: 100dvh;
   overflow: hidden;
@@ -303,13 +323,13 @@ onBeforeUnmount(() => {
 .chapter-layout {
   min-height: 100dvh;
   display: grid;
-  grid-template-columns: minmax(360px, 51vw) minmax(0, 1fr);
+  grid-template-columns: clamp(320px, 35vw, 560px) minmax(0, 1fr);
 }
 
 .chapter-cover {
   position: relative;
   min-height: 100dvh;
-  padding: clamp(92px, 13vh, 132px) clamp(30px, 5vw, 58px) clamp(34px, 6vh, 62px);
+  padding: clamp(82px, 10.5vh, 112px) clamp(24px, 3vw, 46px) clamp(34px, 5vh, 54px);
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--chapter-accent) 92%, #f2c7a7), var(--chapter-accent)),
     var(--chapter-accent);
@@ -331,8 +351,7 @@ onBeforeUnmount(() => {
 .album-script,
 .chapter-facts,
 blockquote,
-.chapter-stamp,
-.chapter-controls {
+.chapter-stamp {
   font-family: "Courier New", monospace;
 }
 
@@ -349,10 +368,10 @@ blockquote,
 h1 {
   position: relative;
   z-index: 1;
-  max-width: 8.8ch;
+  max-width: 7.6ch;
   margin: 0;
   color: #080706;
-  font-size: clamp(60px, 10vw, 132px);
+  font-size: clamp(48px, 6.6vw, 104px);
   font-weight: 950;
   line-height: 0.92;
   overflow-wrap: anywhere;
@@ -371,7 +390,7 @@ h1::after {
 .album-script {
   position: relative;
   z-index: 1;
-  max-width: 430px;
+  max-width: 360px;
   margin: 18px 0 0;
   color: rgba(8, 7, 6, 0.62);
   font-size: 13px;
@@ -383,8 +402,8 @@ h1::after {
 .chapter-facts {
   position: absolute;
   z-index: 1;
-  bottom: clamp(88px, 14vh, 132px);
-  left: clamp(30px, 5vw, 58px);
+  bottom: clamp(74px, 10vh, 104px);
+  left: clamp(24px, 3vw, 46px);
   display: grid;
   gap: 8px;
   color: rgba(8, 7, 6, 0.72);
@@ -395,9 +414,9 @@ h1::after {
 blockquote {
   position: absolute;
   z-index: 1;
-  right: clamp(28px, 4vw, 54px);
-  bottom: clamp(84px, 14vh, 130px);
-  width: min(270px, 42%);
+  right: clamp(24px, 3vw, 44px);
+  bottom: clamp(76px, 10vh, 106px);
+  width: min(230px, 44%);
   margin: 0;
   color: rgba(8, 7, 6, 0.72);
   font-size: 12px;
@@ -407,8 +426,8 @@ blockquote {
 
 .chapter-stamp {
   position: absolute;
-  right: clamp(34px, 5vw, 70px);
-  bottom: clamp(30px, 6vh, 54px);
+  right: clamp(24px, 3vw, 46px);
+  bottom: clamp(26px, 4vh, 42px);
   z-index: 1;
   width: 66px;
   height: 66px;
@@ -464,16 +483,19 @@ blockquote {
 
 figcaption {
   position: absolute;
-  right: clamp(36px, 8vw, 116px);
-  bottom: clamp(28px, 5vh, 46px);
+  right: clamp(132px, 12vw, 214px);
+  bottom: clamp(30px, 4.4vh, 48px);
+  left: clamp(28px, 4vw, 64px);
   z-index: 3;
   display: grid;
+  justify-items: end;
   gap: 6px;
   color: rgba(255, 246, 231, 0.88);
   font-family: "Courier New", monospace;
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.08em;
+  text-align: right;
   text-transform: lowercase;
   text-shadow: 0 3px 18px rgba(0, 0, 0, 0.7);
 }
@@ -485,13 +507,14 @@ figcaption em {
 
 .photo-counter {
   position: absolute;
-  right: clamp(24px, 3vw, 42px);
-  bottom: clamp(20px, 4vh, 36px);
+  right: clamp(132px, 12vw, 214px);
+  bottom: clamp(74px, 8.4vh, 104px);
   z-index: 3;
   color: rgba(255, 246, 231, 0.94);
-  font-size: clamp(42px, 6vw, 82px);
+  font-size: clamp(42px, 5vw, 70px);
   font-weight: 950;
   line-height: 0.85;
+  text-align: right;
   text-shadow: 0 4px 24px rgba(0, 0, 0, 0.72);
 }
 
@@ -499,15 +522,47 @@ figcaption em {
   position: absolute;
   top: 72px;
   right: 12px;
-  bottom: 96px;
+  bottom: 0;
   z-index: 4;
-  width: 52px;
+  width: 68px;
   display: grid;
   align-content: start;
-  gap: 7px;
+  gap: 8px;
   overflow-y: auto;
-  padding-right: 4px;
+  padding: 14px 10px 18px;
+  border: 1px solid rgba(255, 246, 231, 0.16);
+  border-radius: 2px;
+  background:
+    linear-gradient(90deg, rgba(255, 246, 231, 0.05), transparent 24%, transparent 76%, rgba(255, 246, 231, 0.05)),
+    rgba(2, 2, 2, 0.62);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.72),
+    0 18px 44px rgba(0, 0, 0, 0.34);
   scrollbar-width: none;
+}
+
+.thumb-rail::before,
+.thumb-rail::after {
+  content: "";
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  width: 5px;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(255, 246, 231, 0.32) 0 4px,
+    transparent 4px 12px
+  );
+  opacity: 0.62;
+}
+
+.thumb-rail::before {
+  left: 3px;
+}
+
+.thumb-rail::after {
+  right: 3px;
 }
 
 .thumb-rail::-webkit-scrollbar {
@@ -515,16 +570,33 @@ figcaption em {
 }
 
 .thumb-rail button {
-  width: 44px;
-  height: 54px;
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  width: 48px;
+  height: 58px;
   overflow: hidden;
   padding: 0;
-  border: 1px solid rgba(255, 246, 231, 0.15);
+  border: 2px solid rgba(3, 3, 3, 0.84);
   border-radius: 1px;
   background: #111;
   cursor: pointer;
-  opacity: 0.54;
-  transition: opacity 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  opacity: 0.66;
+  box-shadow:
+    0 0 0 1px rgba(255, 246, 231, 0.16),
+    inset 0 0 0 1px rgba(255, 246, 231, 0.08);
+  transition: opacity 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.thumb-rail button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08), transparent 18%, transparent 82%, rgba(0, 0, 0, 0.28)),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 4px);
+  mix-blend-mode: screen;
 }
 
 .thumb-rail button.active,
@@ -532,54 +604,26 @@ figcaption em {
 .thumb-rail button:focus-visible {
   opacity: 1;
   border-color: var(--chapter-accent);
-  transform: translateX(-4px);
+  box-shadow:
+    0 0 0 1px rgba(255, 246, 231, 0.34),
+    0 0 22px color-mix(in srgb, var(--chapter-accent) 34%, transparent);
+  transform: none;
 }
 
 .thumb-rail img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  filter: saturate(0.88) contrast(1.04);
 }
 
-.chapter-controls {
+.chapter-photo-placeholder {
   position: absolute;
-  bottom: 26px;
-  left: 50%;
-  z-index: 5;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px;
-  color: rgba(244, 234, 215, 0.64);
-  background: rgba(4, 4, 4, 0.76);
-  border: 1px solid rgba(244, 234, 215, 0.13);
-  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.38);
-  transform: translateX(-50%);
-  backdrop-filter: blur(14px);
-  font-size: 10px;
-  font-weight: 950;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-.chapter-controls button {
-  width: 28px;
-  height: 28px;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border: 1px solid rgba(244, 234, 215, 0.12);
-  border-radius: 2px;
-  color: #f4ead7;
-  background: rgba(255, 255, 255, 0.04);
-  cursor: pointer;
-}
-
-.chapter-controls button:hover,
-.chapter-controls button:focus-visible {
-  color: #0b0907;
-  border-color: var(--chapter-accent);
-  background: var(--chapter-accent);
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.36), transparent 34%, rgba(0, 0, 0, 0.62)),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 4px),
+    #070707;
 }
 
 .chapter-empty {
@@ -693,26 +737,52 @@ figcaption em {
   .thumb-rail {
     top: auto;
     right: 14px;
-    bottom: 82px;
+    bottom: 88px;
     left: 14px;
     width: auto;
+    height: 72px;
     grid-auto-flow: column;
     grid-auto-columns: 46px;
     overflow-x: auto;
     overflow-y: hidden;
+    padding: 10px 30px;
+  }
+
+  .thumb-rail::before,
+  .thumb-rail::after {
+    right: 16px;
+    left: 16px;
+    width: auto;
+    height: 5px;
+    background: repeating-linear-gradient(
+      90deg,
+      rgba(255, 246, 231, 0.32) 0 4px,
+      transparent 4px 12px
+    );
+  }
+
+  .thumb-rail::before {
+    top: 3px;
+    bottom: auto;
+  }
+
+  .thumb-rail::after {
+    top: auto;
+    bottom: 3px;
   }
 
   .thumb-rail button {
     width: 46px;
+    height: 52px;
   }
 
   .photo-counter {
-    right: 16px;
-    bottom: 18px;
+    right: 86px;
+    bottom: 62px;
   }
 
   figcaption {
-    right: 80px;
+    right: 86px;
     bottom: 20px;
     left: 16px;
   }
